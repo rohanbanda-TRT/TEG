@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Skill files (large binary files)
+*.skill
+
+# Specific agent directories to exclude
+trt-kb-agent/
+
+# Temporary files
+temp_skill/
+*.tmp
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# OS files
+Thumbs.db
