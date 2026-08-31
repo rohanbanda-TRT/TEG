@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from typing import Any
+
 from google import genai
 from google.genai import types
 
@@ -16,6 +19,79 @@ def _to_contents(messages: list[LLMMessage]) -> list[types.Content]:
         )
         for m in messages
     ]
+
+
+# ---------------------------------------------------------------------------
+# The Gemini Developer API rejects JSON schemas containing `additionalProperties`
+# (which pydantic emits for free-form `dict` fields). We sanitise the schema:
+#   - drop `additionalProperties` everywhere
+#   - inline `$ref`/`$defs`
+#   - turn a property-less `object` (an open dict) into a `string`, and remember
+#     it so we can json.loads() that field back into a dict after the call.
+# ---------------------------------------------------------------------------
+_STRIP_KEYS = {"additionalProperties", "$schema", "title", "default"}
+
+
+def _resolve_refs(node: Any, defs: dict[str, Any]) -> Any:
+    if isinstance(node, dict):
+        if "$ref" in node:
+            name = node["$ref"].split("/")[-1]
+            return _resolve_refs(defs.get(name, {}), defs)
+        return {k: _resolve_refs(v, defs) for k, v in node.items()}
+    if isinstance(node, list):
+        return [_resolve_refs(x, defs) for x in node]
+    return node
+
+
+def _sanitise(node: Any, path: str, coerced: set[str]) -> Any:
+    if isinstance(node, list):
+        return [_sanitise(x, path, coerced) for x in node]
+    if not isinstance(node, dict):
+        return node
+
+    node = {k: v for k, v in node.items() if k not in _STRIP_KEYS}
+
+    # An open object: `type: object` with no `properties` -> ask for a JSON string.
+    if node.get("type") == "object" and "properties" not in node:
+        coerced.add(path)
+        return {"type": "string"}
+
+    out: dict[str, Any] = {}
+    for k, v in node.items():
+        if k == "properties" and isinstance(v, dict):
+            out[k] = {
+                pk: _sanitise(pv, f"{path}.{pk}" if path else pk, coerced)
+                for pk, pv in v.items()
+            }
+        elif k in ("items", "anyOf", "oneOf", "allOf", "prefixItems"):
+            out[k] = _sanitise(v, path, coerced)
+        else:
+            out[k] = _sanitise(v, path, coerced)
+    return out
+
+
+def _prepare_schema(schema: type[BaseModelT]) -> tuple[dict[str, Any], set[str]]:
+    raw = schema.model_json_schema()
+    defs = raw.get("$defs", {})
+    resolved = _resolve_refs(raw, defs)
+    if isinstance(resolved, dict):
+        resolved.pop("$defs", None)
+    coerced: set[str] = set()
+    sane = _sanitise(resolved, "", coerced)
+    return sane, coerced
+
+
+def _coerce_back(data: dict[str, Any], coerced: set[str]) -> dict[str, Any]:
+    for field in coerced:
+        # only top-level fields are coerced in practice
+        top = field.split(".")[0]
+        val = data.get(top)
+        if isinstance(val, str):
+            try:
+                data[top] = json.loads(val) if val.strip() else {}
+            except (ValueError, TypeError):
+                data[top] = {}
+    return data
 
 
 class GeminiClient(LLMClient):
@@ -43,18 +119,17 @@ class GeminiClient(LLMClient):
         self, *, system: str, messages: list[LLMMessage],
         schema: type[BaseModelT], model: str | None = None,
     ) -> BaseModelT:
+        sane_schema, coerced = _prepare_schema(schema)
         resp = await self._client.aio.models.generate_content(
             model=model or self._model_main,
             contents=_to_contents(messages),
             config=types.GenerateContentConfig(
                 system_instruction=system,
                 response_mime_type="application/json",
-                response_schema=schema,
+                response_schema=sane_schema,
             ),
         )
-        parsed = getattr(resp, "parsed", None)
-        if parsed is not None and not isinstance(parsed, (str, bytes)):
-            if isinstance(parsed, schema):
-                return parsed
-            return schema.model_validate(parsed if isinstance(parsed, dict) else parsed.__dict__)
-        return schema.model_validate_json(resp.text)
+        data = json.loads(resp.text)
+        if coerced:
+            data = _coerce_back(data, coerced)
+        return schema.model_validate(data)
