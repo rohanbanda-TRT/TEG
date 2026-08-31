@@ -2,7 +2,7 @@
 
 > **Event:** Tech Expo Gujarat 2026 (TEG 2026)
 > **Source:** Official TEG 2026 cost sheet (`teg-cost.pdf`, 16-page organizer collateral) + official sponsors brochure (`teg-sponsors-brochure.pdf`)
-> **Last updated:** August 31, 2026
+> **Last updated:** September 1, 2026
 > **Status:** ✅ CONFIRMED — these figures come from official TEG-branded collateral. All prices are **exclusive of GST** and marked with an asterisk (*) on the source sheet, indicating they are indicative/subject to final confirmation at booking.
 
 ---
@@ -152,7 +152,7 @@ The cost sheet and sponsors brochure cover **exhibitor and sponsor pricing only*
 
 - Two named visitor tiers: **"Regular Visitor"** and **"Golden Ticket"** (per technobrains.io third-party page)
 - Entry is **not free** ("There is NO FREE entry")
-- A running site banner advertised: *"Limited Super Early Bird Ticket Offer – 60% OFF | 2,600+ Tickets Sold"*
+- Running site banner (September 2026 re-check): *"Early Bird Offer Live! — 50% OFF"* — reduced from the *"60% OFF | 2,600+ Tickets Sold"* wording seen in August 2026.
 - See `registration/registration_and_passes.md` for full detail.
 
 ---

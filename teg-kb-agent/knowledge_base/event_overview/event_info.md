@@ -3,7 +3,7 @@
 > **Organizer:** AIMED TECH EXPO GUJARAT LLP
 > **Dates:** 27–28–29 November 2026
 > **Venue:** GUCEC, Ahmedabad, Gujarat, India
-> **Last updated:** August 2026
+> **Last updated:** September 1, 2026 (early-bird offer re-checked)
 
 ---
 
@@ -49,7 +49,7 @@ TEG 2026 is explicitly positioned as nearly double the scale of TEG 2024.
 Manufacturing, Automobile, Power & Energy, Agriculture, Educational Institute, Healthcare, Electronics, Pharmaceutical, Jewelers, Textile — plus retail, logistics, and finance (per event FAQ). The event explicitly frames itself around fintech, healthtech, edtech, real estate, and manufacturing alongside core IT/software.
 
 ## Ticketing status (as of last update)
-The main site was running a "Limited Super Early Bird Ticket Offer – 60% OFF" promotion, with 2,600+ tickets sold at time of last crawl. Ticket tiers/pricing for TEG 2026 itself were not published in static page content (likely rendered dynamically on the ticketing portal at events.techexpogujarat.com) — check that link directly for current pricing.
+The main site runs an early-bird ticket promotion. As of the September 2026 re-check the banner reads **"Early Bird Offer Live! — 50% OFF"** (reduced from the "60% OFF | 2,600+ Tickets Sold" wording seen in August 2026; the sold-count is no longer displayed). Ticket tiers/pricing for TEG 2026 itself are not published in static page content (rendered dynamically on the ticketing portal at events.techexpogujarat.com) — check that link directly for current pricing. See `registration/registration_and_passes.md`.
 
 ---
 *Source: techexpogujarat.com (homepage, about-us) — full site crawl, last page update seen: 2026-05-25*
