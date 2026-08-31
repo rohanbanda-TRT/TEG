@@ -3,9 +3,9 @@
 > **Event:** Tech Expo Gujarat 2026 (TEG 2026)
 > **Organizer:** AIMED TECH EXPO GUJARAT LLP
 > **Website:** https://www.techexpogujarat.com/
-> **Compiled:** August 2026 (re-verified August 27, 2026)
-> **Sources:** Full site crawl of techexpogujarat.com + events.techexpogujarat.com + linked third-party exhibitor/press pages
-> **Total files:** 160 (11 topic files + 4 root-level files [`exhibitor_benefits_analysis.md`, `inquiry_page_content.md`, `data_schema.md`, `sector_wise_participation.md`] + 35 individual speaker profiles + 26 organizers_team files [2 index/summary + 24 individual organizer/co-organizer profiles] + 84 exhibitors/companies files [83 individual company profiles + companies_index.md] + INDEX.md)
+> **Compiled:** August 2026 (re-verified August 27, 2026; TEG 2026 pricing + brochure exhibitor pass August 31, 2026)
+> **Sources:** Full site crawl of techexpogujarat.com + events.techexpogujarat.com + linked third-party exhibitor/press pages + official `teg-cost.pdf` and `teg-sponsors-brochure.pdf` collateral
+> **Total files:** 213 (13 topic files [incl. new `pricing/pricing_and_packages.md`, `testimonials/exhibitor_testimonials.md`] + 5 root-level files [`exhibitor_benefits_analysis.md`, `inquiry_page_content.md`, `data_schema.md`, `sector_wise_participation.md`, `outreach_config.md`] + 35 individual speaker profiles + 26 organizers_team files [2 index/summary + 24 individual organizer/co-organizer profiles] + 134 exhibitors/companies files [133 individual company profiles + companies_index.md] + INDEX.md)
 
 ---
 
@@ -27,9 +27,9 @@ teg_knowledge_base/
 │   └── venue_and_logistics.md                        ← GUCEC details, floor plan, timings, booth sizes
 │
 ├── exhibitors/
-│   ├── exhibitors_directory.md                        ← TEG 2026 status + TEG 2024 master table (linked) + stall packages
-│   └── companies/                                      ← 83 individual TEG 2024 exhibitor company profiles + 1 index
-│       └── companies_index.md                          ← Confidence-tiered index (82 Verified · 1 Medium · 0 Could-Not-Verify)
+│   ├── exhibitors_directory.md                        ← TEG 2026 named brochure exhibitor list + TEG 2024 master table (linked) + stall packages
+│   └── companies/                                      ← 131 individual company profiles (83 TEG 2024 + 48 TEG 2026 brochure) + 1 index
+│       └── companies_index.md                          ← Confidence-tiered index (123 Verified · 4 Medium · 4 Low)
 │
 ├── speakers/
 │   ├── speakers_and_agenda.md                         ← TEG 2024 full speaker list + schedule; TEG 2026 status
@@ -177,7 +177,7 @@ Tapan Patel, Co-Founder/CMO of Third Rock Techkno, sits on TEG's core organizing
 ## Known Data Gaps (re-checked August 27, 2026)
 | Area | Status | Detail |
 |---|---|---|
-| TEG 2026 exhibitor names | **Partially resolved** | Official homepage still shows only ~74 unnamed numbered logo slots (e1.png…e74.png) against the 250+ target — unchanged since last crawl. However, three individual exhibitors were newly identified via their own third-party press/landing pages: **Eternal Web Pvt Ltd** (Stall A48–A55), **TechnoBrains Business Solutions** (Booth A71–72), and **Perigeon** (Booth A144, Salesforce/AI solutions). See `exhibitors/exhibitors_directory.md`. |
+| TEG 2026 exhibitor names | **Largely resolved (~66 named)** | The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page names ~66 TEG 2026 exhibitors — the first machine-legible resolution of the previously ~74 unnamed homepage logo slots. As of August 31, 2026 all ~66 have individual profiles under `exhibitors/companies/` (47 newly created, 18 pre-existing TEG 2024 profiles annotated, plus Perigeon). Booth numbers confirmed for a few: Eternal Web (A48–A55), TechnoBrains (A71–72), Perigeon (A144). A handful of brochure logos remain unidentified entities (AP, AIWI, Splededge, Ittive). Full list: `exhibitors/exhibitors_directory.md` and `exhibitors/companies/companies_index.md`. |
 | TEG 2026 speaker lineup | **Still unresolved** | No individually named TEG-2026-specific keynote speakers found beyond the same three recycled promo-testimonial names (Ankur Warikoo, Savjibhai Dholakia, Sonu Sharma). Broad web/press/LinkedIn search turned up nothing new. See `speakers/speakers_and_agenda.md`. |
 | TEG 2026 visitor ticket pricing | **Partially resolved** | A third-party page (technobrains.io) confirms the ticket structure now has two named tiers — **"Regular Visitor"** and **"Golden Ticket"** — but exact rupee pricing for either tier is still not published anywhere found (official site or third party); entry is confirmed non-free. See `registration/registration_and_passes.md`. |
 | TEG 2026 detailed session agenda | **Still unresolved** | Not published on the official site or any third-party page found. |
@@ -192,5 +192,5 @@ Tapan Patel, Co-Founder/CMO of Third Rock Techkno, sits on TEG's core organizing
 - **Verification pass note (August 27, 2026):** all four external claims above (Perigeon, News Monks, EFY Expo, TECH VAPI) were independently re-fetched from their source URLs rather than trusted from the prior pass's summary; all four checked out. The raw 74-filename logo list previously added to `exhibitors_directory.md` was trimmed to a one-line summary (no informational content was lost — the filenames carried no company-identifying data).
 
 ---
-*Last updated: August 27, 2026*
-*Sources: techexpogujarat.com full crawl (homepage, about-us, our-team, contactus, become-an-exhibitor, become-a-sponsor, tech-expo-2024, retreat-2025, teg-ignite-2026, product-owners) + events.techexpogujarat.com + third-party exhibitor/press pages (eternalsoftsolutions.com, technobrains.io, perigeon.com) + press (newsmonks.com) + app stores (Google Play, Apple App Store) + broad web search for exhibitor/speaker/sponsor/accommodation announcements*
+*Last updated: August 31, 2026 (August 31 pass: added 48 new TEG 2026 brochure exhibitor company profiles + annotated 18 existing profiles; earlier content re-verified August 27, 2026)*
+*Sources: teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page); techexpogujarat.com full crawl (homepage, about-us, our-team, contactus, become-an-exhibitor, become-a-sponsor, tech-expo-2024, retreat-2025, teg-ignite-2026, product-owners) + events.techexpogujarat.com + third-party exhibitor/press pages (eternalsoftsolutions.com, technobrains.io, perigeon.com) + press (newsmonks.com) + app stores (Google Play, Apple App Store) + broad web search for exhibitor/speaker/sponsor/accommodation announcements*

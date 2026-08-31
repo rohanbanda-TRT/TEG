@@ -3,20 +3,91 @@
 > **Event:** Tech Expo Gujarat (TEG 2026 status + TEG 2024 historical roster)
 > **Exhibitor booking:** https://www.techexpogujarat.com/become-an-exhibitor/
 > **Target (2026):** 250+ exhibitors
-> **Last updated:** August 27, 2026
+> **Last updated:** August 31, 2026
 
 ---
 
-## Potential TEG 2026 Exhibitors (Derived from Logo Files)
+## TEG 2026 — Named Exhibitors (from official sponsors brochure)
 
-The "Our Exhibitors 2026" section on the TEG homepage displays approximately 74 exhibitor logo slots using generic numbered filenames (e1.png through e74.png). Company names cannot be extracted from these filenames.
+**Update (August 31, 2026):** The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) includes an "Our Exhibitors (Year 2026)" page displaying **~66 named exhibitor logos** — the first machine-legible 2026 exhibitor list. These are TEG-published, so treated as **confirmed TEG 2026 exhibitors** (against the 250+ target). Individual profile files are being built at `exhibitors/companies/` — see `companies_index.md`.
 
-**Conclusion:** To identify the actual exhibitor companies from these logos, manual visual inspection of the logo images or alternative data sources (such as exhibitor announcements, press releases, or the TEG registration system) would be required.
+| Company | Sector (initial) | Profile | Also TEG 2024? |
+|---|---|---|---|
+| Dropit | E-commerce / logistics tech | [`dropit.md`](./companies/dropit.md) | — |
+| BOSC Tech Labs | Software development | [`bosc.md`](./companies/bosc.md) | Yes |
+| TechAlmas | IT services | [`techalmas.md`](./companies/techalmas.md) | — |
+| BizCompass | Software / IT services | [`bizcompass.md`](./companies/bizcompass.md) | Yes (Silver sponsor) |
+| AP (AppsPlus / Ap Technosoft — TBD) | Software development | [`ap.md`](./companies/ap.md) | — |
+| NeuraMonks | AI / ML | [`neuramonks.md`](./companies/neuramonks.md) | Yes |
+| Aone SEO Service Pvt Ltd | Digital marketing / SEO | [`aone_seo.md`](./companies/aone_seo.md) | — |
+| XPRO.AI | Event tech / AI platform | [`xpro_ai.md`](./companies/xpro_ai.md) | Yes (TEG ticketing platform) |
+| TechEniac | Software development | [`techeniac.md`](./companies/techeniac.md) | — |
+| UpMatrix | WhatsApp CRM / automation | [`upmatrix.md`](./companies/upmatrix.md) | Yes |
+| Essence Solusoft | Software development | [`essence_solusoft.md`](./companies/essence_solusoft.md) | — |
+| iSmartRecruit | HR tech / recruiting software | [`ismartrecruit.md`](./companies/ismartrecruit.md) | — |
+| beRound | Software / product engineering | [`beround.md`](./companies/beround.md) | — |
+| MindQuad | ERP (SAP B1 / Dynamics 365) | [`mindquad.md`](./companies/mindquad.md) | Yes |
+| AIWI | AI solutions | [`aiwi.md`](./companies/aiwi.md) | — |
+| Codevision Technologies | Software development | [`codevision.md`](./companies/codevision.md) | Yes |
+| The MediTale | Healthcare tech | [`meditale.md`](./companies/meditale.md) | — |
+| Elision | VoIP / telephony software | [`elision.md`](./companies/elision.md) | Yes |
+| Chronox AI | AI solutions | [`chronox_ai.md`](./companies/chronox_ai.md) | — |
+| Techify | IT services / DevOps | [`techify.md`](./companies/techify.md) | Yes (Silver sponsor) |
+| MagnusMinds | .NET / data engineering | [`magnusminds.md`](./companies/magnusminds.md) | Yes |
+| Third Rock Techkno | AI consulting | [`third_rock_techkno.md`](./companies/third_rock_techkno.md) | Yes |
+| Connecti5 | Software / integration | [`connecti5.md`](./companies/connecti5.md) | — |
+| WeekMate | SaaS / productivity | [`weekmate.md`](./companies/weekmate.md) | — |
+| Sheth Info (Sheth Infoline / Sheth.Info) | Refurbished IT hardware | [`sheth_info.md`](./companies/sheth_info.md) | — |
+| SalesHandy | Sales engagement / cold email | [`saleshandy.md`](./companies/saleshandy.md) | Yes (Silver sponsor) |
+| Miracle (Miracle Accounting Software) | Accounting software | [`miracle.md`](./companies/miracle.md) | Yes (Silver sponsor) |
+| AppAspect | Mobile app development | [`appaspect.md`](./companies/appaspect.md) | Yes |
+| GavBit | Software development | [`gavbit.md`](./companies/gavbit.md) | — |
+| TechnoBrains Business Solutions | Software development | [`technobrains.md`](./companies/technobrains.md) | Yes |
+| Techanek | Software / cloud | [`techanek.md`](./companies/techanek.md) | — |
+| AppsRow | Software development | [`appsrow.md`](./companies/appsrow.md) | Yes (Silver sponsor) |
+| Easebiz | Business / compliance services | [`easebiz.md`](./companies/easebiz.md) | — |
+| Xobito | Software / product development | [`xobito.md`](./companies/xobito.md) | — |
+| ThinkTanker | Software development | [`thinktanker.md`](./companies/thinktanker.md) | — |
+| Delta Infosoft | ERP / CRM software | [`delta.md`](./companies/delta.md) | Yes |
+| Samyak (Samyak Infotech / Samy@k) | Software development | [`samyak.md`](./companies/samyak.md) | — |
+| Capermint Technologies | Game / software development | [`capermint.md`](./companies/capermint.md) | Yes |
+| DIT (Dev Information Technology) | IT services | [`dit.md`](./companies/dit.md) | Yes |
+| Emblit.ai | AI solutions | [`emblit_ai.md`](./companies/emblit_ai.md) | — |
+| Splededge (Splededge Solutions) | Software / staffing | [`splededge.md`](./companies/splededge.md) | — |
+| Ittive | Software development | [`ittive.md`](./companies/ittive.md) | — |
+| Intelliworkz | Software development | [`intelliworkz.md`](./companies/intelliworkz.md) | Yes (Silver sponsor) |
+| Jignect Technologies | QA / software testing | [`jignect.md`](./companies/jignect.md) | Yes |
+| MatrixHive Technologies | Software development | [`matrixhive.md`](./companies/matrixhive.md) | — |
+| Eternal (Eternal Web Pvt Ltd) | AWS / cloud consulting | [`eternal_web.md`](./companies/eternal_web.md) | Yes |
+| SoftConn | Software development | [`softconn.md`](./companies/softconn.md) | — |
+| SoftQube Technologies | Software development | [`softqube.md`](./companies/softqube.md) | — |
+| Integrax Technolabs | Software development | [`integrax_technolabs.md`](./companies/integrax_technolabs.md) | — |
+| Webtual | Software / web development | [`webtual.md`](./companies/webtual.md) | — |
+| Shubhkey (Shubhkey Technologies) | Software / IT services | [`shubhkey.md`](./companies/shubhkey.md) | — |
+| Onbbits | Software development | [`onbbits.md`](./companies/onbbits.md) | — |
+| Satva Solutions | Software development | [`satva.md`](./companies/satva.md) | Yes |
+| Calyzer | Field-force / attendance SaaS | [`calyzer.md`](./companies/calyzer.md) | Yes (Silver sponsor, as "Callyzer") |
+| Perigeon | Salesforce / enterprise tech | [`perigeon.md`](./companies/perigeon.md) | — (confirmed 2026 via own press) |
+| Visiobyte | Software development | [`visiobyte.md`](./companies/visiobyte.md) | — |
+| SeedData | Data / analytics | [`seeddata.md`](./companies/seeddata.md) | — |
+| DevOpsLabs | DevOps / cloud | [`devopslabs.md`](./companies/devopslabs.md) | — |
+| Codemech | Software development | [`codemech.md`](./companies/codemech.md) | — |
+| Ace Analytics | Data / analytics | [`ace_analytics.md`](./companies/ace_analytics.md) | — |
+| ViitorCloud | AI / software engineering | [`viitorcloud.md`](./companies/viitorcloud.md) | Yes (Experience Zone Partner) |
+| BetterBugs | QA / bug reporting tool | [`betterbugs.md`](./companies/betterbugs.md) | Yes (Silver sponsor) |
+| iValue | IT solutions / distribution | [`ivalue.md`](./companies/ivalue.md) | — |
+| CanTech.in (Cantech) | Web hosting | [`cantech.md`](./companies/cantech.md) | — |
+| Jarvis Technolabs | Digital engineering | [`jarvis_technolabs.md`](./companies/jarvis_technolabs.md) | Yes |
+| JMS (Jarvis Management Solutions — TBD) | IT services | [`jms.md`](./companies/jms.md) | — |
+| TechSofya | Software development | [`techsofya.md`](./companies/techsofya.md) | — |
+| factoHR | HR & payroll software | [`factohr.md`](./companies/factohr.md) | Yes (Gold sponsor 2024) |
+
+*Logo names transcribed from the brochure page; several are abbreviated on the logo art and marked "TBD" pending confirmation of the exact legal entity. This list supersedes the earlier "~74 unnamed numbered logo slots" note.*
 
 ---
 
-## TEG 2026 exhibitor status
-As of the last site crawl, the "Our Exhibitors 2026" section on the homepage displays ~74 exhibitor logo slots (image files, not machine-readable company names) against a stated target of **250+ exhibitors**. This means the 2026 exhibitor roster is still filling out — the named list below is a mix of confirmed 2026 exhibitors found via third-party pages and the full named 2024 roster (for reference/pattern purposes).
+## TEG 2026 exhibitor status (earlier crawl note — retained for history)
+As of the August 27 site crawl, the "Our Exhibitors 2026" section on the homepage displayed ~74 exhibitor logo slots (image files, not machine-readable company names) against a stated target of **250+ exhibitors**. The named brochure list above (August 31) is the first machine-legible resolution of that section.
 
 ### Confirmed / individually announced TEG 2026 exhibitors (via partner press pages)
 - **Eternal Web Pvt Ltd** — AWS Advanced Tier Consulting Partner & certified Odoo partner. Showcasing AWS consulting, GenAI application demos (Eternal AI Studio), live Odoo ERP walkthrough. Stall A48–A55. (Source: eternalsoftsolutions.com/events/tech-expo-gujarat-2026)
@@ -27,15 +98,22 @@ As of the last site crawl, the "Our Exhibitors 2026" section on the homepage dis
 ## How exhibiting works — stall packages (TEG 2026)
 Booking is via https://www.techexpogujarat.com/become-an-exhibitor/ (also mirrored on the ticketing portal). Exhibitors select an industry category (Software / IoT / Marketing / ERP / AI / SaaS / Other) and choose what they're exhibiting (Products / Services / Both).
 
-| Stall size | Exhibitor passes | Pre/post-party passes | Visitor passes | Furniture/infra included |
-|---|---|---|---|---|
-| **3m x 3m** | 2 (with food coupon) | 1 | 5 | 1 table, 2 chairs, 3 spotlights, 1x 15A power socket, carpet flooring |
-| **3m x 6m** | 4 | 2 | 10 | 2 tables, 4 chairs, 6 spotlights, 2x 15A power sockets, carpet flooring |
-| **6m x 6m** | 8 | 3 | 20 | 2 tables + 2 round glass tables, 2 sofas, 6 chairs, 12 spotlights, 3x 15A power sockets, carpet flooring |
-| **3m x 9m (corner)** | 6 | 2 | 15 | 2 tables + 1 round glass table, 1 sofa, 4 chairs, 9 spotlights, 3x 15A power sockets, carpet flooring |
-| **Catalyst Zone (2m x 2m, startup-focused)** | 2 | — | — | 1 table, 2 chairs, 2 spotlights, 1x 15A power socket |
+**✅ CONFIRMED PRICING (official TEG 2026 cost sheet — `teg-cost.pdf`).** Base rate: **₹13,000\* per sq. metre + GST**. All prices exclude GST. Full detail, add-ons, payment plan and refund policy: **`pricing/pricing_and_packages.md`**.
+
+| Stall size | Area | Price (excl. GST) | Exhibitor passes | Pre/post-party passes | Visitor passes | Furniture/infra included |
+|---|---|---|---|---|---|---|
+| **3m x 3m** | 9 sqm | **₹1,17,000\*** | 2 (with food coupon) | 1 | 5 | 1 table, 2 chairs, 3 spotlights, 1x 15A power socket, carpet flooring |
+| **3m x 6m** | 18 sqm | **₹2,34,000\*** | 4 | 2 | 10 | 2 tables, 4 chairs, 6 spotlights, 2x 15A power sockets, carpet flooring |
+| **6m x 6m** | 36 sqm | **₹4,68,000\*** | 8 | 3 | 20 | 2 tables + 2 round glass tables, 2 sofas, 6 chairs, 12 spotlights, 3x 15A power sockets, carpet flooring |
+| **3m x 9m (corner)** | 27 sqm | **₹3,51,000\*** | 6 | 2 | 15 | 2 tables + 1 round glass table, 1 sofa, 4 chairs, 9 spotlights, 3x 15A power sockets, carpet flooring |
+| **Catalyst Zone (2m x 2m, startup-focused)** | 4 sqm | **₹35,000\*** (flat) | 2 | — | — | 1 table, 2 chairs, 2 spotlights, 1x 15A power socket |
 
 All stall packages include: modular stall structure (white Octanorm panels), fascia with company name, TEG Community Network Portal access, pre-scheduled 1:1 curated business meetings, in-app one-to-one messaging with visitors, website + on-ground logo visibility.
+
+### Payment plan & refunds
+- **Payment plan:** 25% each on 9 Apr 2026 / 30 Jun 2026 / 31 Jul 2026 / 31 Aug 2026.
+- **Refunds:** 10% deduction if cancelled by 30 Jun · 25% by 31 Jul · 40% by 31 Aug · 50% by 30 Sep · **non-refundable after 1 Oct 2026**.
+- Full detail in `pricing/pricing_and_packages.md`.
 
 ### Why exhibit (organizer's pitch)
 - Direct access to 15,000+ business visitors (SMEs, MSMEs, decision-makers)
@@ -143,5 +221,5 @@ Note: **Third Rock Techkno (TRT)** was itself a named exhibitor at TEG 2024, and
 A dedicated "Experience Zone" featured AI and hologram technology demos — interactive AI installations and holographic visuals, branded as "Experience the Future."
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com homepage (2026 exhibitor logos), /tech-expo-2024/ (full named list), /become-an-exhibitor/ (stall packages), eternalsoftsolutions.com, technobrains.io, and perigeon.com (individual exhibitor pages)*
+*Last updated: August 31, 2026*
+*Source: teg-sponsors-brochure.pdf (named 2026 exhibitor list), teg-cost.pdf (confirmed stall pricing, payment plan, refund policy), techexpogujarat.com homepage (2026 exhibitor logos), /tech-expo-2024/ (full named list), /become-an-exhibitor/ (stall packages), eternalsoftsolutions.com, technobrains.io, and perigeon.com (individual exhibitor pages)*

@@ -2,7 +2,7 @@
 
 > **Category:** ERP Solutions (SAP Business One / Microsoft Dynamics 365)
 > **Website:** https://www.mindquad.com/
-> **TEG participation:** TEG 2024 exhibitor
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure)
 > **Confidence:** Verified
 
 ---
@@ -21,6 +21,9 @@ MindQuad Solutions Pvt Ltd is an Ahmedabad-based ERP solutions provider, founded
 ## TEG 2024 Participation
 Listed as a named TEG 2024 exhibitor in `exhibitors_directory.md` (category "Software Dev," no website on record there). No TEG-specific press mention was independently found in this pass — participation is sourced only to the KB's own master exhibitor list.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -29,5 +32,5 @@ Listed as a named TEG 2024 exhibitor in `exhibitors_directory.md` (category "Sof
 | Clutch profile | https://clutch.co/profile/mindquad-solutions |
 
 ---
-*Last updated: August 27, 2026*
-*Source: mindquad.com, clutch.co/profile/mindquad-solutions, myerp.guru (SAP partner directory), tradeindia.com, `exhibitors/exhibitors_directory.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 31: Nikhil Patel, MindQuad" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=QW1VSr4gko8*
+*Last updated: August 31, 2026*
+*Source: mindquad.com, clutch.co/profile/mindquad-solutions, myerp.guru (SAP partner directory), tradeindia.com, `exhibitors/exhibitors_directory.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 31: Nikhil Patel, MindQuad" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=QW1VSr4gko8; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

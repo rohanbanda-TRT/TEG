@@ -42,6 +42,9 @@ At the time of this crawl, the site displayed: **"Limited Super Early Bird Ticke
 ## Exhibitor pass entitlements (bundled into stall packages)
 See `exhibitors/exhibitors_directory.md` for the full breakdown by stall size — exhibitor passes, pre/post-party passes, and visitor passes all scale with stall size (from 2 exhibitor passes / 5 visitor passes at 3x3m up to 8 exhibitor passes / 20 visitor passes at 6x6m).
 
+## Confirmed stall & sponsorship pricing (exhibitor/sponsor, not visitor)
+**As of August 31, 2026**, the official TEG 2026 cost sheet (`teg-cost.pdf`) confirms exhibitor stall prices (3×3 ₹1,17,000* + GST up to 6×6 ₹4,68,000* + GST; Catalyst Zone ₹35,000*) and the full sponsorship price list (Title Sponsor ₹35,00,000*). It also confirms a 4-instalment payment plan (25% each on 9 Apr / 30 Jun / 31 Jul / 31 Aug 2026) and an exhibitor/sponsor refund schedule (non-refundable after 1 Oct 2026). Full detail: **`pricing/pricing_and_packages.md`**. **Visitor** ticket amounts are still not in the cost sheet — see below.
+
 ## Is there an entry fee?
 Yes — per a third-party summary (technobrains.io), there is a fee to enter the expo, with early bird and group pricing available on the official site/ticketing portal.
 
@@ -65,5 +68,5 @@ All tiers were sold out at last check, and included accommodation, meals, and ne
 *(This is historical Retreat pricing, not TEG 2026 expo ticket pricing — included for pattern reference.)*
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com (become-an-exhibitor, become-a-sponsor, homepage banner), events.techexpogujarat.com, retreat-2025 page, technobrains.io*
+*Last updated: August 31, 2026*
+*Source: techexpogujarat.com (become-an-exhibitor, become-a-sponsor, homepage banner), events.techexpogujarat.com, retreat-2025 page, technobrains.io, teg-cost.pdf (confirmed exhibitor/sponsor pricing, payment plan, refund schedule)*

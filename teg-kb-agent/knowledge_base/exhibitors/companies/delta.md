@@ -2,7 +2,7 @@
 
 > **Category:** ERP / CRM Software
 > **Website:** https://www.deltainfosoft.com/
-> **TEG participation:** TEG 2024 exhibitor (confirmed via official TEG exhibitors page)
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure) (confirmed via official TEG exhibitors page)
 > **Confidence:** Verified
 
 ---
@@ -21,6 +21,9 @@ Confirmed. The official Tech Expo Gujarat exhibitors page links the "Delta Infos
 ## TEG 2024 Participation
 Listed as a named TEG 2024 exhibitor (Software Dev category) in `exhibitors_directory.md`. No source directly confirms Delta Infosoft's TEG booth/participation details.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -28,5 +31,5 @@ Listed as a named TEG 2024 exhibitor (Software Dev category) in `exhibitors_dire
 | Facebook | https://www.facebook.com/DeltaInfoSoft/ |
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); deltainfosoft.com, Facebook, `exhibitors/exhibitors_directory.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 29: Sandip Mevada" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=iEKbWaa3fGA*
+*Last updated: August 31, 2026*
+*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); deltainfosoft.com, Facebook, `exhibitors/exhibitors_directory.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 29: Sandip Mevada" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=iEKbWaa3fGA; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

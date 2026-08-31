@@ -2,7 +2,7 @@
 
 > **Category:** AI / ML Consulting
 > **Website:** https://www.neuramonks.com/
-> **TEG participation:** TEG 2024 exhibitor (confirmed via official TEG exhibitors page)
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure) (confirmed via official TEG exhibitors page)
 > **Confidence:** Verified
 
 ---
@@ -22,6 +22,9 @@ Confirmed. The official Tech Expo Gujarat exhibitors page links the "Neura Monks
 ## TEG 2024 Participation
 Listed as a named TEG 2024 exhibitor ("NeuraMonks") in `exhibitors_directory.md` and cross-referenced in `sector_wise_participation.md`'s AI & Machine Learning sector table (Medium confidence there too, for the same spelling-variance reason). No independent TEG-specific source (e.g., an exhibitor list matching the exact "Neuramonks" spelling) was found to fully close this gap in this pass.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -30,5 +33,5 @@ Listed as a named TEG 2024 exhibitor ("NeuraMonks") in `exhibitors_directory.md`
 | LinkedIn (founder) | via theorg.com aggregator profile |
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); `organizers_team/upendrasinh_zala.md`, `sector_wise_participation.md`, neuramonks.com, facebook.com/neuramonkAI, `exhibitors/exhibitors_directory.md`*
+*Last updated: August 31, 2026*
+*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); `organizers_team/upendrasinh_zala.md`, `sector_wise_participation.md`, neuramonks.com, facebook.com/neuramonkAI, `exhibitors/exhibitors_directory.md`; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

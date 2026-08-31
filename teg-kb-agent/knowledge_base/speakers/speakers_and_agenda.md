@@ -3,7 +3,11 @@
 > **Document type:** Overview / index (see `individuals/` for per-speaker profiles)
 > **Event:** Tech Expo Gujarat (TEG 2024 full lineup + TEG 2026 status)
 > **Named speakers:** 20 (TEG 2024) + 15 (Retreat 2025) + 2 (Ignite 2026) = **38 total speaker appearances** (35 individual profile files)
-> **Last updated:** August 27, 2026
+> **Last updated:** August 31, 2026
+
+---
+
+> **Note (Aug 31, 2026):** The official sponsors brochure added 3 keynote names not previously in the KB — Kiran Deshpande, Pratul Shroff, Satyarth Srivastava — see the "Keynote Speakers (2024–25) — from official sponsors brochure" section below. Individual profile files for these three are still to be created.
 
 ---
 
@@ -88,8 +92,35 @@ Individual profiles (bio, session/panel role, sourcing notes) are linked below �
 
 ---
 
+## Keynote Speakers (2024–25) — from official sponsors brochure
+
+**Added August 31, 2026.** The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`, "Our Keynote Speakers — Year 2024-25" page) shows a 16-name keynote grid spanning TEG 2024 and Retreat 2025. It corroborates several names already profiled and adds a few not previously in the KB's TEG-2024 list. The brochure does **not** date each speaker to a specific edition — it is a combined 2024–25 grid.
+
+| Speaker (brochure title) | Already profiled? | Notes |
+|---|---|---|
+| Sonu Sharma — Inspirational Speaker & Leadership Coach | Yes | Also has a TEG 2024 testimonial (`testimonials/exhibitor_testimonials.md`) |
+| Ankur Warikoo — Entrepreneur, Investor, Content Creator & Author | Yes (`individuals/ankur_warikoo.md`) | Previously logged as Retreat 2025 + TEG 2026 promo; brochure confirms keynote status |
+| Savjibhai Dholakia — HK Exports Pvt. Ltd. | Yes | + TEG 2024 testimonial |
+| Dr. Gyanvatsal Swami — Life Coach & Eminent Speaker, BAPS Swaminarayan Sanstha | Yes (as "Dr. Gnanvatsal Swami") | Spelling per brochure: "Gyanvatsal" |
+| Chitrak Shah — Founder & MD, Shivalik Group; Director, CREDAI Ahmedabad | Yes | + TEG 2024 testimonial |
+| Yash Vasant — Managing Director, Vasant Group | Yes | |
+| **Kiran Deshpande** — Former CEO Tech Mahindra; Co-Founder Mojo Networks; TiE Global Board Member | **No — new** | Not previously in KB; needs an `individuals/` profile |
+| Kaushal Mehta — Co-Founder, Motif Inc. | Yes | |
+| **Pratul Shroff** — Founder & Former CEO, eInfochips; Venture Investor & Philanthropist | **No — new** | Not previously in KB; needs an `individuals/` profile |
+| **Satyarth Srivastava** — Honorary Chairman Elect & Director, GESIA; Director & COO, Adit Microsys | **No — new** | Not previously in KB; needs an `individuals/` profile |
+| Kanaksinh Rana — Director, GTPL | Yes | + TEG 2024 testimonial |
+| Jaimin Shah — CEO & MD, Dev Information Technology Ltd. | Yes | |
+| Shri M. Nagarajan — IAS, Gujarat | Yes (Ignite 2026 context in `related_events/`) | Brochure places him in the keynote grid |
+| Vatsal Shah — Executive Coach & Business Catalyst, Pragmatic Consultancy | Yes | |
+| Vishal Mehta — Chairman & MD, AvenuesAI Ltd. | Yes (as "Infibeam Avenues Ltd") | Brochure title: "AvenuesAI Ltd." — note the rebrand/variant |
+| Shalin Sheth — Founder & Managing Director, Advait Energy Transitions Ltd. (AETL) | Yes | |
+
+**Action items (not yet done):** create `individuals/kiran_deshpande.md`, `individuals/pratul_shroff.md`, `individuals/satyarth_srivastava.md`. Reconcile "Infibeam Avenues" vs "AvenuesAI Ltd" in `vishal_mehta.md`.
+
+---
+
 ## Related event: TEG Business Retreat 2025 speakers & schedule
 See `related_events/related_events.md` for the full Retreat 2025 (Dec 2025, invite-only CXO retreat) and TEG Ignite 2026 (April 2026 curtain-raiser) speaker lists and agendas — these feed directly into the TEG 2026 program and organizing team.
 
 ---
-*Source: techexpogujarat.com /tech-expo-2024/ (2024 speakers & schedule), homepage (2026 promo testimonials), related_events/related_events.md (Retreat 2025 & Ignite 2026 speakers)*
+*Source: techexpogujarat.com /tech-expo-2024/ (2024 speakers & schedule), homepage (2026 promo testimonials), related_events/related_events.md (Retreat 2025 & Ignite 2026 speakers), teg-sponsors-brochure.pdf ("Our Keynote Speakers — Year 2024-25" page)*

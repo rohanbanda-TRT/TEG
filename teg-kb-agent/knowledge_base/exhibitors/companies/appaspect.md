@@ -2,7 +2,7 @@
 
 > **Category:** Mobile App Development
 > **Website:** https://www.appaspect.com/
-> **TEG participation:** TEG 2024 exhibitor
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure)
 > **Confidence:** Verified
 
 ---
@@ -21,6 +21,9 @@ AppAspect Technologies Pvt. Ltd. is a mobile app and custom web development comp
 ## TEG 2024 Participation
 Named TEG 2024 exhibitor (Mobile App Dev category, website already verified) per `exhibitors_directory.md`. AppAspect ran its own event landing page — appaspect.com/aimed-techexpo-gujarat-2024/ — promoting its participation in "AIMED Tech-Expo Gujarat 2024," December 20–21, Ahmedabad, inviting attendees to "explore advanced tech solutions, meet experts, and drive innovation forward" at its booth. No specific booth number was found on that page.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -28,5 +31,5 @@ Named TEG 2024 exhibitor (Mobile App Dev category, website already verified) per
 | TEG 2024 event page | https://appaspect.com/aimed-techexpo-gujarat-2024/ |
 
 ---
-*Last updated: August 27, 2026*
-*Source: appaspect.com, appaspect.com/aimed-techexpo-gujarat-2024/, Clutch.co, Tracxn, `exhibitors/exhibitors_directory.md`, `organizers_team/organizers_and_team.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 45: Gurupritsingh Saini" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=dSejiP38u0I*
+*Last updated: August 31, 2026*
+*Source: appaspect.com, appaspect.com/aimed-techexpo-gujarat-2024/, Clutch.co, Tracxn, `exhibitors/exhibitors_directory.md`, `organizers_team/organizers_and_team.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 45: Gurupritsingh Saini" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=dSejiP38u0I; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

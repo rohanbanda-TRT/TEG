@@ -2,7 +2,7 @@
 
 > **Category:** Software Testing / QA Services
 > **Website:** https://jignect.tech/
-> **TEG participation:** TEG 2024 exhibitor
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure)
 > **Confidence:** Verified
 
 ---
@@ -20,6 +20,9 @@ JigNect Technologies is a software testing company based in Ahmedabad, India, pr
 ## TEG 2024 Participation
 Listed as a named TEG 2024 exhibitor in `exhibitors_directory.md` (category "Software Dev," no website on record there). No TEG-specific press mention was independently found in this pass — participation is sourced only to the KB's own master exhibitor list.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -28,5 +31,5 @@ Listed as a named TEG 2024 exhibitor in `exhibitors_directory.md` (category "Sof
 | Clutch profile | https://clutch.co/profile/jignect-technologies |
 
 ---
-*Last updated: August 27, 2026*
-*Source: jignect.tech, clutch.co/profile/jignect-technologies, in.linkedin.com/company/jignect-technologies, zoominfo.com, `exhibitors/exhibitors_directory.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 41: Piyush Patel, Jignect" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=OWTtLh5XvGI*
+*Last updated: August 31, 2026*
+*Source: jignect.tech, clutch.co/profile/jignect-technologies, in.linkedin.com/company/jignect-technologies, zoominfo.com, `exhibitors/exhibitors_directory.md`; "Tech Talks at Gujarat Tech Expo 2024 | Ep 41: Piyush Patel, Jignect" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=OWTtLh5XvGI; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

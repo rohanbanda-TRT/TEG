@@ -400,7 +400,69 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 | Software Development | TechnoBrains Business Solutions | A71–72 |
 | AI & Machine Learning | Third Rock Techkno | TBD |
 
-**Total TEG 2026 confirmed:** 4 companies (with more expected)
+**Total TEG 2026 confirmed (with booth/first-party confirmation):** 4 companies
+
+---
+
+## TEG 2026 Named Exhibitors (from official sponsors brochure)
+
+The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page named ~66 TEG 2026 exhibitors. Grouped by primary sector below (many are multi-domain). Individual profiles: `exhibitors/companies/`. Confidence per company is in each profile and in `companies_index.md`.
+
+### AI & Machine Learning
+Chronox AI · Emblit.ai · AIWI *(Low confidence — unidentified)* · Integrax Technolabs · NeuraMonks · Third Rock Techkno · ViitorCloud · Eternal Web · Perigeon
+
+### Software Development & IT Services
+Techalmas · TechEniac · Essence Solusoft · beRound · GavBit · Techanek · AppsRow · Xobito · ThinkTanker · Samyak · Ittive *(Low)* · Splededge *(Low)* · Intelliworkz · MatrixHive · SoftConn · SoftQube · Webtual · Shubhkey · Onbbits · Codemech · Visiobyte *(Medium)* · TechSofya · Techify · MagnusMinds · AppAspect · TechnoBrains · Codevision · Satva · AP *(Low — unidentified)* · JMS *(Medium)*
+
+### SaaS / Productivity / Messaging
+WeekMate · Connecti5 · UpMatrix · SalesHandy · Calyzer/Callyzer · Onbbits
+
+### Data & Analytics
+SeedData · Ace Analytics
+
+### DevOps / Cloud / Hosting
+DevOpsLabs · Techanek · Cantech (web hosting) · Techify
+
+### Enterprise Software (ERP / CRM / Salesforce)
+Perigeon (Salesforce) · MindQuad (SAP/Dynamics) · Delta Infosoft (ERP/CRM) · Miracle Accounting Software · DIT
+
+### HR Tech / Recruiting
+factoHR · iSmartRecruit
+
+### Healthcare Tech
+The MediTale
+
+### Digital Marketing / SEO
+AONE SEO Service
+
+### QA / Software Testing
+Jignect Technologies · BetterBugs (AI bug-reporting tool)
+
+### Business Automation Platform (HR / Payroll / CRM / PM)
+BizCompass
+
+### Game Development
+Capermint Technologies
+
+### VoIP / Telephony
+Elision
+
+### Logistics / Delivery
+Dropit
+
+### IT Hardware (Refurbished)
+Sheth Info
+
+### Event Technology
+XPRO.AI (also the TEG ticketing-platform vendor — see `registration/registration_and_passes.md`, `related_events/related_events.md`)
+
+### Business / Compliance Services
+Easebiz
+
+### IT Distribution / Solutions
+iValue *(Medium)*
+
+**Note:** This subsection is a brochure-derived list, not a re-computation of the sector summary tables above. Booth numbers are unknown except where noted in the "TEG 2026 Confirmed Exhibitors by Sector" table.
 
 ---
 
@@ -475,5 +537,5 @@ Cloud providers benefit from:
 
 ---
 
-*Last updated: August 2026*
-*Sources: techexpogujarat.com/exhibitors, exhibitors_directory.md, exhibitors/individuals/, Chai Time with ManthanBaba podcast, company websites*
+*Last updated: August 31, 2026 (added "TEG 2026 Named Exhibitors (from official sponsors brochure)" subsection)*
+*Sources: techexpogujarat.com/exhibitors, exhibitors_directory.md, exhibitors/companies/, Chai Time with ManthanBaba podcast, company websites, teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

@@ -2,7 +2,7 @@
 
 > **Category:** AI Consulting / Custom AI & Software Development
 > **Website:** https://www.thirdrocktechkno.com/
-> **TEG participation:** TEG 2024 exhibitor (also: TRT co-founder Tapan Patel is a TEG core organizer)
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure) (also: TRT co-founder Tapan Patel is a TEG core organizer)
 > **Confidence:** Verified
 
 ---
@@ -27,6 +27,9 @@ Third Rock Techkno (TRT) is a custom AI and software development company headqua
 
 Third Rock Techkno exhibited at **TEG 2024** at **Booth E-58**, confirmed via TRT's own blog post and Instagram posts (@thirdrocktechkno_team). At the booth, TRT showcased custom software solutions for process automation, CRM, and reducing operational overhead; co-founders Yashesh, Tapan, Krunal, and Nishant were present to discuss projects and offer guidance on digital tools and AI integration. Separately, TRT co-founder **Tapan Patel** is one of the twelve core organizers of Tech Expo Gujarat itself (see `organizers_team/organizers_and_team.md`), making TRT the only company in this KB that is both a TEG exhibitor and directly represented in TEG's own organizing coalition.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 
 | Channel | URL |
@@ -39,5 +42,5 @@ Third Rock Techkno exhibited at **TEG 2024** at **Booth E-58**, confirmed via TR
 | Facebook | https://www.facebook.com/ThirdRockTechkno/ |
 
 ---
-*Last updated: August 27, 2026*
-*Source: `trt-kb-agent/knowledge_base/company/company_info.md` (companion KB, read-only reference, summarized here), thirdrocktechkno.com/blog/tech-expo-gujarat-2024-everything-you-need-to-know/, WebSearch results (Instagram); "Tech Talks at Gujarat Tech Expo 2024 | Ep 2: Nishant Contractor" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=G58kR5Xkzn8*
+*Last updated: August 31, 2026*
+*Source: `trt-kb-agent/knowledge_base/company/company_info.md` (companion KB, read-only reference, summarized here), thirdrocktechkno.com/blog/tech-expo-gujarat-2024-everything-you-need-to-know/, WebSearch results (Instagram); "Tech Talks at Gujarat Tech Expo 2024 | Ep 2: Nishant Contractor" — Chai Time with ManthanBaba, https://www.youtube.com/watch?v=G58kR5Xkzn8; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*
