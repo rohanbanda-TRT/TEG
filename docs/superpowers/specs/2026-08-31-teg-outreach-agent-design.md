@@ -192,21 +192,18 @@ Each unit has one purpose, a typed interface, and is testable alone.
 
 **`init(dossier, intake) -> PersuasionInit`:**
 - **Persona mapping** (from `outreach_config.md`):
-  - Sector in {Software Development, Cloud & Infrastructure, Enterprise Software, Data & Analytics} → **IT/Tech Service**
-  - Sector in {AI & Machine Learning} AND size < 50 → **AI/Deep-Tech Startup**
-  - `intent_hint == sponsor` AND non-tech sector → **Non-Tech Sponsor**
-  - `intent_hint == visitor` → **Visitor**
-  - **Fallback order when none of the above match:**
-    1. If `sector` resolved to any technology sector listed in `sector_wise_participation.md` → **IT/Tech Service**.
-    2. Else if `sector` resolved to a non-tech sector AND `intent_hint == unknown` → **Visitor** (the safest, lowest-commitment pitch).
-    3. Else if nothing resolved at all (`dossier.ask_prospect` non-empty) → **Visitor** persona for tone, but the opening message is the qualifying question; re-map the persona on the next turn once the prospect answers.
+  - **The persona is chosen by an LLM classifier** (`classify_persona`, one fast-model call), not by hardcoded rules. It is given the full dossier (company profile, resolved sector, TEG relationship), the stated `intent_hint`, and — on re-classification — whatever the prospect revealed in chat, plus the four persona definitions. It returns one of `it_tech_service` / `ai_startup` / `non_tech_sponsor` / `visitor` with a short reason.
+  - Guidance baked into the classifier prompt: if the company clearly builds or sells technology, prefer `it_tech_service` (or `ai_startup` for a small AI/deep-tech firm) over `visitor` even when the company's *customers* are in another industry (e.g. "we build IoT for textile mills" → `it_tech_service`).
+  - **Deterministic guard:** if `dossier.ask_prospect` is non-empty at `init` (identity unresolved), the classifier is NOT called — the opening is a qualifying question with a provisional `visitor` persona. Once the prospect answers, `respond` calls `classify_persona` once with their message as extra context and persists the result.
+  - **Fallback:** `classify_persona` returns `visitor` on any LLM error — classification never breaks the pipeline.
+  - The earlier rule-based `map_persona` (keyword sector sets + `_size_lt_50`) and `_RemapHint` were removed; they mis-classified real-world phrasings.
 - **Value props**: pull the persona's props from `exhibitor_benefits_analysis.md` + `outreach_config.md`.
 - **Target CTA** by persona: IT/Tech Service → *book a stall* (quote `pricing_and_packages.md`); AI Startup → *Catalyst Zone booking or submit a pitch deck*; Non-Tech Sponsor → *request a sponsorship call*; Visitor → *register for a visitor pass*.
 - **Opening message**: acknowledge company + sector (from dossier), one persona value prop, name 3 peer companies from `peer_companies`, soft ask. If `dossier.ask_prospect` is non-empty, lead with the qualifying question instead. Tone from `relationship` (`insider`/`returning` → "welcome back", reference their specific history; `cold` → warm but not familiar).
 
 **`respond(state, history, prospect_message) -> PersuasionTurn`:**
 - Generate the next reply given the conversation, dossier, persona, and target CTA.
-- **Persona re-mapping:** the persona is normally fixed at `init`. The one exception is the unresolved-identity case (fallback 3 above): if `init` could not resolve a sector, then on the first prospect reply that reveals what the company does, the agent re-runs persona mapping once and persists the new `persona` on the session. After that first re-map, the persona is fixed for the session.
+- **Persona re-classification:** the persona is fixed at `init` unless identity was unresolved there. In that one case, on the first prospect reply, `respond` calls `classify_persona` again (dossier + the prospect's message) and persists the result; `persona_remapped` is set so it never re-classifies again that session.
 - **Guardrails applied every turn** (from `outreach_config.md` + KB rules), enforced by a post-generation check that can force a regeneration:
   - No fabricated statistics or testimonials. Every quantitative claim must trace to a KB source file.
   - Only the **4 cleared testimonials** in `testimonials/exhibitor_testimonials.md` may be quoted, and only as speaker/scale voices — never attributed as exhibitor-ROI proof.
