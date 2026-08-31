@@ -28,4 +28,10 @@ class FakeLLMClient(LLMClient):
     ) -> BaseModelT:
         self.calls.append({"kind": "structured", "system": system, "messages": messages, "schema": schema.__name__})
         assert self._structured, "FakeLLMClient.generate_structured called with empty queue"
+        # Prefer the first queued item whose type matches the requested schema;
+        # this lets a test queue e.g. a _PersonaChoice and a _Analysis in any order.
+        for i, item in enumerate(self._structured):
+            if isinstance(item, schema):
+                return self._structured.pop(i)
+        # No exact match (e.g. a test queued only one type of stub) -> FIFO.
         return self._structured.pop(0)

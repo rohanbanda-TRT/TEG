@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.agents.analysis import AnalysisAgent, _CanonResult
-from app.agents.persuasion import PersuasionAgent, _Analysis
+from app.agents.persuasion import PersuasionAgent, _Analysis, _PersonaChoice
 from app.agents.research import ResearchAgent, _Synthesis
 from app.api.inquiries import get_orchestrator
 from app.llm.fake import FakeLLMClient
@@ -52,6 +52,7 @@ def _orch():
         persuasion=PersuasionAgent(FakeLLMClient(
             responses=["opening: a 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."],
             structured=[
+                _PersonaChoice(persona="it_tech_service", reason="software services"),
                 _Analysis(
                     reply="Shall I send the booking link?", detected_cta="book_stall",
                     cta_status="offered", cta_type=None, cta_detail={}, should_handoff=False,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import re
+from typing import get_args
 
 from pydantic import BaseModel
 
@@ -14,40 +14,73 @@ from app.domain.schemas import (
     PersuasionTurn,
     ResearchDossier,
 )
-from app.kb.loader import get_kb
+from app.kb.loader import get_kb  # noqa: F401  (kept for downstream use / test patching)
 from config.outreach_rules import load_rules
+from config.settings import get_settings
 
-_IT_SECTORS = {
-    "software development", "software development & it services", "it services",
-    "cloud & infrastructure", "enterprise software", "data & analytics",
-    "devops / cloud / hosting", "saas / productivity / messaging",
-}
-_AI_SECTORS = {"ai & machine learning", "ai / ml", "ai solutions", "ai consulting"}
+_PERSONA_VALUES: tuple[Persona, ...] = get_args(Persona)
+
+_PERSONA_DEFINITIONS = (
+    "- it_tech_service: an IT / software / technology services or product company "
+    "(software dev, cloud, SaaS, data, ERP/CRM, IoT, cybersecurity, QA, digital "
+    "engineering, automation). They would exhibit to reach B2B buyers.\n"
+    "- ai_startup: a small / early-stage AI or deep-tech company (roughly < 50 people, "
+    "or self-describes as a startup) that wants an affordable stall, AI demo space, or "
+    "investor access.\n"
+    "- non_tech_sponsor: a company from a non-tech industry (real estate, automobile, "
+    "banking, manufacturing, FMCG, etc.) interested in sponsoring / brand association, "
+    "not exhibiting a tech product.\n"
+    "- visitor: an individual attending to learn / discover / network — no clear "
+    "exhibiting or sponsoring intent, or we genuinely can't tell what they'd do."
+)
 
 
-def _size_lt_50(profile: dict) -> bool:
-    raw = str(profile.get("company_size") or "")
-    m = re.search(r"\d+", raw)
-    if not m:
-        return True  # unknown -> allow startup classification
-    return int(m.group()) < 50
+class _PersonaChoice(BaseModel):
+    persona: Persona
+    reason: str
 
 
-def map_persona(intake: IntakeResult, dossier: ResearchDossier) -> Persona:
-    sector = (dossier.sector or "").strip().lower()
-    if dossier.ask_prospect:
+async def classify_persona(
+    llm,
+    intake: IntakeResult,
+    dossier: ResearchDossier,
+    *,
+    extra_context: str = "",
+    model: str | None = None,
+) -> Persona:
+    """Ask the LLM to pick the best persona from the full picture.
+
+    Falls back to ``visitor`` on any LLM failure — the safest, lowest-commitment pitch.
+    """
+    facts = {
+        "company": intake.company_name_canonical,
+        "resolved_sector": dossier.sector,
+        "company_profile": dossier.company_profile,
+        "person_profile": dossier.person_profile,
+        "relationship_to_teg": dossier.relationship,
+        "stated_intent": intake.intent_hint,
+        "person_designation": intake.provided_fields and dossier.person_profile.get("designation"),
+    }
+    user = (
+        "Classify this Tech Expo Gujarat 2026 inquiry into ONE persona.\n\n"
+        f"Known facts:\n{facts}\n"
+        + (f"\nWhat the prospect just told us in chat:\n{extra_context}\n" if extra_context else "")
+        + "\nPersonas:\n"
+        + _PERSONA_DEFINITIONS
+        + "\n\nPick the single best fit. If the company clearly sells or builds "
+        "technology, prefer it_tech_service (or ai_startup when it's a small AI/deep-tech "
+        "firm) over visitor, even if their customers are in another industry."
+    )
+    try:
+        choice = await llm.generate_structured(
+            system="You are a precise B2B event lead classifier. Return exactly one persona.",
+            messages=[{"role": "user", "content": user}],
+            schema=_PersonaChoice,
+            model=model,
+        )
+    except Exception:  # noqa: BLE001 — classification must never break the pipeline
         return "visitor"
-    if any(s in sector for s in _AI_SECTORS) and _size_lt_50(dossier.company_profile):
-        return "ai_startup"
-    if any(s in sector for s in _IT_SECTORS) or "software" in sector:
-        return "it_tech_service"
-    if intake.intent_hint == "sponsor":
-        return "non_tech_sponsor"
-    if intake.intent_hint == "visitor":
-        return "visitor"
-    if sector and any(s in sector for s in _IT_SECTORS | _AI_SECTORS):
-        return "it_tech_service"
-    return "visitor"
+    return choice.persona if choice.persona in _PERSONA_VALUES else "visitor"
 
 
 def target_cta_for(persona: Persona) -> str:
@@ -77,16 +110,11 @@ class _Analysis(BaseModel):
     learned_facts: dict = {}
 
 
-class _RemapHint(BaseModel):
-    sector: str | None = None
-    role: str | None = None
-    size: str | None = None
-
-
 class PersuasionAgent(Agent):
-    def __init__(self, llm) -> None:
+    def __init__(self, llm, *, fast_model: str | None = None) -> None:
         super().__init__(llm)
         self._rules = load_rules()
+        self._fast_model = fast_model or get_settings().llm_model_fast
 
     async def run(self, data):  # PersuasionAgent uses init()/respond(), not run()
         raise NotImplementedError("PersuasionAgent has no run(); call init() or respond()")
@@ -99,21 +127,25 @@ class PersuasionAgent(Agent):
             "cold": "First contact — warm and helpful, not familiar.",
         }[dossier.relationship]
         return (
-            "You are a helpful TEG 2026 outreach assistant on the inquiry page. "
-            "Be encouraging and specific, never pushy. One short paragraph, end with one soft ask.\n"
+            "You are a helpful outreach assistant for Tech Expo Gujarat 2026 (27-29 Nov "
+            "2026, GUCEC Ahmedabad). Write ONLY the message to send to the prospect - no "
+            "preamble, no headings, no labels like 'Context:' or 'Reply:'. One warm, "
+            "specific paragraph (2-4 sentences) that ends with a single soft question.\n\n"
             f"Tone: {tone}\n"
-            f"Persona value props to draw on: {'; '.join(props)}\n"
-            f"Pricing you may quote: {_PRICING_LINE[persona]}\n"
-            "Rules: never state a visitor ticket price; every price is '+ GST' and 'indicative, "
-            "confirmed at booking'; only mention peer companies from the provided list; "
-            "no invented statistics or testimonials."
+            f"You may draw on these benefits (paraphrase naturally, do not list them): "
+            f"{'; '.join(props)}.\n"
+            f"If pricing comes up you may say: {_PRICING_LINE[persona]}\n\n"
+            "Hard rules: never state a visitor ticket price; every price is quoted as "
+            "'+ GST' and 'indicative, confirmed at booking'; only name peer companies "
+            "from the list you are given; never invent statistics or testimonials."
         )
 
     async def init(self, intake: IntakeResult, dossier: ResearchDossier) -> PersuasionInit:
-        persona = map_persona(intake, dossier)
-        cta = target_cta_for(persona)
-
+        # Identity unresolved -> don't guess a persona yet; ask a qualifying question.
+        # A provisional persona is still needed for tone/CTA on that first message.
         if dossier.ask_prospect:
+            persona = "visitor"
+            cta = target_cta_for(persona)
             q = await self.llm.generate(
                 system=(
                     "You are a TEG 2026 assistant. The prospect just submitted an inquiry but we "
@@ -123,9 +155,12 @@ class PersuasionAgent(Agent):
                 messages=[{"role": "user", "content": (
                     f"Name: {intake.person_name}\nCompany as entered: {intake.company_name_raw}"
                 )}],
-                max_tokens=120,
+                max_tokens=250,
             )
             return PersuasionInit(persona=persona, target_cta=cta, opening_message=q.strip())
+
+        persona = await classify_persona(self.llm, intake, dossier, model=self._fast_model)
+        cta = target_cta_for(persona)
 
         peers = dossier.peer_companies[:3]
         user = (
@@ -137,14 +172,14 @@ class PersuasionAgent(Agent):
             "Write the opening message."
         )
         system = self._system(persona, dossier)
-        text = await self.llm.generate(system=system, messages=[{"role": "user", "content": user}], max_tokens=300)
+        text = await self.llm.generate(system=system, messages=[{"role": "user", "content": user}], max_tokens=800)
         for _ in range(1):
             v = check_message(text, allowed_peers=peers, persona=persona)
             if not v:
                 break
             text = await self.llm.generate(
                 system=system + f"\nYour previous draft violated: {[x.code for x in v]}. Fix it.",
-                messages=[{"role": "user", "content": user}], max_tokens=300,
+                messages=[{"role": "user", "content": user}], max_tokens=800,
             )
         if check_message(text, allowed_peers=peers, persona=persona):
             text = SAFE_TEMPLATES[persona]
@@ -158,34 +193,23 @@ class PersuasionAgent(Agent):
     ) -> PersuasionTurn:
         persona: Persona = state.get("persona", "visitor")
 
-        # one-time persona re-map for the unresolved-identity case
+        # one-time persona re-classification for the unresolved-identity case:
+        # once the prospect answers our qualifying question, classify from the full
+        # picture (dossier + what they just told us).
         first_prospect_turn = sum(1 for m in history if m.get("role") == "prospect") == 0
         if (
             dossier.ask_prospect
             and not state.get("persona_remapped")
             and first_prospect_turn
         ):
-            hint = await self.llm.generate_structured(
-                system=(
-                    "From the prospect's message, infer their company's sector, the person's "
-                    "role, and any headcount mentioned. Null if not stated."
-                ),
-                messages=[{"role": "user", "content": prospect_message}],
-                schema=_RemapHint,
+            persona = await classify_persona(
+                self.llm, intake, dossier,
+                extra_context=prospect_message, model=self._fast_model,
             )
-            patched = dossier.model_copy(update={
-                "sector": hint.sector or dossier.sector,
-                "company_profile": {
-                    **dossier.company_profile,
-                    "company_size": hint.size or dossier.company_profile.get("company_size"),
-                },
-                "ask_prospect": [],
-            })
-            persona = map_persona(intake, patched)
             state["persona"] = persona
             state["target_cta"] = target_cta_for(persona)
             state["persona_remapped"] = True
-            dossier = patched
+            dossier = dossier.model_copy(update={"ask_prospect": []})
 
         peers = dossier.peer_companies[:3]
         system = self._system(persona, dossier) + (

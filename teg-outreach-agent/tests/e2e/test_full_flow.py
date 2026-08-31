@@ -20,7 +20,7 @@ from sqlalchemy import select
 from starlette.websockets import WebSocketDisconnect
 
 from app.agents.analysis import AnalysisAgent, _CanonResult
-from app.agents.persuasion import PersuasionAgent, _Analysis, _RemapHint
+from app.agents.persuasion import PersuasionAgent, _Analysis, _PersonaChoice
 from app.agents.research import ResearchAgent, _Synthesis
 from app.api.inquiries import get_orchestrator
 from app.domain.schemas import HandoffPacket
@@ -65,6 +65,7 @@ def test_happy_path_kb_company_completes_cta():
                 )
             ],
             structured=[
+                _PersonaChoice(persona="it_tech_service", reason="software services company"),
                 _Analysis(
                     reply="A 3m x 6m at ₹2,34,000 + GST (indicative) would fit a team of 4. "
                           "Shall I lock a 3m x 6m stall for you?",
@@ -125,7 +126,7 @@ def test_handoff_path_unknown_company_deflect():
         persuasion=PersuasionAgent(FakeLLMClient(
             responses=["So I can tailor this -- what does your company do, and what's your role there?"],
             structured=[
-                _RemapHint(sector="IT services", role="Founder", size=None),
+                _PersonaChoice(persona="it_tech_service", reason="IT services firm"),
                 _Analysis(
                     reply="Thanks! TEG has a lot for services firms. Are you thinking of exhibiting or visiting?",
                     detected_cta=None, cta_status="none", cta_type=None, cta_detail={},

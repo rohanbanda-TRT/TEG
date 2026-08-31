@@ -1,4 +1,4 @@
-from app.agents.persuasion import PersuasionAgent, _Analysis, _RemapHint
+from app.agents.persuasion import PersuasionAgent, _Analysis, _PersonaChoice
 from app.domain.schemas import IntakeResult, ResearchDossier
 from app.llm.fake import FakeLLMClient
 
@@ -34,10 +34,11 @@ async def test_respond_basic_turn_updates_cta():
     assert turn.persona == "it_tech_service"
 
 
-async def test_respond_remaps_persona_on_first_reply_after_unresolved():
+async def test_respond_reclassifies_persona_on_first_reply_after_unresolved():
+    # queue order doesn't matter: FakeLLMClient matches by schema
     llm = FakeLLMClient(
         structured=[
-            _RemapHint(sector="Real Estate", role="Marketing Head", size="500"),
+            _PersonaChoice(persona="non_tech_sponsor", reason="real estate developer"),
             _Analysis(
                 reply="A category-exclusive sponsorship could work well. Shall I set up a call?",
                 detected_cta="request_sponsor_call", cta_status="offered", cta_type=None,
@@ -53,6 +54,22 @@ async def test_respond_remaps_persona_on_first_reply_after_unresolved():
     )
     assert turn.persona == "non_tech_sponsor"
     assert turn.updated_state["persona_remapped"] is True
+
+
+async def test_respond_does_not_reclassify_once_remapped():
+    llm = FakeLLMClient(structured=[_Analysis(
+        reply="Sounds good.", detected_cta=None, cta_status="offered", cta_type=None,
+        cta_detail={}, should_handoff=False, learned_facts={},
+    )])
+    d = ResearchDossier(sector=None, relationship="cold", ask_prospect=["role"])
+    turn = await PersuasionAgent(llm).respond(
+        intake=_intake(), dossier=d, state=_state("it_tech_service", persona_remapped=True),
+        history=[{"role": "agent", "content": "?"}, {"role": "prospect", "content": "we do software"}],
+        prospect_message="tell me about stalls",
+    )
+    assert turn.persona == "it_tech_service"
+    # only the _Analysis call was made, no _PersonaChoice
+    assert [c["schema"] for c in llm.calls if c["kind"] == "structured"] == ["_Analysis"]
 
 
 async def test_respond_handoff_after_repeated_deflection():

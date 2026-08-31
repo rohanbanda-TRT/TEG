@@ -3,7 +3,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.agents.analysis import AnalysisAgent, _CanonResult
-from app.agents.persuasion import PersuasionAgent
+from app.agents.persuasion import PersuasionAgent, _PersonaChoice
 from app.agents.research import ResearchAgent, _Synthesis
 from app.api.inquiries import get_orchestrator
 from app.llm.fake import FakeLLMClient
@@ -44,9 +44,12 @@ def _fake_orchestrator() -> Orchestrator:
             )]),
             tools=[KBRetriever(), _DeadWeb()],
         ),
-        persuasion=PersuasionAgent(FakeLLMClient(responses=[
-            "Welcome back. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking). Want details?"
-        ])),
+        persuasion=PersuasionAgent(FakeLLMClient(
+            structured=[_PersonaChoice(persona="it_tech_service", reason="software services")],
+            responses=[
+                "Welcome back. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking). Want details?"
+            ],
+        )),
     )
 
 

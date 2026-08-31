@@ -1,7 +1,7 @@
 import pytest
 
 from app.agents.analysis import AnalysisAgent, _CanonResult
-from app.agents.persuasion import PersuasionAgent, _Analysis, _RemapHint
+from app.agents.persuasion import PersuasionAgent, _Analysis, _PersonaChoice
 from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import HandoffPacket, IntakePayload
 from app.llm.fake import FakeLLMClient
@@ -37,7 +37,7 @@ async def _seed_session(persuasion_llm) -> tuple[Orchestrator, "uuid.UUID"]:
     )]), tools=[KBRetriever(), _DeadWeb()])
     persuasion = PersuasionAgent(persuasion_llm)
     orch = Orchestrator(analysis=analysis, research=research, persuasion=persuasion)
-    res = await orch.run_pipeline(IntakePayload(person_name="Rohan B", company_name="TRT"))
+    res = await orch.run_pipeline(IntakePayload(person_name="Tapan Patel", company_name="Third Rock Techkno"))
     return orch, res.session_id
 
 
@@ -45,7 +45,7 @@ async def test_run_turn_persists_pair_and_state():
     persuasion_llm = FakeLLMClient(
         responses=["opening line ok"],
         structured=[
-            _RemapHint(sector=None, role=None, size=None),
+            _PersonaChoice(persona="it_tech_service", reason="software company"),
             _Analysis(
                 reply="Shall I send the stall booking link?", detected_cta="book_stall",
                 cta_status="offered", cta_type=None, cta_detail={}, should_handoff=False,
@@ -68,7 +68,7 @@ async def test_end_session_generates_handoff_when_cta_incomplete():
     persuasion_llm = FakeLLMClient(
         responses=["opening line ok"],
         structured=[
-            _RemapHint(sector=None, role=None, size=None),
+            _PersonaChoice(persona="it_tech_service", reason="software company"),
             _Analysis(reply="No worries, I'll pass you to the team.", detected_cta=None,
                       cta_status="none", cta_type=None, cta_detail={}, should_handoff=True,
                       learned_facts={}),
