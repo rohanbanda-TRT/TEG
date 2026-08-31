@@ -3073,6 +3073,9 @@ class PersuasionAgent(Agent):
         super().__init__(llm)
         self._rules = load_rules()
 
+    async def run(self, data):  # PersuasionAgent uses init()/respond(), not run()
+        raise NotImplementedError("PersuasionAgent has no run(); call init() or respond()")
+
     def _system(self, persona: Persona, dossier: ResearchDossier) -> str:
         props = self._rules.persona_triggers.get(persona, {}).get("value_props", [])
         tone = {
