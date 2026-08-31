@@ -409,13 +409,14 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page named ~66 TEG 2026 exhibitors. Grouped by primary sector below (many are multi-domain). Individual profiles: `exhibitors/companies/`. Confidence per company is in each profile and in `companies_index.md`.
 
 ### AI & Machine Learning
-Chronox AI · Emblit.ai · AIWI *(Low confidence — unidentified)* · Integrax Technolabs · NeuraMonks · Third Rock Techkno · ViitorCloud · Eternal Web · Perigeon
+Chronox AI · Emblit.ai · Integrax Technolabs · NeuraMonks · Third Rock Techkno · ViitorCloud · Eternal Web · Perigeon
+*(Note: brochure "AI solutions" category also lists **AIWI** — but Aiwi Software Solutions is actually a business-management/HRMS SaaS; see `exhibitors/companies/aiwi.md`. Listed under SaaS below.)*
 
 ### Software Development & IT Services
-Techalmas · TechEniac · Essence Solusoft · beRound · GavBit · Techanek · AppsRow · Xobito · ThinkTanker · Samyak · Ittive *(Low)* · Splededge *(Low)* · Intelliworkz · MatrixHive · SoftConn · SoftQube · Webtual · Shubhkey · Onbbits · Codemech · Visiobyte *(Medium)* · TechSofya · Techify · MagnusMinds · AppAspect · TechnoBrains · Codevision · Satva · AP *(Low — unidentified)* · JMS *(Medium)*
+Techalmas · TechEniac · Essence Solusoft · beRound · GavBit · Techanek · AppsRow · Xobito · ThinkTanker · Samyak · Ittive *(Low)* · Splededge *(Low)* · Intelliworkz · MatrixHive · SoftConn · SoftQube · Webtual · Shubhkey · Onbbits · Codemech · Visiobyte *(Medium)* · TechSofya · Techify · MagnusMinds · AppAspect · TechnoBrains · Codevision · Satva · AP (Apicem Partners — enterprise infra / managed resources / recruiting) · JMS *(Medium)*
 
 ### SaaS / Productivity / Messaging
-WeekMate · Connecti5 · UpMatrix · SalesHandy · Calyzer/Callyzer · Onbbits
+WeekMate · Connecti5 · UpMatrix · SalesHandy · Calyzer/Callyzer · Onbbits · AIWI (Aiwi Software Solutions — all-in-one HRMS/payroll/PM) · BizCompass (business automation platform)
 
 ### Data & Analytics
 SeedData · Ace Analytics

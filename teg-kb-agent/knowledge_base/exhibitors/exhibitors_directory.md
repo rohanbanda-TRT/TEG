@@ -17,7 +17,7 @@
 | BOSC Tech Labs | Software development | [`bosc.md`](./companies/bosc.md) | Yes |
 | TechAlmas | IT services | [`techalmas.md`](./companies/techalmas.md) | — |
 | BizCompass | Software / IT services | [`bizcompass.md`](./companies/bizcompass.md) | Yes (Silver sponsor) |
-| AP (AppsPlus / Ap Technosoft — TBD) | Software development | [`ap.md`](./companies/ap.md) | — |
+| AP (Apicem Partners) | IT services — enterprise infra / managed resources / recruiting | [`ap.md`](./companies/ap.md) | — |
 | NeuraMonks | AI / ML | [`neuramonks.md`](./companies/neuramonks.md) | Yes |
 | Aone SEO Service Pvt Ltd | Digital marketing / SEO | [`aone_seo.md`](./companies/aone_seo.md) | — |
 | XPRO.AI | Event tech / AI platform | [`xpro_ai.md`](./companies/xpro_ai.md) | Yes (TEG ticketing platform) |
@@ -27,7 +27,7 @@
 | iSmartRecruit | HR tech / recruiting software | [`ismartrecruit.md`](./companies/ismartrecruit.md) | — |
 | beRound | Software / product engineering | [`beround.md`](./companies/beround.md) | — |
 | MindQuad | ERP (SAP B1 / Dynamics 365) | [`mindquad.md`](./companies/mindquad.md) | Yes |
-| AIWI | AI solutions | [`aiwi.md`](./companies/aiwi.md) | — |
+| AIWI (Aiwi Software Solutions) | Business-management SaaS (HRMS / payroll / PM) | [`aiwi.md`](./companies/aiwi.md) | — |
 | Codevision Technologies | Software development | [`codevision.md`](./companies/codevision.md) | Yes |
 | The MediTale | Healthcare tech | [`meditale.md`](./companies/meditale.md) | — |
 | Elision | VoIP / telephony software | [`elision.md`](./companies/elision.md) | Yes |

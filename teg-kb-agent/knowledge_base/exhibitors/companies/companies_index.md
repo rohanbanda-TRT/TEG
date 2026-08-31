@@ -10,13 +10,13 @@
 
 | Tier | Count | Meaning |
 |---|---|---|
-| **Verified** | 125 | Real website + specific, independently confirmed company match |
+| **Verified** | 127 | Real website + specific, independently confirmed company match |
 | **Medium** | 4 | A plausible real company found, but not fully confirmed as *the* TEG-exhibiting entity (common name, no direct TEG-specific source, or an unresolved discrepancy in official sourcing) |
-| **Could Not Verify / Low** | 4 | Logo abbreviation or name with no matching company identified at all (AP, AIWI, Splededge, Ittive — all from the TEG 2026 brochure) |
+| **Could Not Verify / Low** | 2 | Logo abbreviation or name with no matching company identified at all (Splededge, Ittive — both from the TEG 2026 brochure) |
 | **Total** | 133 | |
 
 ### August 31, 2026 pass — TEG 2026 brochure exhibitors
-The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page named ~66 TEG 2026 exhibitors. 18 already had profiles here (annotated with a "## TEG 2026 Participation" note); 50 new profile files were created in this pass. Of the 50: 43 Verified, 3 Medium (Visiobyte, iValue, JMS — plausible entity but not TEG-confirmed), 4 Low (AP, AIWI, Splededge, Ittive — no matching company found). Several new entries are companies of TEG organizers (AONE SEO / Pruthviraj Zala, AppsRow / Sandeep Sisodiya, Techify / Taral Shah, ThinkTanker / Rajan Rawal, XPRO.AI / Saumil Patel & Nilay Khandhar). XPRO.AI is cross-linked to `registration/registration_and_passes.md` and `related_events/related_events.md`. Connecti5 is a ThinkTanker product; Xobito is a Saeculum Solutions product.
+The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page named ~66 TEG 2026 exhibitors. 18 already had profiles here (annotated with a "## TEG 2026 Participation" note); 50 new profile files were created in this pass. Of the 50: 45 Verified, 3 Medium (Visiobyte, iValue, JMS — plausible entity but not TEG-confirmed), 2 Low (Splededge, Ittive — no matching company found). **AP and AIWI**, initially Low, were resolved via URLs provided by the TEG team: AP = **Apicem Partners** (apicem-partners.com), AIWI = **Aiwi Software Solutions** (aiwi.io). Several new entries are companies of TEG organizers (AONE SEO / Pruthviraj Zala, AppsRow / Sandeep Sisodiya, Techify / Taral Shah, ThinkTanker / Rajan Rawal, XPRO.AI / Saumil Patel & Nilay Khandhar). XPRO.AI is cross-linked to `registration/registration_and_passes.md` and `related_events/related_events.md`. Connecti5 is a ThinkTanker product; Xobito is a Saeculum Solutions product.
 
 This tier count reflects two research passes: (1) a broad pass that fetched the official `techexpogujarat.com/exhibitors` sponsor-logo links, resolving nearly every prior Medium/Could-Not-Verify company to Verified; and (2) a targeted pass cross-referencing the **"Tech Talks at Gujarat Tech Expo 2024"** podcast mini-series (Chai Time with ManthanBaba, ~49 of an apparent 50 episodes catalogued, hosted by TEG exhibitor/organizer Manthan Bhavsar of Metizsoft), which named specific exhibitor founders on-record and is now cited as an additional source on ~35 company files — upgrading several (Hana, TechNotery, Viscap, JCASP, Lucent, Webapprise, KeyCarrier) from Medium to Verified on its own evidence, and adding a previously-unknown founder name to many others. See each file's own `*Source:*` footer for exactly which sources apply.
 
@@ -109,12 +109,14 @@ This tier count reflects two research passes: (1) a broad pass that fetched the 
 | Wappnet | [`wappnet.md`](./wappnet.md) |
 | Webapprise | [`webapprise.md`](./webapprise.md) |
 
-## Verified — TEG 2026 brochure exhibitors, new profiles August 31, 2026 (43)
+## Verified — TEG 2026 brochure exhibitors, new profiles August 31, 2026 (45)
 
 | Company | Profile |
 |---|---|
 | Ace Analytics | [`ace_analytics.md`](./ace_analytics.md) |
+| AIWI (Aiwi Software Solutions) | [`aiwi.md`](./aiwi.md) |
 | AONE SEO Service | [`aone_seo.md`](./aone_seo.md) |
+| AP (Apicem Partners) | [`ap.md`](./ap.md) |
 | AppsRow | [`appsrow.md`](./appsrow.md) |
 | beRound | [`beround.md`](./beround.md) |
 | BetterBugs | [`betterbugs.md`](./betterbugs.md) |
@@ -166,12 +168,10 @@ This tier count reflects two research passes: (1) a broad pass that fetched the 
 | iValue | [`ivalue.md`](./ivalue.md) | Likely the national iValue InfoSolutions (Bangalore VAD), but no TEG-specific source confirms it over a local same-name firm. |
 | JMS | [`jms.md`](./jms.md) | Brochure logo "JMS"; best Ahmedabad match is JMS Advisory Services, unconfirmed. |
 
-## Could Not Verify / Low (4)
+## Could Not Verify / Low (2)
 
 | Company | Profile | Note |
 |---|---|---|
-| AP | [`ap.md`](./ap.md) | Logo reads only "AP"; no matching Gujarat entity found (AppsPlus / AP Technosoft / AlphaBI all inconclusive). |
-| AIWI | [`aiwi.md`](./aiwi.md) | AI-solutions exhibitor per brochure; no website or entity found. |
 | Splededge | [`splededge.md`](./splededge.md) | Software / staffing per brochure; no matching company found. |
 | Ittive | [`ittive.md`](./ittive.md) | Software development per brochure; no matching Gujarat company found. |
 

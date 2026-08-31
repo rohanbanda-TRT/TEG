@@ -29,7 +29,7 @@ teg_knowledge_base/
 ├── exhibitors/
 │   ├── exhibitors_directory.md                        ← TEG 2026 named brochure exhibitor list + TEG 2024 master table (linked) + stall packages
 │   └── companies/                                      ← 131 individual company profiles (83 TEG 2024 + 48 TEG 2026 brochure) + 1 index
-│       └── companies_index.md                          ← Confidence-tiered index (123 Verified · 4 Medium · 4 Low)
+│       └── companies_index.md                          ← Confidence-tiered index (127 Verified · 4 Medium · 2 Low)
 │
 ├── speakers/
 │   ├── speakers_and_agenda.md                         ← TEG 2024 full speaker list + schedule; TEG 2026 status
@@ -181,7 +181,7 @@ Tapan Patel, Co-Founder/CMO of Third Rock Techkno, sits on TEG's core organizing
 ## Known Data Gaps (re-checked August 27, 2026)
 | Area | Status | Detail |
 |---|---|---|
-| TEG 2026 exhibitor names | **Largely resolved (~66 named)** | The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page names ~66 TEG 2026 exhibitors — the first machine-legible resolution of the previously ~74 unnamed homepage logo slots. As of August 31, 2026 all ~66 have individual profiles under `exhibitors/companies/` (47 newly created, 18 pre-existing TEG 2024 profiles annotated, plus Perigeon). Booth numbers confirmed for a few: Eternal Web (A48–A55), TechnoBrains (A71–72), Perigeon (A144). A handful of brochure logos remain unidentified entities (AP, AIWI, Splededge, Ittive). Full list: `exhibitors/exhibitors_directory.md` and `exhibitors/companies/companies_index.md`. |
+| TEG 2026 exhibitor names | **Largely resolved (~66 named)** | The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page names ~66 TEG 2026 exhibitors — the first machine-legible resolution of the previously ~74 unnamed homepage logo slots. As of August 31, 2026 all ~66 have individual profiles under `exhibitors/companies/` (50 newly created, 18 pre-existing TEG 2024 profiles annotated). Booth numbers confirmed for a few: Eternal Web (A48–A55), TechnoBrains (A71–72), Perigeon (A144). Two brochure logos remain unidentified entities (Splededge, Ittive); AP and AIWI were resolved via TEG-team-provided URLs (Apicem Partners; Aiwi Software Solutions). Full list: `exhibitors/exhibitors_directory.md` and `exhibitors/companies/companies_index.md`. |
 | TEG 2026 speaker lineup | **Still unresolved** | No individually named TEG-2026-specific keynote speakers found beyond the same three recycled promo-testimonial names (Ankur Warikoo, Savjibhai Dholakia, Sonu Sharma). Broad web/press/LinkedIn search turned up nothing new. See `speakers/speakers_and_agenda.md`. |
 | TEG 2026 visitor ticket pricing | **Partially resolved** | A third-party page (technobrains.io) confirms the ticket structure now has two named tiers — **"Regular Visitor"** and **"Golden Ticket"** — but exact rupee pricing for either tier is still not published anywhere found (official site or third party); entry is confirmed non-free. See `registration/registration_and_passes.md`. |
 | TEG 2026 detailed session agenda | **Still unresolved** | Not published on the official site or any third-party page found. |
