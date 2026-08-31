@@ -6,7 +6,7 @@
 
 **Architecture:** A 3-agent pipeline (Analysis → Research → Persuasion) runs on form submit and completes before the chat widget opens. Agents never call each other; an orchestrator sequences them and owns Postgres persistence. Research is frozen for the chat session. All research runs on free tools (local KB + Tavily/Brave free tier + httpx scraping); no paid LinkedIn, no browser automation.
 
-**Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2.x + Alembic, Postgres, Pydantic v2, httpx, `trafilatura` (page text extraction), `rank-bm25` (KB retrieval), `anthropic` SDK, `pytest` + `pytest-asyncio`, `respx` (httpx mocking). Widget: vanilla TypeScript, `esbuild` bundle, no framework.
+**Tech Stack:** Python 3.12, FastAPI, SQLAlchemy 2.x + Alembic, Postgres, Pydantic v2, httpx, `trafilatura` (page text extraction), `rank-bm25` (KB retrieval), `google-genai` SDK (Gemini, default) with `anthropic` SDK retained, `pytest` + `pytest-asyncio`, `respx` (httpx mocking). Widget: vanilla TypeScript, `esbuild` bundle, no framework.
 
 **Design spec:** `docs/superpowers/specs/2026-08-31-teg-outreach-agent-design.md` — read it before starting.
 
@@ -18,7 +18,7 @@
 - Every quantitative claim a Persuasion Agent message makes must trace to a KB source file. Only the 4 cleared testimonials in `testimonials/exhibitor_testimonials.md` may be quoted. Peer-company lists come only from `sector_wise_participation.md`. Never state a visitor ticket price (amounts are unpublished).
 - All prices quoted must be "+ GST" and carry the "indicative / subject to confirmation at booking" caveat (per `pricing/pricing_and_packages.md`).
 - All agent I/O is typed Pydantic models defined in `app/domain/schemas.py`. Agents subclass `Agent` ABC with `async def run()`.
-- LLM access only via the `LLMClient` interface (`app/llm/base.py`). No direct `anthropic` imports outside `app/llm/anthropic_client.py`.
+- LLM access only via the `LLMClient` interface (`app/llm/base.py`). No direct `google.genai` / `anthropic` imports outside their adapter files (`app/llm/gemini_client.py`, `app/llm/anthropic_client.py`). Default provider is **Gemini** (`gemini-flash-latest`).
 - All external calls (LLM, web search, scraping) are `async`. Tests stub them; no test makes a real network call.
 - Config via environment only (`config/settings.py`), with the defaults from spec §8.
 - Conventional-commit messages. Commit at the end of every task.
@@ -1366,6 +1366,231 @@ Expected: PASS (5 tests)
 ```bash
 git add teg-outreach-agent/
 git commit -m "feat(outreach): provider-agnostic LLM client with Anthropic adapter and fake
+
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01S8jnLgnabikNB11qaetwtQ"
+```
+
+---
+
+## Task 5b: Gemini LLM adapter (default provider)
+
+> **Added mid-execution:** the user chose Google Gemini (`gemini-flash-latest` / "Gemini 3.6 Flash") as the LLM provider instead of Anthropic. The `LLMClient` interface from Task 5 makes this a pure adapter add.
+
+**Files:**
+- Create: `teg-outreach-agent/app/llm/gemini_client.py`
+- Modify: `teg-outreach-agent/app/llm/base.py` (add `gemini` branch to `get_llm()`)
+- Modify: `teg-outreach-agent/config/settings.py` (provider default + Gemini fields)
+- Modify: `teg-outreach-agent/.env.example`
+- Modify: `teg-outreach-agent/pyproject.toml` (add `google-genai` dep)
+- Test: `teg-outreach-agent/tests/llm/test_gemini_client.py`
+
+**Interfaces:**
+- Produces `app.llm.gemini_client.GeminiClient(LLMClient)`:
+  - `generate(*, system, messages, model=None, max_tokens=1024, temperature=0.3) -> str` — via `google.genai` `client.aio.models.generate_content(model=..., contents=[...], config=GenerateContentConfig(system_instruction=system, max_output_tokens=max_tokens, temperature=temperature))`; return `resp.text`.
+  - `generate_structured(*, system, messages, schema, model=None) -> BaseModelT` — set `config.response_mime_type = "application/json"` and `config.response_schema = schema`; parse `resp.text` with `schema.model_validate_json(...)` (fallback: `schema.model_validate(resp.parsed)` if the SDK returns a parsed object).
+- `config.settings.Settings` new/changed fields:
+  - `llm_provider: str = "gemini"` (was "anthropic")
+  - `llm_model_fast: str = "gemini-flash-latest"`
+  - `llm_model_main: str = "gemini-flash-latest"`
+  - `gemini_api_key: str = ""`
+  - keep `anthropic_api_key: str = ""` (Anthropic adapter stays available)
+- `get_llm()` adds: `if provider == "gemini": from app.llm.gemini_client import GeminiClient; return GeminiClient()`
+
+- [ ] **Step 1: Add the dependency and install**
+
+Edit `pyproject.toml` `dependencies`: add `"google-genai>=0.8"`. Then:
+```bash
+cd teg-outreach-agent && .venv/bin/pip install -e ".[dev]"
+```
+Check the installed version and the exact import path:
+```bash
+.venv/bin/python -c "import google.genai as g; from google.genai import types; print(g.__version__ if hasattr(g,'__version__') else 'ok'); print([x for x in dir(types) if 'Config' in x])"
+```
+
+- [ ] **Step 2: Write the failing test**
+
+```python
+# tests/llm/test_gemini_client.py
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+import pytest
+from pydantic import BaseModel
+
+
+class Out(BaseModel):
+    name: str
+
+
+@pytest.fixture
+def gemini_env(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
+    monkeypatch.setenv("LLM_PROVIDER", "gemini")
+    monkeypatch.setenv("GEMINI_API_KEY", "test")
+    from config.settings import get_settings
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+async def test_generate_returns_text(gemini_env):
+    from app.llm.gemini_client import GeminiClient
+
+    fake_resp = SimpleNamespace(text="hi there", parsed=None)
+    with patch("app.llm.gemini_client.genai.Client") as m:
+        m.return_value.aio.models.generate_content = AsyncMock(return_value=fake_resp)
+        c = GeminiClient()
+        out = await c.generate(system="s", messages=[{"role": "user", "content": "x"}])
+    assert out == "hi there"
+
+
+async def test_generate_structured_parses_json(gemini_env):
+    from app.llm.gemini_client import GeminiClient
+
+    fake_resp = SimpleNamespace(text='{"name": "Rohan"}', parsed=None)
+    with patch("app.llm.gemini_client.genai.Client") as m:
+        m.return_value.aio.models.generate_content = AsyncMock(return_value=fake_resp)
+        c = GeminiClient()
+        out = await c.generate_structured(
+            system="s", messages=[{"role": "user", "content": "x"}], schema=Out
+        )
+    assert out.name == "Rohan"
+
+
+def test_get_llm_selects_gemini(gemini_env):
+    from app.llm.base import get_llm
+    from app.llm.gemini_client import GeminiClient
+    assert isinstance(get_llm(), GeminiClient)
+```
+
+- [ ] **Step 3: Run to verify fail**
+
+Run: `cd teg-outreach-agent && .venv/bin/python -m pytest tests/llm/test_gemini_client.py -v`
+Expected: FAIL — `ModuleNotFoundError: No module named 'app.llm.gemini_client'`
+
+- [ ] **Step 4: Write app/llm/gemini_client.py**
+
+```python
+from __future__ import annotations
+
+from google import genai
+from google.genai import types
+
+from app.llm.base import BaseModelT, LLMClient, LLMMessage
+from config.settings import get_settings
+
+
+def _to_contents(messages: list[LLMMessage]) -> list[types.Content]:
+    role_map = {"user": "user", "assistant": "model"}
+    return [
+        types.Content(
+            role=role_map[m["role"]],
+            parts=[types.Part.from_text(text=m["content"])],
+        )
+        for m in messages
+    ]
+
+
+class GeminiClient(LLMClient):
+    def __init__(self) -> None:
+        s = get_settings()
+        self._client = genai.Client(api_key=s.gemini_api_key)
+        self._model_main = s.llm_model_main
+
+    async def generate(
+        self, *, system: str, messages: list[LLMMessage],
+        model: str | None = None, max_tokens: int = 1024, temperature: float = 0.3,
+    ) -> str:
+        resp = await self._client.aio.models.generate_content(
+            model=model or self._model_main,
+            contents=_to_contents(messages),
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                max_output_tokens=max_tokens,
+                temperature=temperature,
+            ),
+        )
+        return (resp.text or "").strip()
+
+    async def generate_structured(
+        self, *, system: str, messages: list[LLMMessage],
+        schema: type[BaseModelT], model: str | None = None,
+    ) -> BaseModelT:
+        resp = await self._client.aio.models.generate_content(
+            model=model or self._model_main,
+            contents=_to_contents(messages),
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                response_mime_type="application/json",
+                response_schema=schema,
+            ),
+        )
+        parsed = getattr(resp, "parsed", None)
+        if parsed is not None and not isinstance(parsed, (str, bytes)):
+            return schema.model_validate(parsed if isinstance(parsed, dict) else parsed.__dict__)
+        return schema.model_validate_json(resp.text)
+```
+
+**Note:** if `.venv/bin/python -c "import google.genai"` in Step 1 revealed a different API surface (e.g. `genai.Client` lives elsewhere, or `aio` is spelled differently, or `Part.from_text` takes a positional arg), adapt this file to the installed SDK. Keep the `LLMClient` interface and the 3 test assertions (mock `app.llm.gemini_client.genai.Client`, `.aio.models.generate_content` AsyncMock returning an object with `.text` and `.parsed`) unchanged.
+
+- [ ] **Step 5: Update base.py get_llm()**
+
+In `app/llm/base.py`, extend `get_llm()`:
+```python
+def get_llm() -> LLMClient:
+    provider = get_settings().llm_provider
+    if provider == "gemini":
+        from app.llm.gemini_client import GeminiClient
+        return GeminiClient()
+    if provider == "anthropic":
+        from app.llm.anthropic_client import AnthropicClient
+        return AnthropicClient()
+    raise ValueError(f"unknown llm_provider: {provider!r}")
+```
+
+- [ ] **Step 6: Update settings.py**
+
+```python
+    llm_provider: str = "gemini"
+    llm_model_fast: str = "gemini-flash-latest"
+    llm_model_main: str = "gemini-flash-latest"
+    anthropic_api_key: str = ""
+    gemini_api_key: str = ""
+```
+(keep every other field unchanged)
+
+- [ ] **Step 7: Update .env.example**
+
+Change the LLM block to:
+```
+LLM_PROVIDER=gemini
+LLM_MODEL_FAST=gemini-flash-latest
+LLM_MODEL_MAIN=gemini-flash-latest
+GEMINI_API_KEY=
+ANTHROPIC_API_KEY=
+```
+
+- [ ] **Step 8: Fix the Anthropic test's provider assumption**
+
+`tests/llm/test_anthropic_client.py` sets `ANTHROPIC_API_KEY` but relies on `AnthropicClient` being constructible directly (it is — it doesn't check `llm_provider`). No change needed there. But `tests/config/test_settings.py::test_settings_defaults` asserts `s.llm_provider == "anthropic"` — update that assertion to `== "gemini"`, and `test_web_search`/others that call `get_settings()` are unaffected. Grep for `"anthropic"` in `tests/` and fix only the provider-default assertion.
+
+- [ ] **Step 9: Run tests + commit**
+
+Run:
+```bash
+cd teg-outreach-agent && .venv/bin/python -m pytest -q
+```
+Expected: full suite green (Gemini's 3 new tests + existing, with the one settings assertion updated).
+
+```bash
+cd /home/com-028/Desktop/TRT/PROJ/TECHEXPO
+git add teg-outreach-agent/
+git commit -m "feat(outreach): Gemini LLM adapter, set as default provider
+
+User chose Google Gemini (gemini-flash-latest) over Anthropic. Adds
+GeminiClient behind the existing LLMClient interface; get_llm() routes on
+llm_provider='gemini' (now the default). Anthropic adapter retained.
 
 Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01S8jnLgnabikNB11qaetwtQ"
