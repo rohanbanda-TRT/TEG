@@ -1,0 +1,284 @@
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from functools import lru_cache
+from pathlib import Path
+from typing import Literal
+
+from config.settings import get_settings
+
+_HEADER_RE = re.compile(r"^>\s*\*\*(?P<key>[^:*]+):\*\*\s*(?P<val>.+?)\s*$", re.M)
+
+
+def _norm(s: str) -> str:
+    s = s.lower()
+    s = re.sub(
+        r"\b(pvt\.?|private|ltd\.?|limited|llp|inc\.?|technologies|technolabs|solutions|software|it)\b",
+        " ",
+        s,
+    )
+    s = re.sub(r"[^a-z0-9 ]", " ", s)
+    return " ".join(s.split())
+
+
+def _token_set_ratio(a: str, b: str) -> float:
+    ta, tb = set(_norm(a).split()), set(_norm(b).split())
+    if not ta or not tb:
+        return 0.0
+    return len(ta & tb) / len(ta | tb)
+
+
+@dataclass
+class CompanyRecord:
+    name: str
+    slug: str
+    category: str | None
+    website: str | None
+    teg_participation: str | None
+    confidence: str | None
+    overview: str
+    raw: str
+
+
+@dataclass
+class PersonRecord:
+    name: str
+    slug: str
+    role: str | None
+    kind: Literal["organizer", "speaker", "founder"]
+    company: str | None
+    overview: str
+    raw: str
+
+
+@dataclass
+class PricingInfo:
+    stalls: list[dict] = field(default_factory=list)
+    title_sponsor_inr: int = 0
+    payment_plan: str = ""
+    refund_policy: str = ""
+    raw: str = ""
+
+
+def _title_of(md: str, fallback: str) -> str:
+    m = re.search(r"^#\s+(.+?)\s*$", md, re.M)
+    if not m:
+        return fallback
+    return m.group(1).strip()
+
+
+def _person_name(md: str, fallback: str) -> str:
+    """First heading, trimmed to the bare name (drops a ' — Role, Company' suffix)."""
+    title = _title_of(md, fallback)
+    title = re.split(r"\s+[—–-]\s+", title, maxsplit=1)[0]
+    title = title.split(",", 1)[0]
+    return title.strip()
+
+
+def _section(md: str, heading: str) -> str:
+    if heading not in md:
+        return ""
+    seg = md.split(heading, 1)[1]
+    return seg.split("\n## ", 1)[0].split("\n#", 1)[0].strip()
+
+
+def _headers(md: str) -> dict[str, str]:
+    return {
+        m.group("key").strip().lower(): m.group("val").strip()
+        for m in _HEADER_RE.finditer(md)
+    }
+
+
+class KnowledgeBase:
+    def __init__(self, root: Path | None = None) -> None:
+        self.root = Path(root or get_settings().kb_path).resolve()
+        self._companies: list[CompanyRecord] = []
+        self._people: list[PersonRecord] = []
+        self._load_companies()
+        self._load_people()
+
+    # ---- loading ----
+    def _load_companies(self) -> None:
+        cdir = self.root / "exhibitors" / "companies"
+        for f in sorted(cdir.glob("*.md")):
+            if f.stem == "companies_index":
+                continue
+            md = f.read_text(encoding="utf-8")
+            h = _headers(md)
+            self._companies.append(
+                CompanyRecord(
+                    name=_title_of(md, f.stem),
+                    slug=f.stem,
+                    category=h.get("category"),
+                    website=h.get("website"),
+                    teg_participation=h.get("teg participation"),
+                    confidence=h.get("confidence"),
+                    overview=_section(md, "## Overview"),
+                    raw=md,
+                )
+            )
+
+    def _load_people(self) -> None:
+        odir = self.root / "organizers_team"
+        for f in sorted(odir.glob("*.md")):
+            if f.stem in {"organizers_and_team", "co_organizers"}:
+                continue
+            md = f.read_text(encoding="utf-8")
+            self._people.append(
+                PersonRecord(
+                    name=_person_name(md, f.stem),
+                    slug=f.stem,
+                    role=_headers(md).get("role"),
+                    kind="organizer",
+                    company=_headers(md).get("company"),
+                    overview=_section(md, "## Overview") or _section(md, "## Profile"),
+                    raw=md,
+                )
+            )
+        sdir = self.root / "speakers" / "individuals"
+        if sdir.is_dir():
+            for f in sorted(sdir.glob("*.md")):
+                md = f.read_text(encoding="utf-8")
+                self._people.append(
+                    PersonRecord(
+                        name=_person_name(md, f.stem),
+                        slug=f.stem,
+                        role=_headers(md).get("affiliation"),
+                        kind="speaker",
+                        company=None,
+                        overview=_section(md, "## Overview") or _section(md, "## Bio"),
+                        raw=md,
+                    )
+                )
+        # founder names inside company files
+        for c in self._companies:
+            for m in re.finditer(
+                r"-\s*\*\*Founder[^:*]*:\*\*\s*([A-Z][A-Za-z.\- ]+)", c.raw
+            ):
+                fname = m.group(1).strip().rstrip(".")
+                if len(fname.split()) >= 2:
+                    self._people.append(
+                        PersonRecord(
+                            name=fname,
+                            slug=f"{c.slug}:{_norm(fname).replace(' ', '_')}",
+                            role="Founder",
+                            kind="founder",
+                            company=c.name,
+                            overview=c.overview,
+                            raw=c.raw,
+                        )
+                    )
+
+    # ---- queries ----
+    def find_company(self, name: str) -> tuple[CompanyRecord | None, float]:
+        n = _norm(name)
+        slug_guess = n.replace(" ", "_")
+        best: CompanyRecord | None = None
+        best_score = 0.0
+        for c in self._companies:
+            if _norm(c.name) == n or c.slug == slug_guess:
+                return c, 1.0
+            score = _token_set_ratio(name, c.name)
+            if score > best_score:
+                best, best_score = c, score
+        return (best, best_score) if best_score >= 0.5 else (None, best_score)
+
+    def find_person(self, name: str) -> tuple[PersonRecord | None, float]:
+        n = _norm(name)
+        best: PersonRecord | None = None
+        best_score = 0.0
+        for p in self._people:
+            if _norm(p.name) == n:
+                return p, 1.0
+            score = _token_set_ratio(name, p.name)
+            if score > best_score:
+                best, best_score = p, score
+        return (best, best_score) if best_score >= 0.6 else (None, best_score)
+
+    def peers_in_sector(self, sector: str, limit: int = 5) -> list[str]:
+        f = self.root / "sector_wise_participation.md"
+        md = f.read_text(encoding="utf-8")
+        want = sector.strip().lower()
+        blocks = re.split(r"\n### ", md)
+
+        def _names_from(body: str) -> list[str]:
+            line = ""
+            for cand in body.splitlines():
+                if cand.strip():
+                    line = cand.strip()
+                    break
+            if line.startswith("|") or line.startswith("#"):
+                return []
+            names = [x.strip() for x in re.split(r"·|\|", line) if x.strip()]
+            names = [re.sub(r"\s*\(.*?\)", "", x).strip().strip("*") for x in names]
+            names = [x for x in names if x and not x.startswith("_")]
+            return names
+
+        # pass 1: exact heading match
+        for block in blocks:
+            head, _, body = block.partition("\n")
+            if head.strip().lower() == want:
+                names = _names_from(body)
+                if names:
+                    return names[:limit]
+        # pass 2: heading contains the sector name
+        for block in blocks:
+            head, _, body = block.partition("\n")
+            if want in head.strip().lower():
+                names = _names_from(body)
+                if names:
+                    return names[:limit]
+        return []
+
+    def pricing(self) -> PricingInfo:
+        f = self.root / "pricing" / "pricing_and_packages.md"
+        md = f.read_text(encoding="utf-8")
+        stalls: list[dict] = []
+        for row in re.finditer(
+            r"\|\s*\*\*(?P<size>[\dm×x ]+)\*\*\s*\|\s*(?P<area>[\d ]*sqm)?\s*\|.*?₹\s*(?P<price>[\d,]+)",
+            md,
+        ):
+            price = int(row.group("price").replace(",", ""))
+            stalls.append(
+                {
+                    "size": row.group("size").strip(),
+                    "area": (row.group("area") or "").strip(),
+                    "price_inr": price,
+                    "exhibitor_passes": None,
+                    "visitor_passes": None,
+                }
+            )
+        ts = re.search(r"Title Sponsor.*?₹\s*([\d,]+)", md, re.S)
+        title_inr = int(ts.group(1).replace(",", "")) if ts else 0
+        return PricingInfo(
+            stalls=stalls,
+            title_sponsor_inr=title_inr,
+            payment_plan=_section(md, "## 7. Flexible Payment Plan"),
+            refund_policy=_section(md, "## 8. Refund"),
+            raw=md,
+        )
+
+    def cleared_testimonials(self) -> list[dict]:
+        f = self.root / "testimonials" / "exhibitor_testimonials.md"
+        md = f.read_text(encoding="utf-8")
+        block = md.split("## ✅ Attributed Testimonials", 1)[-1].split("\n## ", 1)[0]
+        out: list[dict] = []
+        for part in re.split(r"\n### ", block)[1:]:
+            name = part.splitlines()[0].strip()
+            role_m = re.search(r"\*\*Role:\*\*\s*(.+)", part)
+            quote_m = re.search(r">\s*[\"“](.+?)[\"”]", part, re.S)
+            if quote_m:
+                out.append(
+                    {
+                        "name": name,
+                        "role": role_m.group(1).strip() if role_m else "",
+                        "quote": " ".join(quote_m.group(1).split()),
+                    }
+                )
+        return out
+
+
+@lru_cache
+def get_kb() -> KnowledgeBase:
+    return KnowledgeBase()
