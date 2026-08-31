@@ -235,18 +235,31 @@ class KnowledgeBase:
         f = self.root / "pricing" / "pricing_and_packages.md"
         md = f.read_text(encoding="utf-8")
         stalls: list[dict] = []
-        for row in re.finditer(
-            r"\|\s*\*\*(?P<size>[\dm×x ]+)\*\*\s*\|\s*(?P<area>[\d ]*sqm)?\s*\|.*?₹\s*(?P<price>[\d,]+)",
-            md,
-        ):
-            price = int(row.group("price").replace(",", ""))
+        # Parse the stall-package table (## 1. Stall Packages) row by row.
+        # Each data row: | <size> | <area> | <exh passes> | <pre/post> | <visitor> | <price + GST> |
+        stall_section = md.split("## 1. Stall Packages", 1)[-1].split("\n## ", 1)[0]
+        int_re = re.compile(r"\d+")
+        for line in stall_section.splitlines():
+            if not line.strip().startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) < 6:
+                continue
+            price_m = re.search(r"₹\s*([\d,]+)", cells[-1])
+            if not price_m:
+                continue
+            size = cells[0].strip().strip("*").strip()
+            if not re.search(r"\d\s*m|sqm|zone", size, re.I) and "m ×" not in size and "m x" not in size.lower():
+                continue
+            exh_m = int_re.search(cells[2])
+            vis_m = int_re.search(cells[4])
             stalls.append(
                 {
-                    "size": row.group("size").strip(),
-                    "area": (row.group("area") or "").strip(),
-                    "price_inr": price,
-                    "exhibitor_passes": None,
-                    "visitor_passes": None,
+                    "size": size,
+                    "area": cells[1].strip().strip("*"),
+                    "price_inr": int(price_m.group(1).replace(",", "")),
+                    "exhibitor_passes": int(exh_m.group()) if exh_m else None,
+                    "visitor_passes": int(vis_m.group()) if vis_m else None,
                 }
             )
         ts = re.search(r"Title Sponsor.*?₹\s*([\d,]+)", md, re.S)

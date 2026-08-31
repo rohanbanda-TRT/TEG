@@ -52,6 +52,11 @@ def test_pricing_has_confirmed_stall_numbers():
     assert 117000 in prices
     assert 468000 in prices
     assert p.title_sponsor_inr == 3500000
+    # all five stall rows are parsed (3x3, 3x6, 6x6, 3x9 corner, Catalyst Zone)
+    assert len(p.stalls) == 5
+    assert 234000 in prices and 351000 in prices and 35000 in prices
+    threes = next(s for s in p.stalls if s["price_inr"] == 117000)
+    assert threes["exhibitor_passes"] == 2 and threes["visitor_passes"] == 5
 
 
 def test_cleared_testimonials_exactly_four():
