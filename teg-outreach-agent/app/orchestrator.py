@@ -7,10 +7,10 @@ from dataclasses import dataclass
 from app.agents.analysis import AnalysisAgent
 from app.agents.persuasion import PersuasionAgent
 from app.agents.research import ResearchAgent
-from app.domain.schemas import IntakePayload, ResearchDossier
+from app.domain.schemas import HandoffPacket, IntakePayload, IntakeResult, PersuasionTurn, ResearchDossier
 from app.llm.base import get_llm
 from app.store.db import SessionLocal
-from app.store.repositories import DossierRepo, InquiryRepo, MessageRepo, SessionRepo
+from app.store.repositories import DossierRepo, HandoffRepo, InquiryRepo, MessageRepo, SessionRepo
 from config.settings import get_settings
 
 
@@ -60,3 +60,103 @@ class Orchestrator:
                 inquiry_id=inq.id, session_id=cs.id,
                 opening_message=init.opening_message, persona=init.persona,
             )
+
+    def _state_from_row(self, cs) -> dict:
+        return {
+            "persona": cs.persona,
+            "target_cta": cs.target_cta,
+            "cta_status": cs.cta_status,
+            "cta_detail": cs.cta_detail or {},
+            "learned_facts": cs.learned_facts or {},
+            "persona_remapped": cs.persona_remapped,
+            "needs_review": cs.needs_review,
+        }
+
+    async def run_turn(self, session_id: uuid.UUID, prospect_message: str) -> PersuasionTurn:
+        async with SessionLocal() as s:
+            cs = await SessionRepo(s).get(session_id)
+            inq = await InquiryRepo(s).get(cs.inquiry_id)
+            drow = await DossierRepo(s).get(cs.dossier_id)
+            dossier = DossierRepo.to_domain(drow)
+            intake = IntakeResult(
+                person_name=inq.person_name,
+                company_name_raw=inq.company_name_raw,
+                company_name_canonical=inq.company_name_canonical or inq.company_name_raw,
+                provided_fields=[],
+                intent_hint=inq.intent_hint,
+                consent_status=inq.consent_status,
+            )
+            history = await MessageRepo(s).history(session_id)
+            state = self._state_from_row(cs)
+
+            turn = await self.persuasion.respond(
+                intake=intake, dossier=dossier, state=state,
+                history=history, prospect_message=prospect_message,
+            )
+
+            mr = MessageRepo(s)
+            await mr.append(session_id, "prospect", prospect_message,
+                            turn_index=await mr.next_turn_index(session_id))
+            await s.flush()
+            await mr.append(session_id, "agent", turn.reply_text,
+                            turn_index=await mr.next_turn_index(session_id),
+                            guardrail_flags=turn.guardrail_flags,
+                            detected_intent={"detected_cta": turn.detected_cta})
+            await SessionRepo(s).update_state(
+                session_id,
+                cta_status=turn.cta_status, cta_type=turn.cta_type,
+                cta_detail=turn.cta_detail,
+                learned_facts=turn.updated_state.get("learned_facts", {}),
+                persona=turn.persona,
+                persona_remapped=turn.updated_state.get("persona_remapped", False),
+                needs_review=turn.updated_state.get("needs_review", False),
+            )
+            await s.commit()
+            return turn
+
+    async def end_session(self, session_id: uuid.UUID, reason: str) -> HandoffPacket | None:
+        async with SessionLocal() as s:
+            cs = await SessionRepo(s).get(session_id)
+            drow = await DossierRepo(s).get(cs.dossier_id)
+            dossier = DossierRepo.to_domain(drow)
+            history = await MessageRepo(s).history(session_id)
+
+            if cs.cta_status == "completed":
+                outcome = "qualified"
+            elif cs.cta_status in ("in_progress", "offered") and (cs.cta_detail or {}).get("callback"):
+                outcome = "qualified"
+            elif reason == "bounced" or cs.cta_status == "declined":
+                outcome = "lost"
+            else:
+                outcome = "contacted"
+
+            packet: HandoffPacket | None = None
+            if cs.cta_status != "completed":
+                if dossier.ask_prospect:
+                    confidence = "low"
+                elif dossier.sector and dossier.person_profile.get("teg_role"):
+                    confidence = "high"
+                else:
+                    confidence = "medium"
+                convo = "\n".join(f"{m['role']}: {m['content']}" for m in history)
+                packet = await self.persuasion.llm.generate_structured(
+                    system=(
+                        "Write a concise sales handoff for the TEG team. Summarise who this is, "
+                        "what they want, where the conversation landed, and the best next step. "
+                        "suggested_followup_message: a short draft the rep can send."
+                    ),
+                    messages=[{"role": "user", "content": (
+                        f"Dossier: company={dossier.company_profile} person={dossier.person_profile} "
+                        f"sector={dossier.sector} relationship={dossier.relationship}\n"
+                        f"Learned in chat: {cs.learned_facts}\n\nTranscript:\n{convo}"
+                    )}],
+                    schema=HandoffPacket,
+                )
+                packet = packet.model_copy(update={"prospect_confidence": confidence})
+                await HandoffRepo(s).create(session_id, packet)
+
+            await SessionRepo(s).finalize(
+                session_id, outcome_status=outcome, handoff_generated=packet is not None,
+            )
+            await s.commit()
+            return packet
