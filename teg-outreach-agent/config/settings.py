@@ -7,10 +7,11 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str
-    llm_provider: str = "anthropic"
-    llm_model_fast: str = "claude-haiku-4-5-20251001"
-    llm_model_main: str = "claude-sonnet-5"
+    llm_provider: str = "gemini"
+    llm_model_fast: str = "gemini-flash-latest"
+    llm_model_main: str = "gemini-flash-latest"
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""
     web_search_provider: str = "tavily"
     tavily_api_key: str = ""
     brave_api_key: str = ""

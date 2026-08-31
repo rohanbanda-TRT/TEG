@@ -5,7 +5,7 @@ def test_settings_defaults(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://u:p@localhost/db")
     monkeypatch.delenv("LLM_PROVIDER", raising=False)
     s = Settings()
-    assert s.llm_provider == "anthropic"
+    assert s.llm_provider == "gemini"
     assert s.web_search_provider == "tavily"
     assert s.research_max_searches_per_track == 2
     assert s.linkedin_provider == "none"

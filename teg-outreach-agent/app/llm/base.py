@@ -31,6 +31,9 @@ class LLMClient(ABC):
 
 def get_llm() -> LLMClient:
     provider = get_settings().llm_provider
+    if provider == "gemini":
+        from app.llm.gemini_client import GeminiClient
+        return GeminiClient()
     if provider == "anthropic":
         from app.llm.anthropic_client import AnthropicClient
         return AnthropicClient()
