@@ -102,18 +102,26 @@ class GeminiClient(LLMClient):
 
     async def generate(
         self, *, system: str, messages: list[LLMMessage],
-        model: str | None = None, max_tokens: int = 1024, temperature: float = 0.3,
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.3,
     ) -> str:
-        resp = await self._client.aio.models.generate_content(
-            model=model or self._model_main,
-            contents=_to_contents(messages),
-            config=types.GenerateContentConfig(
-                system_instruction=system,
-                max_output_tokens=max_tokens,
-                temperature=temperature,
-            ),
-        )
-        return (resp.text or "").strip()
+        # gemini-flash spends part of its budget on internal reasoning tokens; a
+        # too-small ceiling can yield empty visible text. Retry once with headroom.
+        for attempt, cap in enumerate((max(max_tokens, 1024), max(max_tokens * 2, 4096))):
+            resp = await self._client.aio.models.generate_content(
+                model=model or self._model_main,
+                contents=_to_contents(messages),
+                config=types.GenerateContentConfig(
+                    system_instruction=system,
+                    max_output_tokens=cap,
+                    temperature=temperature,
+                ),
+            )
+            text = (resp.text or "").strip()
+            if text:
+                return text
+            if attempt == 1:
+                raise RuntimeError("gemini returned no text output after retry")
+        return ""  # unreachable
 
     async def generate_structured(
         self, *, system: str, messages: list[LLMMessage],
@@ -127,9 +135,15 @@ class GeminiClient(LLMClient):
                 system_instruction=system,
                 response_mime_type="application/json",
                 response_schema=sane_schema,
+                # generous ceiling: a truncated JSON response is unparseable,
+                # and gemini-flash spends part of the budget on internal tokens.
+                max_output_tokens=4096,
             ),
         )
-        data = json.loads(resp.text)
+        raw = (resp.text or "").strip()
+        if not raw:
+            raise RuntimeError("gemini returned no structured output (possibly truncated)")
+        data = json.loads(raw)
         if coerced:
             data = _coerce_back(data, coerced)
         return schema.model_validate(data)

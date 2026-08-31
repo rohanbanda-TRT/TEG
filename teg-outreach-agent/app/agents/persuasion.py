@@ -155,7 +155,7 @@ class PersuasionAgent(Agent):
                 messages=[{"role": "user", "content": (
                     f"Name: {intake.person_name}\nCompany as entered: {intake.company_name_raw}"
                 )}],
-                max_tokens=250,
+                max_tokens=512,
             )
             return PersuasionInit(persona=persona, target_cta=cta, opening_message=q.strip())
 
@@ -172,14 +172,14 @@ class PersuasionAgent(Agent):
             "Write the opening message."
         )
         system = self._system(persona, dossier)
-        text = await self.llm.generate(system=system, messages=[{"role": "user", "content": user}], max_tokens=800)
+        text = await self.llm.generate(system=system, messages=[{"role": "user", "content": user}], max_tokens=2048)
         for _ in range(1):
             v = check_message(text, allowed_peers=peers, persona=persona)
             if not v:
                 break
             text = await self.llm.generate(
                 system=system + f"\nYour previous draft violated: {[x.code for x in v]}. Fix it.",
-                messages=[{"role": "user", "content": user}], max_tokens=800,
+                messages=[{"role": "user", "content": user}], max_tokens=2048,
             )
         if check_message(text, allowed_peers=peers, persona=persona):
             text = SAFE_TEMPLATES[persona]

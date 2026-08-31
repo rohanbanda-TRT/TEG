@@ -19,7 +19,7 @@ class LLMClient(ABC):
     @abstractmethod
     async def generate(
         self, *, system: str, messages: list[LLMMessage],
-        model: str | None = None, max_tokens: int = 1024, temperature: float = 0.3,
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.3,
     ) -> str: ...
 
     @abstractmethod
