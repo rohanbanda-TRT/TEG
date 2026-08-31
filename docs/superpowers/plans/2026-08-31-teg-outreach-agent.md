@@ -4563,11 +4563,13 @@ class _DeadWeb(ResearchTool):
 
 
 def _fake_orchestrator() -> Orchestrator:
-    # Tejas Shah is in the KB (TEG organizer + MagnusMinds founder), so the person
-    # track resolves and the dossier does NOT set ask_prospect -> persona is a real
-    # tech persona, not the "visitor" fallback.
+    # Tapan Patel (TEG organizer + Third Rock Techkno co-founder) and Third Rock
+    # Techkno both resolve in the KB, so the person track resolves and the dossier
+    # does NOT set ask_prospect -> persona is a real tech persona, not the fallback.
+    # NOTE: get_orchestrator() lazily constructs Orchestrator() so importing the API
+    # module does not require an LLM API key.
     return Orchestrator(
-        analysis=AnalysisAgent(FakeLLMClient(structured=[_CanonResult(canonical="MagnusMinds", intent_hint="exhibitor")])),
+        analysis=AnalysisAgent(FakeLLMClient(structured=[_CanonResult(canonical="Third Rock Techkno", intent_hint="exhibitor")])),
         research=ResearchAgent(
             FakeLLMClient(structured=[_Synthesis(
                 sector="AI Consulting", company_size="200", hq=None, founder=None,
@@ -4590,7 +4592,7 @@ def client():
 
 async def test_post_inquiry_returns_session_and_opening(client):
     async with client as c:
-        r = await c.post("/inquiries", json={"person_name": "Tejas Shah", "company_name": "MagnusMinds"})
+        r = await c.post("/inquiries", json={"person_name": "Tapan Patel", "company_name": "Third Rock Techkno"})
     assert r.status_code == 202
     body = r.json()
     assert body["session_id"]
@@ -4606,7 +4608,7 @@ async def test_post_inquiry_requires_company(client):
 
 async def test_get_session_returns_transcript(client):
     async with client as c:
-        posted = (await c.post("/inquiries", json={"person_name": "Tejas Shah", "company_name": "MagnusMinds"})).json()
+        posted = (await c.post("/inquiries", json={"person_name": "Tapan Patel", "company_name": "Third Rock Techkno"})).json()
         r = await c.get(f"/sessions/{posted['session_id']}")
     assert r.status_code == 200
     data = r.json()
