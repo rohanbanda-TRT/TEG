@@ -5,7 +5,7 @@
 > **Website:** https://www.techexpogujarat.com/
 > **Compiled:** August 2026 (re-verified August 27, 2026; TEG 2026 pricing + brochure exhibitor pass August 31, 2026)
 > **Sources:** Full site crawl of techexpogujarat.com + events.techexpogujarat.com + linked third-party exhibitor/press pages + official `teg-cost.pdf` and `teg-sponsors-brochure.pdf` collateral
-> **Total files:** 213 (13 topic files [incl. new `pricing/pricing_and_packages.md`, `testimonials/exhibitor_testimonials.md`] + 5 root-level files [`exhibitor_benefits_analysis.md`, `inquiry_page_content.md`, `data_schema.md`, `sector_wise_participation.md`, `outreach_config.md`] + 35 individual speaker profiles + 26 organizers_team files [2 index/summary + 24 individual organizer/co-organizer profiles] + 134 exhibitors/companies files [133 individual company profiles + companies_index.md] + INDEX.md)
+> **Total files:** 214 (14 topic files [incl. new `pricing/pricing_and_packages.md`, `testimonials/exhibitor_testimonials.md`, `venture_capital/venture_capital_and_investors.md`] + 5 root-level files [`exhibitor_benefits_analysis.md`, `inquiry_page_content.md`, `data_schema.md`, `sector_wise_participation.md`, `outreach_config.md`] + 35 individual speaker profiles + 26 organizers_team files [2 index/summary + 24 individual organizer/co-organizer profiles] + 134 exhibitors/companies files [133 individual company profiles + companies_index.md] + INDEX.md)
 
 ---
 
@@ -74,7 +74,10 @@ teg_knowledge_base/
 │   └── registration_and_passes.md                    ← How to register, ticket promo, pass entitlements
 │
 ├── sponsors_partners/
-│   └── sponsors_and_partners.md                      ← TEG 2026 sponsor tiers/benefits + TEG 2024 named sponsors
+│   └── sponsors_and_partners.md                      ← TEG 2026 sponsor tiers/benefits + TEG 2024 named sponsors + associate partners
+│
+├── venture_capital/
+│   └── venture_capital_and_investors.md              ← Canonical VC roster (15 firms), investor-speakers, matchmaking track, funding figures
 │
 ├── organizers_team/
 │   ├── organizers_and_team.md                        ← Core team index (links to 12 core + 12 co-organizer profiles)
@@ -164,7 +167,8 @@ Tapan Patel, Co-Founder/CMO of Third Rock Techkno, sits on TEG's core organizing
 |---|---|
 | **General event overview / pitch** | `event_overview/event_info.md` + `faq/faq_event.md` |
 | **Deciding whether/how to exhibit** | `exhibitors/exhibitors_directory.md` + `registration/registration_and_passes.md` |
-| **Sponsorship decision** | `sponsors_partners/sponsors_and_partners.md` |
+| **Sponsorship decision** | `sponsors_partners/sponsors_and_partners.md` + `pricing/pricing_and_packages.md` |
+| **VC / investor / fundraising angle** | `venture_capital/venture_capital_and_investors.md` (+ `related_events/related_events.md` for matchmaking mechanics) |
 | **Who's involved / relationship mapping** | `organizers_team/organizers_and_team.md` (+ individual profile files for depth on one person) |
 | **Planning travel / logistics** | `venue_logistics/venue_and_logistics.md` |
 | **Understanding speaker caliber / past programming** | `speakers/speakers_and_agenda.md` (+ `speakers/individuals/` for depth on one speaker) + `past_editions/past_editions_history.md` |

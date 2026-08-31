@@ -33,13 +33,15 @@ Unlike a company knowledge base, an upcoming *event's* details change frequently
 | Speakers, keynotes, session schedule | `knowledge_base/speakers/speakers_and_agenda.md` |
 | Tickets, passes, how to register, pricing | `knowledge_base/registration/registration_and_passes.md` |
 | Sponsorship tiers, sponsor benefits, named sponsors | `knowledge_base/sponsors_partners/sponsors_and_partners.md` |
+| VCs / investors, investor-founder matchmaking, funding track record | `knowledge_base/venture_capital/venture_capital_and_investors.md` |
 | Who organizes TEG, core team, TRT connection | `knowledge_base/organizers_team/organizers_and_team.md` |
 | Individual core organizer profile (Taral Shah, Harshal Shah, etc.) | `knowledge_base/organizers_team/<name>.md` (12 core organizers) |
 | Individual co-organizer profile (Jigar Joshi, Manthan Bhavsar, etc.) | `knowledge_base/organizers_team/<name>.md` (12 co-organizers) |
 | Individual TEG 2024 speaker profile (Sonu Sharma, Savjibhai, etc.) | `knowledge_base/speakers/individuals/<name>.md` |
 | Individual Retreat 2025 / Ignite 2026 speaker profile | `knowledge_base/speakers/individuals/<name>.md` |
 | TEG 2024 history, testimonials, growth trajectory | `knowledge_base/past_editions/past_editions_history.md` |
-| TEG Business Retreat 2025, TEG Ignite 2026, VC matchmaking | `knowledge_base/related_events/related_events.md` |
+| TEG Business Retreat 2025, TEG Ignite 2026 (agendas, formats) | `knowledge_base/related_events/related_events.md` |
+| VC / investor roster, matchmaking mechanics, funding figures | `knowledge_base/venture_capital/venture_capital_and_investors.md` (canonical) |
 | Website, social channels, media/PR, vendors | `knowledge_base/digital_presence/digital_channels.md` |
 | General FAQ | `knowledge_base/faq/faq_event.md` |
 | Persona-based "why exhibit" analysis, lead qualification questions | `knowledge_base/exhibitor_benefits_analysis.md` |
@@ -100,6 +102,7 @@ Keep it short. One line max.
 | "Tell me about [speaker name]" / "Who is [speaker]?" | `speakers/individuals/<first_name>_<last_name>.md` |
 | "What happened at TEG 2024?" | `past_editions/past_editions_history.md` |
 | "What is TEG Retreat / TEG Ignite?" | `related_events/related_events.md` |
+| "Which VCs / investors are involved with TEG?" | `venture_capital/venture_capital_and_investors.md` |
 | "What's TEG's website / social media?" | `digital_presence/digital_channels.md` |
 | "Is TEG only for IT companies?" | `faq/faq_event.md` |
 

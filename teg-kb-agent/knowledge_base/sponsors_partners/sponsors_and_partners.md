@@ -83,9 +83,9 @@ GESIA, RITA, GIHED, TiE, KCCI, ASSOCHAM, Rajkot Engineering Association, eChai, 
 
 ---
 
-## TEG Business Retreat 2025 — Sponsors & VCs (for pattern/reference)
+## TEG Business Retreat 2025 — Sponsors (for pattern/reference)
 
-**Confirmed via sponsors brochure ("Our Proud Sponsors — Year 2025" + "Our Associated Venture Capitalists — Year 2025" pages):**
+**Confirmed via sponsors brochure ("Our Proud Sponsors — Year 2025" page):**
 - **Title Sponsor – 2025:** Simprosys (₹5L+Tax)
 - **Lanyard Partner:** BizCompass (₹3L+GST)
 - **Startup & Product Ecosystem Partner:** MPCS
@@ -93,10 +93,10 @@ GESIA, RITA, GIHED, TiE, KCCI, ASSOCHAM, Rajkot Engineering Association, eChai, 
 - **Networking Sponsors (brochure row 3):** DevOps Techlab, Weam, Kyara Consulting, Myco, Rework Zone — plus Wream (per prior KB; brochure logo reads "Weam", likely the same company — flag if asked)
 - **POD Sponsor / Event Tech Partner:** Xpro.ai (also builds the TEG ticketing platform; brochure logo reads "XPRO.AI")
 - **Community Partners:** AIMED, eChai, Ahmedabad Fostering, Draper (Draper University network), TEC, RITA, AIC-GUSEC, GUSEC, Ahmedabad University, GESIA IT Association, BESIA
-- **VCs present (brochure, Year 2025):** Katva, Unicorn India Ventures, Enrission India Capital, GVFL, Morphosis Venture Advisors, GrowthCap.vc, Vyoma Capital, BM Capital, Warmup Ventures, BLnC, IIMA Ventures, Ashika, Caret Capital, Seafund, DevX
-  *(Prior KB spelled the first as "Ekatva"; brochure logo reads "Katva" — treat as the same VC pending confirmation. "Blinc" / "BLnC" and "Growth Capital" / "GrowthCap.vc" are the same, matched to brochure spelling.)*
 
 Retreat 2025 sponsorship packages ranged from ₹75,000 (Pod Table, 5 available) up to ₹5,00,000+Tax (Title Sponsor, 1 available) — see the retreat page for the full benefits matrix.
+
+> **Venture Capitalists are covered separately.** VCs are not a sponsorship tier — they participate through TEG's investor–founder matchmaking track (mainly the Retreat and Ignite). The full VC roster (15 firms, brochure-confirmed), individual investor-speakers, and the funding track record are in **`venture_capital/venture_capital_and_investors.md`**.
 
 ---
 
@@ -117,4 +117,4 @@ The brochure's "The TEG Impact (Year 2024)" page carries 4 attributed testimonia
 - **Kanaksinh Rana** (Director, GTPL)
 
 ---
-*Source: techexpogujarat.com (become-a-sponsor, tech-expo-2024, retreat-2025); teg-sponsors-brochure.pdf and teg-cost.pdf (confirmed 2026 sponsorship pricing, 2024/2025 sponsor & VC logos, associate partners, testimonials)*
+*Source: techexpogujarat.com (become-a-sponsor, tech-expo-2024, retreat-2025); teg-sponsors-brochure.pdf and teg-cost.pdf (confirmed 2026 sponsorship pricing, 2024/2025 sponsor logos, associate partners, testimonials). VC roster moved to `venture_capital/venture_capital_and_investors.md`.*
