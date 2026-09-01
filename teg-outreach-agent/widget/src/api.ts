@@ -15,10 +15,24 @@ export interface InquiryResponse {
 }
 
 export type ChatEvent = {
-  type: "opening" | "reply" | "handoff";
+  type:
+    | "opening"
+    | "reply"
+    | "handoff"
+    | "proposal_pending"
+    | "attachment"
+    | "proposal_failed";
   text?: string;
   cta_status?: string;
   should_handoff?: boolean;
+  company?: string;
+  kind?: string;
+  proposal_id?: string;
+  version?: number;
+  filename?: string;
+  bytes?: number;
+  pdf_url?: string;
+  png_url?: string;
 };
 
 export async function submitInquiry(

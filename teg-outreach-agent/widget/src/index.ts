@@ -30,6 +30,12 @@ export function mount(
         if (ev.cta_status) chat.setStatus(`Status: ${ev.cta_status}`);
       } else if (ev.type === "handoff") {
         chat.setStatus("Our team will follow up with you.");
+      } else if (ev.type === "proposal_pending") {
+        chat.showProposalPending((ev as { company?: string }).company);
+      } else if (ev.type === "attachment") {
+        chat.showAttachment(ev as never);
+      } else if (ev.type === "proposal_failed") {
+        chat.showProposalFailed();
       }
     });
     chat.onSend((text) => {

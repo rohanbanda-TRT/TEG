@@ -17,6 +17,10 @@ class El {
     this.children.push(c);
     return c;
   }
+  removeChild(c: El) {
+    this.children = this.children.filter((x) => x !== c);
+    return c;
+  }
   setAttribute(k: string, v: string) {
     this.attrs[k] = v;
   }
@@ -97,4 +101,44 @@ test("renderChat onSend fires with input value", () => {
   root.querySelector("[name=chat_input]").value = "how much is a stall?";
   root.querySelector("[name=chat_send]").fire("click");
   assert.equal(sent, "how much is a stall?");
+});
+
+import { humanSize } from "./ui.ts";
+
+test("humanSize formats", () => {
+  assert.equal(humanSize(900), "900 B");
+  assert.equal(humanSize(148213), "145 KB");
+});
+
+test("renderChat shows attachment card with links", () => {
+  const root = new El("div") as any;
+  const chat = renderChat(root);
+  chat.showAttachment({
+    kind: "proposal",
+    proposal_id: "p1",
+    version: 2,
+    filename: "TEG-2026-Proposal-Acme-v2.pdf",
+    bytes: 148213,
+    pdf_url: "/proposals/p1.pdf",
+    png_url: "/proposals/p1/preview.png",
+  });
+  assert.ok(JSON.stringify(root).includes("/proposals/p1.pdf"));
+  assert.ok(JSON.stringify(root).includes("data-attachment"));
+});
+
+test("renderChat pending then attachment replaces skeleton", () => {
+  const root = new El("div") as any;
+  const chat = renderChat(root);
+  chat.showProposalPending("Acme");
+  chat.showAttachment({
+    kind: "proposal",
+    proposal_id: "p1",
+    version: 1,
+    filename: "f.pdf",
+    bytes: 1000,
+    pdf_url: "/proposals/p1.pdf",
+    png_url: "/x.png",
+  });
+  const cards = JSON.stringify(root).match(/data-attachment/g) || [];
+  assert.equal(cards.length, 1);
 });
