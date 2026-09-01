@@ -3,9 +3,9 @@
 > **Event:** Tech Expo Gujarat 2026 (TEG 2026)
 > **Organizer:** AIMED TECH EXPO GUJARAT LLP
 > **Website:** https://www.techexpogujarat.com/
-> **Compiled:** August 2026 (re-verified August 27, 2026; TEG 2026 pricing + brochure exhibitor pass August 31, 2026)
+> **Compiled:** August 2026 (re-verified August 27, 2026; TEG 2026 pricing + brochure exhibitor pass August 31, 2026; site re-check September 1, 2026 — early-bird offer changed 60% → 50%, no other factual changes)
 > **Sources:** Full site crawl of techexpogujarat.com + events.techexpogujarat.com + linked third-party exhibitor/press pages + official `teg-cost.pdf` and `teg-sponsors-brochure.pdf` collateral
-> **Total files:** 214 (14 topic files [incl. new `pricing/pricing_and_packages.md`, `testimonials/exhibitor_testimonials.md`, `venture_capital/venture_capital_and_investors.md`] + 5 root-level files [`exhibitor_benefits_analysis.md`, `inquiry_page_content.md`, `data_schema.md`, `sector_wise_participation.md`, `outreach_config.md`] + 35 individual speaker profiles + 26 organizers_team files [2 index/summary + 24 individual organizer/co-organizer profiles] + 134 exhibitors/companies files [133 individual company profiles + companies_index.md] + INDEX.md)
+> **Total files:** 215 (14 topic files [incl. new `pricing/pricing_and_packages.md`, `testimonials/exhibitor_testimonials.md`, `venture_capital/venture_capital_and_investors.md`] + 6 root-level files [`exhibitor_benefits_analysis.md`, `inquiry_page_content.md`, `data_schema.md`, `sector_wise_participation.md`, `outreach_config.md`, `event_goals_and_problem.md`] + 35 individual speaker profiles + 26 organizers_team files [2 index/summary + 24 individual organizer/co-organizer profiles] + 134 exhibitors/companies files [133 individual company profiles + companies_index.md] + INDEX.md)
 
 ---
 
@@ -19,6 +19,7 @@ teg_knowledge_base/
 ├── inquiry_page_content.md                           ← Draft inquiry-page copy (hero, CTAs, form fields) — not site-sourced
 ├── data_schema.md                                    ← Proposed internal data-fields schema (event/exhibitor/speaker/ticket/lead records)
 ├── sector_wise_participation.md                      ← Company-level sector breakdown (TEG 2024/2026), confidence-tiered
+├── event_goals_and_problem.md                        ← What TEG is FOR: goals, problem solved, mechanism, evidence, per-persona pain library
 │
 ├── event_overview/
 │   └── event_info.md                                 ← Identity, dates, scale, vision/mission, industries
@@ -167,6 +168,7 @@ Tapan Patel, Co-Founder/CMO of Third Rock Techkno, sits on TEG's core organizing
 |---|---|
 | **General event overview / pitch** | `event_overview/event_info.md` + `faq/faq_event.md` |
 | **Deciding whether/how to exhibit** | `exhibitors/exhibitors_directory.md` + `registration/registration_and_passes.md` |
+| **Personalized pitch / proposal / "why should we participate"** | `event_goals_and_problem.md` + `exhibitor_benefits_analysis.md` |
 | **Sponsorship decision** | `sponsors_partners/sponsors_and_partners.md` + `pricing/pricing_and_packages.md` |
 | **VC / investor / fundraising angle** | `venture_capital/venture_capital_and_investors.md` (+ `related_events/related_events.md` for matchmaking mechanics) |
 | **Who's involved / relationship mapping** | `organizers_team/organizers_and_team.md` (+ individual profile files for depth on one person) |
@@ -196,5 +198,5 @@ Tapan Patel, Co-Founder/CMO of Third Rock Techkno, sits on TEG's core organizing
 - **Verification pass note (August 27, 2026):** all four external claims above (Perigeon, News Monks, EFY Expo, TECH VAPI) were independently re-fetched from their source URLs rather than trusted from the prior pass's summary; all four checked out. The raw 74-filename logo list previously added to `exhibitors_directory.md` was trimmed to a one-line summary (no informational content was lost — the filenames carried no company-identifying data).
 
 ---
-*Last updated: August 31, 2026 (August 31 pass: added 48 new TEG 2026 brochure exhibitor company profiles + annotated 18 existing profiles; earlier content re-verified August 27, 2026)*
+*Last updated: September 1, 2026 (Sept 1 pass: added `event_goals_and_problem.md` — TEG's goals, the problem it solves, and a per-persona pain-point library; also site re-crawled — early-bird ticket offer reduced 60% → 50% and the "2,600+ sold" figure removed, updated in `registration/registration_and_passes.md`, `event_overview/event_info.md`, `pricing/pricing_and_packages.md`. The /industries/ page still lists the same 18 industries as icons only — no per-sector integration content added. August 31 pass: added 48 new TEG 2026 brochure exhibitor company profiles + annotated 18 existing profiles; earlier content re-verified August 27, 2026)*
 *Sources: teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page); techexpogujarat.com full crawl (homepage, about-us, our-team, contactus, become-an-exhibitor, become-a-sponsor, tech-expo-2024, retreat-2025, teg-ignite-2026, product-owners) + events.techexpogujarat.com + third-party exhibitor/press pages (eternalsoftsolutions.com, technobrains.io, perigeon.com) + press (newsmonks.com) + app stores (Google Play, Apple App Store) + broad web search for exhibitor/speaker/sponsor/accommodation announcements*

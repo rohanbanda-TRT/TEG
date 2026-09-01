@@ -48,6 +48,7 @@ Unlike a company knowledge base, an upcoming *event's* details change frequently
 | Draft inquiry-page copy (hero, CTAs, form fields) | `knowledge_base/inquiry_page_content.md` |
 | Internal data-fields schema (event/exhibitor/speaker/ticket/lead records) | `knowledge_base/data_schema.md` |
 | Sector-wise company/exhibitor breakdown (AI, Cloud, Fintech, etc.) | `knowledge_base/sector_wise_participation.md` |
+| Event goals, the problem TEG solves, per-persona pain points | `knowledge_base/event_goals_and_problem.md` |
 | Confirmed stall/sponsorship pricing, add-on prices, payment plan, refund policy | `knowledge_base/pricing/pricing_and_packages.md` |
 | Attributed TEG testimonials (speaker/sponsor voices) | `knowledge_base/testimonials/exhibitor_testimonials.md` |
 
