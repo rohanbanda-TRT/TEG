@@ -71,6 +71,7 @@ class PersuasionTurn(BaseModel):
     updated_state: dict = Field(default_factory=dict)
     guardrail_flags: list[str] = Field(default_factory=list)
     persona: Persona
+    wants_proposal: bool = False
 
 
 class HandoffPacket(BaseModel):

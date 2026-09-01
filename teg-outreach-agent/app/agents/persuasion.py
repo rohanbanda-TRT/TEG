@@ -108,6 +108,7 @@ class _Analysis(BaseModel):
     cta_detail: dict = {}
     should_handoff: bool = False
     learned_facts: dict = {}
+    wants_proposal: bool = False
 
 
 class PersuasionAgent(Agent):
@@ -216,7 +217,10 @@ class PersuasionAgent(Agent):
             f"\nTarget CTA: {state.get('target_cta')}. Current cta_status: {state.get('cta_status')}. "
             "Advance it naturally; set cta_status to 'completed' only if the prospect clearly commits. "
             "Set should_handoff true if they say they're just researching or repeatedly deflect. "
-            "Return learned_facts for anything new they told you."
+            "Return learned_facts for anything new they told you. "
+            "If the prospect asks for a proposal, a PDF, or 'something in writing', or accepts an "
+            "offer of one, set wants_proposal=true. You MAY offer a tailored proposal once when "
+            "they show real buying interest (asked about pricing, leads, ROI, or 'how it helps')."
         )
         convo = "\n".join(f"{m['role']}: {m['content']}" for m in history[-8:])
         user = (
@@ -263,4 +267,5 @@ class PersuasionAgent(Agent):
             updated_state=state,
             guardrail_flags=flags,
             persona=persona,
+            wants_proposal=analysis.wants_proposal,
         )
