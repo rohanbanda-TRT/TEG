@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     data_retention_days: int = 180
     linkedin_provider: str = "none"
 
+    # --- proposal / PDF ---
+    proposal_model: str = ""  # empty -> use llm_model_main
+    proposal_soft_timeout_s: int = 8
+    proposal_hard_timeout_s: int = 20
+    proposal_dir: str = "./proposals"
+    email_enabled: bool = False
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_pass: str = ""
+    smtp_from: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:
