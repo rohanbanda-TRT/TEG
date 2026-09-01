@@ -28,6 +28,12 @@ class Settings(BaseSettings):
     log_verbose: bool = False        # True -> DEBUG + include prompt/response bodies
     log_body_chars: int = 800        # truncation for logged prompt/response bodies
 
+    # --- KB explorer ---
+    kb_explore_timeout_s: int = 30    # wall-clock per explore() call
+    kb_explore_max_steps: int = 8     # model turns before a forced answer
+    kb_read_file_max_bytes: int = 6144  # read_file page size
+    kb_grep_max_matches: int = 30     # grep result cap
+
     # --- proposal / PDF ---
     proposal_model: str = ""  # empty -> use llm_model_main
     proposal_soft_timeout_s: int = 12
