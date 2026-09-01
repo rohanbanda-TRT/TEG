@@ -22,6 +22,8 @@
 ## What it is
 TEG 2026 is a 3-day AI and technology exposition in Ahmedabad that brings together technology companies, AI solution providers, SMEs & MSMEs, investors, startups and industry leaders under one roof. It is positioned as Gujarat's biggest tech expo, aiming to establish Gujarat as India's premier technology and innovation hub. It's explicitly not IT-only — it's designed for the state's broader business ecosystem (manufacturing, healthcare, agriculture, retail, finance, education, etc.) to discover and adopt AI/tech solutions.
 
+> For TEG's stated goals, the problem it was created to solve, the mechanism by which it delivers value, and a per-persona pain-point library, see `event_goals_and_problem.md`.
+
 ## Dates & scale
 | Metric | TEG 2026 (this edition) | TEG 2024 (first edition) |
 |---|---|---|
