@@ -33,8 +33,12 @@ def get_llm() -> LLMClient:
     provider = get_settings().llm_provider
     if provider == "gemini":
         from app.llm.gemini_client import GeminiClient
-        return GeminiClient()
-    if provider == "anthropic":
+        inner: LLMClient = GeminiClient()
+    elif provider == "anthropic":
         from app.llm.anthropic_client import AnthropicClient
-        return AnthropicClient()
-    raise ValueError(f"unknown llm_provider: {provider!r}")
+        inner = AnthropicClient()
+    else:
+        raise ValueError(f"unknown llm_provider: {provider!r}")
+
+    from app.llm.logging_client import LoggingLLMClient
+    return LoggingLLMClient(inner)

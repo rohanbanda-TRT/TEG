@@ -7,6 +7,9 @@ from pydantic import BaseModel
 from app.agents.base import Agent
 from app.domain.schemas import IntakePayload, IntakeResult, IntentHint
 from app.kb.loader import _token_set_ratio, get_kb
+from app.obs import get_logger
+
+_log = get_logger("agent.analysis")
 
 _HONORIFICS = re.compile(r"^\s*(mr|mrs|ms|dr|shri|smt|prof)\.?\s+", re.I)
 
@@ -93,6 +96,10 @@ class AnalysisAgent(Agent):
         explicit_intent = _guess_intent(payload)
         intent = explicit_intent if explicit_intent != "unknown" else canon.intent_hint
 
+        _log.info(
+            "intake  person=%r  company=%r -> %r  intent=%s  consent=%s  provided=%s",
+            person, raw_company, canonical, intent, consent, provided or "-",
+        )
         return IntakeResult(
             person_name=person,
             company_name_raw=raw_company,

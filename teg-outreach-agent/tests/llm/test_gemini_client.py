@@ -47,4 +47,7 @@ async def test_generate_structured_parses_json(gemini_env):
 def test_get_llm_selects_gemini(gemini_env):
     from app.llm.base import get_llm
     from app.llm.gemini_client import GeminiClient
-    assert isinstance(get_llm(), GeminiClient)
+    from app.llm.logging_client import LoggingLLMClient
+    client = get_llm()
+    assert isinstance(client, LoggingLLMClient)
+    assert isinstance(client._inner, GeminiClient)

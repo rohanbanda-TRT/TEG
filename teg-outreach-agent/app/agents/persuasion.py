@@ -15,8 +15,11 @@ from app.domain.schemas import (
     ResearchDossier,
 )
 from app.kb.loader import get_kb  # noqa: F401  (kept for downstream use / test patching)
+from app.obs import get_logger
 from config.outreach_rules import load_rules
 from config.settings import get_settings
+
+_log = get_logger("agent.persuasion")
 
 _PERSONA_VALUES: tuple[Persona, ...] = get_args(Persona)
 
@@ -78,9 +81,12 @@ async def classify_persona(
             schema=_PersonaChoice,
             model=model,
         )
-    except Exception:  # noqa: BLE001 — classification must never break the pipeline
+    except Exception as exc:  # noqa: BLE001 — classification must never break the pipeline
+        _log.warning("persona classification failed (%s) -> visitor", exc)
         return "visitor"
-    return choice.persona if choice.persona in _PERSONA_VALUES else "visitor"
+    persona = choice.persona if choice.persona in _PERSONA_VALUES else "visitor"
+    _log.info("persona=%s  reason=%s", persona, choice.reason)
+    return persona
 
 
 def target_cta_for(persona: Persona) -> str:
@@ -142,11 +148,19 @@ class PersuasionAgent(Agent):
         )
 
     async def init(self, intake: IntakeResult, dossier: ResearchDossier) -> PersuasionInit:
-        # Identity unresolved -> don't guess a persona yet; ask a qualifying question.
-        # A provisional persona is still needed for tone/CTA on that first message.
-        if dossier.ask_prospect:
+        ask = list(dossier.ask_prospect or [])
+        company_known = "company_description" not in ask
+        _log.info(
+            "init  ask_prospect=%s  company_known=%s  relationship=%s  sector=%r",
+            ask or "none", company_known, dossier.relationship, dossier.sector,
+        )
+
+        # Company genuinely not identified (KB miss + web miss) -> we must ask about
+        # the company. Only reach here when research could not describe the company.
+        if ask and not company_known:
             persona = "visitor"
             cta = target_cta_for(persona)
+            _log.info("init path=ask-company  (company unresolved after KB + web)")
             q = await self.llm.generate(
                 system=(
                     "You are a TEG 2026 assistant. The prospect just submitted an inquiry but we "
@@ -162,14 +176,25 @@ class PersuasionAgent(Agent):
 
         persona = await classify_persona(self.llm, intake, dossier, model=self._fast_model)
         cta = target_cta_for(persona)
+        _log.info("init path=personalised  persona=%s  cta=%s  role_known=%s",
+                  persona, cta, "role" not in ask)
 
         peers = dossier.peer_companies[:3]
+        role_line = (
+            "We already know their company; we do NOT know this person's role. "
+            "Reference one specific, accurate fact about their company (from Company facts), "
+            "then end by asking what their role there is — do NOT ask what the company does."
+            if "role" in ask else
+            "Address them by their role where natural and reference one specific company fact."
+        )
         user = (
             f"Person: {intake.person_name}\nCompany: {intake.company_name_canonical}\n"
             f"Sector: {dossier.sector}\nRelationship: {dossier.relationship}\n"
             f"Company facts: {dossier.company_profile}\n"
+            f"Person facts: {dossier.person_profile}\n"
             f"Peer companies you may name (only these): {peers}\n"
             f"Their stated intent: {intake.intent_hint}\n"
+            f"{role_line}\n"
             "Write the opening message."
         )
         system = self._system(persona, dossier)
@@ -193,6 +218,8 @@ class PersuasionAgent(Agent):
         history: list[dict], prospect_message: str,
     ) -> PersuasionTurn:
         persona: Persona = state.get("persona", "visitor")
+        _log.info("respond  persona=%s  cta_status=%s  history=%d turns  msg=%r",
+                  persona, state.get("cta_status"), len(history), prospect_message[:120])
 
         # one-time persona re-classification for the unresolved-identity case:
         # once the prospect answers our qualifying question, classify from the full
@@ -245,7 +272,13 @@ class PersuasionAgent(Agent):
             analysis.reply = SAFE_TEMPLATES[persona]
             flags = [x.code for x in v]
             state["needs_review"] = True
+            _log.warning("guardrails forced safe template  flags=%s", flags)
 
+        _log.info(
+            "turn done  cta=%s/%s  handoff=%s  wants_proposal=%s  learned=%s",
+            analysis.cta_type, analysis.cta_status, analysis.should_handoff,
+            analysis.wants_proposal, list(analysis.learned_facts) or "-",
+        )
         turn_count = sum(1 for m in history if m.get("role") == "agent")
         should_handoff = analysis.should_handoff or (
             turn_count >= 6 and analysis.cta_status in ("none", "offered")

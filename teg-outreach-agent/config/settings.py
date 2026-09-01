@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     data_retention_days: int = 180
     linkedin_provider: str = "none"
 
+    # --- observability ---
+    log_level: str = "INFO"          # DEBUG shows per-step detail
+    log_verbose: bool = False        # True -> DEBUG + include prompt/response bodies
+    log_body_chars: int = 800        # truncation for logged prompt/response bodies
+
     # --- proposal / PDF ---
     proposal_model: str = ""  # empty -> use llm_model_main
     proposal_soft_timeout_s: int = 12

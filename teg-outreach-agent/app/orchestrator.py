@@ -20,6 +20,7 @@ from app.domain.schemas import (
     ResearchDossier,
 )
 from app.llm.base import get_llm
+from app.obs import get_logger
 from app.proposal.email import send_proposal_email
 from app.proposal.render import render_first_page_png, render_html, render_pdf
 from app.store.db import SessionLocal
@@ -32,6 +33,8 @@ from app.store.repositories import (
     SessionRepo,
 )
 from config.settings import get_settings
+
+_log = get_logger("orchestrator")
 
 
 def _slug(s: str) -> str:
@@ -61,16 +64,22 @@ class Orchestrator:
 
     async def run_pipeline(self, payload: IntakePayload) -> PipelineResult:
         settings = get_settings()
+        _log.info("=== run_pipeline  person=%r  company=%r ===",
+                  payload.person_name, payload.company_name)
         intake = await self.analysis.run(payload)
 
         try:
             dossier = await asyncio.wait_for(
                 self.research.run(intake), timeout=settings.pipeline_hard_timeout_s,
             )
-        except (TimeoutError, asyncio.TimeoutError):
+        except TimeoutError:
+            _log.warning("research timed out after %ss -> ask_prospect fallback",
+                         settings.pipeline_hard_timeout_s)
             dossier = ResearchDossier(ask_prospect=["company_description", "role"])
 
         init = await self.persuasion.init(intake, dossier)
+        _log.info("=== pipeline done  persona=%s  opening=%r ===",
+                  init.persona, init.opening_message[:160])
 
         async with SessionLocal() as s:
             inq = await InquiryRepo(s).create(payload, intake)
@@ -147,9 +156,7 @@ class Orchestrator:
             dossier = DossierRepo.to_domain(drow)
             history = await MessageRepo(s).history(session_id)
 
-            if cs.cta_status == "completed":
-                outcome = "qualified"
-            elif cs.cta_status in ("in_progress", "offered") and (cs.cta_detail or {}).get("callback"):
+            if cs.cta_status == "completed" or cs.cta_status in ("in_progress", "offered") and (cs.cta_detail or {}).get("callback"):
                 outcome = "qualified"
             elif reason == "bounced" or cs.cta_status == "declined":
                 outcome = "lost"
@@ -207,6 +214,8 @@ class Orchestrator:
             learned = cs.learned_facts or {}
             version = await ProposalRepo(s).next_version(session_id)
 
+        _log.info("=== generate_proposal  session=%s  v%d  persona=%s ===",
+                  str(session_id)[:8], version, persona)
         proposal, flags = await asyncio.wait_for(
             self.proposal.build(
                 intake=intake, dossier=dossier, persona=persona, transcript=transcript,
@@ -215,6 +224,7 @@ class Orchestrator:
             timeout=settings.proposal_hard_timeout_s,
         )
         proposal.generated_on = datetime.now(UTC).date().isoformat()
+        _log.info("proposal built  flags=%s  rendering pdf/png", flags or "-")
 
         html = render_html(proposal)
         pdf = await asyncio.to_thread(render_pdf, html)

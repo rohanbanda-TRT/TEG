@@ -11,7 +11,10 @@ from app.domain.schemas import (
     ResearchDossier,
 )
 from app.kb.loader import get_kb
+from app.obs import get_logger
 from config.settings import get_settings
+
+_log = get_logger("agent.proposal")
 
 _PRICING_BY_PERSONA: dict[Persona, ProposalPackage] = {
     "it_tech_service": ProposalPackage(
@@ -111,6 +114,11 @@ class ProposalAgent(Agent):
             "Produce the Proposal."
         )
 
+        _log.info(
+            "build  persona=%s  company=%r  sector=%r  peers=%d  base_pains=%d  testimonials=%d",
+            persona, intake.company_name_canonical, dossier.sector, len(peers),
+            len(base_pains.pains) if base_pains else 0, len(testimonials),
+        )
         proposal = await self.llm.generate_structured(
             system=system, messages=[{"role": "user", "content": user}],
             schema=Proposal, model=self._model,
@@ -138,6 +146,7 @@ class ProposalAgent(Agent):
         violations = all_violations(proposal)
         if violations:
             codes = sorted({v.code for _, v in violations})
+            _log.warning("proposal draft violated %s -> regenerating once", codes)
             proposal = await self.llm.generate_structured(
                 system=system + f"\nYour previous draft violated: {codes}. Fix every one.",
                 messages=[{"role": "user", "content": user}],
@@ -183,4 +192,6 @@ class ProposalAgent(Agent):
         proposal.peer_companies = [p for p in proposal.peer_companies if p in peers][:5] or peers[:3]
         if not proposal.contact:
             proposal.contact = "info@techexpogujarat.com · +91 98989 23712"
+        _log.info("build done  package=%r  pains=%d  flags=%s",
+                  proposal.recommended_package.name, len(proposal.pains), flags or "-")
         return proposal, flags

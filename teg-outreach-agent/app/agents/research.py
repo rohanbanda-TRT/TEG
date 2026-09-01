@@ -7,6 +7,9 @@ from pydantic import BaseModel
 from app.agents.base import Agent
 from app.domain.schemas import IntakeResult, ResearchDossier, SourceRef
 from app.kb.loader import get_kb
+from app.obs import get_logger
+
+_log = get_logger("agent.research")
 from app.research.kb_retriever import KBRetriever
 from app.research.linkedin import LinkedInStub
 from app.research.page_scraper import PageScraper
@@ -55,6 +58,9 @@ class ResearchAgent(Agent):
     async def run(self, intake: IntakeResult) -> ResearchDossier:
         s = get_settings()
         budget = _Budget(s.research_max_searches_per_track, s.research_max_scrapes)
+        _log.info("research start  company=%r  person=%r  (web=%s)",
+                  intake.company_name_canonical, intake.person_name,
+                  "on" if self._web is not None else "off")
 
         company_task = self._track(
             "company", intake.company_name_canonical, intake.person_name, _COMPANY_WANT, budget,
@@ -76,6 +82,7 @@ class ResearchAgent(Agent):
         synth = _Synthesis()
         llm_calls = 0
         if raw_ctx.strip():
+            _log.info("synthesising %d chars of web/scrape text into firmographic facts", len(raw_ctx))
             synth = await self.llm.generate_structured(
                 system=(
                     "Extract firmographic and role facts from research text. "
@@ -134,6 +141,16 @@ class ResearchAgent(Agent):
         if p_id_conf < 0.5:
             ask_prospect.append("role")
 
+        _log.info(
+            "research done  relationship=%s  sector=%r  peers=%d  ask_prospect=%s  "
+            "company_id_conf=%.2f  person_id_conf=%.2f  cost=%s",
+            relationship, sector, len(peers), ask_prospect or "none",
+            c_id_conf, p_id_conf,
+            {"web": budget.web_calls, "scrape": budget.scrape_calls, "llm": llm_calls},
+        )
+        _log.debug("   company_profile=%s", {k: v for k, v in company_profile.items() if v})
+        _log.debug("   person_profile=%s", {k: v for k, v in person_profile.items() if v})
+
         return ResearchDossier(
             company_profile={k: v for k, v in company_profile.items() if v is not None},
             person_profile={k: v for k, v in person_profile.items() if v is not None},
@@ -166,25 +183,33 @@ class ResearchAgent(Agent):
             id_conf = max(id_conf, kb_res.confidence.get(id_field, 0.0), kb_res.confidence.get("role", 0.0))
             for f in kb_res.fields:
                 sources.append(SourceRef(field=f, url=None, tool="kb", confidence=kb_res.confidence.get(f, 0.0)))
+        _log.info("[%s] KB %s  id_conf=%.2f  fields=%s", track,
+                  "hit" if kb_res.available else "miss", id_conf, list(kb_res.fields.keys()) or "-")
 
         need_web = (not kb_res.available) or id_conf < self._auto or any(w not in fields for w in ("sector", "role", "designation"))
         web_left = budget.web_left_company if track == "company" else budget.web_left_person
         if need_web and self._web is not None and web_left > 0:
+            _log.info("[%s] web search  subject=%r  context=%r", track, subject, context)
             res = await self._web.lookup(ResearchQuery(track=track, subject=subject, context=context, want=want))
             budget.web_calls += 1
             if track == "company":
                 budget.web_left_company -= 1
             else:
                 budget.web_left_person -= 1
+            _log.info("[%s] web %s  url=%s  fields=%s", track,
+                      "hit" if res.available else "miss", res.source_url or "-",
+                      list(res.fields.keys()) or "-")
             if res.available:
                 fields.update(res.fields)
                 conf.update({k: max(conf.get(k, 0.0), v) for k, v in res.confidence.items()})
                 for f in res.fields:
                     sources.append(SourceRef(field=f, url=res.source_url, tool="web", confidence=res.confidence.get(f, 0.0)))
-                # id_conf is not raised by web for company identity (weak signal), but a hit means "found something"
-                id_conf = max(id_conf, 0.5 if res.fields.get("web_context") else id_conf)
+                # a web hit that returned context is a real "found something" signal
+                if res.fields.get("web_context"):
+                    id_conf = max(id_conf, 0.6)
                 # try a scrape on the surfaced url
                 if self._scraper is not None and res.source_url and budget.scrapes_left > 0:
+                    _log.info("[%s] scrape  url=%s", track, res.source_url)
                     sc = await self._scraper.lookup(ResearchQuery(track=track, subject=res.source_url, context=context, want=["page_text"]))
                     budget.scrape_calls += 1
                     budget.scrapes_left -= 1
