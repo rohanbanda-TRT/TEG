@@ -8,8 +8,12 @@ Usage (from teg-outreach-agent/):
 
 You'll be asked for a name, a company, and an optional message. The pipeline
 runs, the agent opens the chat, and you type replies. Commands during chat:
-    /end     end the session (writes outcome + handoff packet)
-    /quit    exit without ending
+    /proposal  force-generate a personalized proposal PDF now
+    /end       end the session (writes outcome + handoff packet)
+    /quit      exit without ending
+
+(The agent also generates a proposal on its own if you ask for one in chat —
+ e.g. "can you send me a proposal / something in writing / a PDF?")
 """
 import asyncio
 import os
@@ -20,7 +24,6 @@ from app.domain.schemas import IntakePayload
 from app.orchestrator import Orchestrator
 from app.store.db import SessionLocal
 from app.store.repositories import SessionRepo
-
 
 C_AGENT = "\033[36m"
 C_YOU = "\033[33m"
@@ -70,14 +73,38 @@ async def main() -> None:
                 print(f"{C_SYS}draft:   {packet.suggested_followup_message}{C_OFF}")
                 print(f"{C_SYS}confidence: {packet.prospect_confidence}{C_OFF}")
             return
+        if msg == "/proposal":
+            print(f"{C_SYS}generating a proposal … (real Gemini + WeasyPrint){C_OFF}")
+            card = await orch.generate_proposal(res.session_id)
+            print(f"{C_SYS}--- PROPOSAL v{card.version} ---{C_OFF}")
+            print(f"{C_SYS}file:  {card.filename}  ({card.bytes // 1024} KB){C_OFF}")
+            async with SessionLocal() as s:
+                from app.store.repositories import ProposalRepo
+                pr = (await ProposalRepo(s).list_for_session(res.session_id))[-1]
+            print(f"{C_SYS}pdf:   {pr.pdf_path}{C_OFF}")
+            print(f"{C_SYS}png:   {pr.png_path}{C_OFF}")
+            print(f"{C_SYS}flags: {pr.guardrail_flags or 'none'}{C_OFF}")
+            print(f"{C_SYS}(open the PDF to see it — or via the server: GET {card.pdf_url}){C_OFF}\n")
+            continue
         if not msg:
             continue
 
         turn = await orch.run_turn(res.session_id, msg)
         flags = f"  ⚠ {turn.guardrail_flags}" if turn.guardrail_flags else ""
         handoff = "  → handoff suggested" if turn.should_handoff else ""
+        proposal = "  📄 wants proposal" if turn.wants_proposal else ""
         print(f"\n{C_AGENT}TEG ▸ {turn.reply_text}{C_OFF}")
-        print(f"{C_SYS}   [persona={turn.persona} cta={turn.cta_status}{flags}{handoff}]{C_OFF}\n")
+        print(f"{C_SYS}   [persona={turn.persona} cta={turn.cta_status}{flags}{handoff}{proposal}]{C_OFF}")
+        if turn.wants_proposal:
+            print(f"{C_SYS}generating a proposal …{C_OFF}")
+            card = await orch.generate_proposal(res.session_id)
+            async with SessionLocal() as s:
+                from app.store.repositories import ProposalRepo
+                pr = (await ProposalRepo(s).list_for_session(res.session_id))[-1]
+            print(f"{C_AGENT}TEG ▸ [proposal v{card.version}]  {card.filename}  "
+                  f"({card.bytes // 1024} KB){C_OFF}")
+            print(f"{C_SYS}   pdf: {pr.pdf_path}  |  flags: {pr.guardrail_flags or 'none'}{C_OFF}")
+        print()
 
 
 if __name__ == "__main__":

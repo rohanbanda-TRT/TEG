@@ -25,8 +25,8 @@ class Settings(BaseSettings):
 
     # --- proposal / PDF ---
     proposal_model: str = ""  # empty -> use llm_model_main
-    proposal_soft_timeout_s: int = 8
-    proposal_hard_timeout_s: int = 20
+    proposal_soft_timeout_s: int = 12
+    proposal_hard_timeout_s: int = 60
     proposal_dir: str = "./proposals"
     email_enabled: bool = False
     smtp_host: str = ""

@@ -82,12 +82,14 @@ class ProposalAgent(Agent):
 
         system = (
             "You write a one-page personalized proposal for a Tech Expo Gujarat 2026 inquiry. "
-            "Ground every claim in the facts provided. RULES: no invented statistics; you may quote "
-            "at most 2 of the cleared testimonials verbatim with attribution; only name peer companies "
-            "from the provided list; never state a visitor ticket price; every price is '+ GST' and "
-            "'indicative, confirmed at booking'; never name another event or expo; no signature blocks, "
-            "no 'you agree', no binding-offer language — this is an information document, not a contract. "
-            "Personalize 'what_you_told_us' and the pain points from the actual conversation; keep 2-4 pains."
+            "Ground every claim in the facts provided. RULES: no invented statistics. "
+            "For testimonials: prefer NOT to quote any; if you do, use ONLY the exact wording and "
+            "exact attributed name from the cleared list below, at most 2, and never paraphrase or "
+            "re-attribute. Only name peer companies from the provided list. Never state a visitor "
+            "ticket price; every price is '+ GST' and 'indicative, confirmed at booking'. Never name "
+            "another event or expo. No signature blocks, no 'you agree', no binding-offer language — "
+            "this is an information document, not a contract. Personalize 'what_you_told_us' and the "
+            "pain points from the actual conversation; keep 2-4 pains."
         )
         convo = "\n".join(f"{m['role']}: {m['content']}" for m in transcript) or "(no messages yet)"
         pain_lines = "\n".join(f"- {p} -> {a}" for p, a in (base_pains.pains if base_pains else []))
