@@ -6,27 +6,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from app.kb._names import _norm, _token_set_ratio  # noqa: F401  (re-exported for back-compat)
 from config.settings import get_settings
 
 _HEADER_RE = re.compile(r"^>\s*\*\*(?P<key>[^:*]+):\*\*\s*(?P<val>.+?)\s*$", re.M)
-
-
-def _norm(s: str) -> str:
-    s = s.lower()
-    s = re.sub(
-        r"\b(pvt\.?|private|ltd\.?|limited|llp|inc\.?|technologies|technolabs|solutions|software|it)\b",
-        " ",
-        s,
-    )
-    s = re.sub(r"[^a-z0-9 ]", " ", s)
-    return " ".join(s.split())
-
-
-def _token_set_ratio(a: str, b: str) -> float:
-    ta, tb = set(_norm(a).split()), set(_norm(b).split())
-    if not ta or not tb:
-        return 0.0
-    return len(ta & tb) / len(ta | tb)
 
 
 @dataclass

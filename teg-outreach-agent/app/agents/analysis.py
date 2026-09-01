@@ -6,7 +6,8 @@ from pydantic import BaseModel
 
 from app.agents.base import Agent
 from app.domain.schemas import IntakePayload, IntakeResult, IntentHint
-from app.kb.loader import _token_set_ratio, get_kb
+from app.kb._names import _token_set_ratio
+from app.kb.loader import get_kb
 from app.obs import get_logger
 
 _log = get_logger("agent.analysis")
