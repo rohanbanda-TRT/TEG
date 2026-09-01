@@ -6,7 +6,7 @@ from typing import Any
 from google import genai
 from google.genai import types
 
-from app.llm.base import BaseModelT, LLMClient, LLMMessage
+from app.llm.base import BaseModelT, LLMClient, LLMMessage, ToolTurn
 from config.settings import get_settings
 
 
@@ -147,3 +147,9 @@ class GeminiClient(LLMClient):
         if coerced:
             data = _coerce_back(data, coerced)
         return schema.model_validate(data)
+
+    async def generate_with_tools(
+        self, *, system: str, messages: list, tools: list[dict],
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.2,
+    ) -> ToolTurn:
+        raise NotImplementedError("implemented in Task 4")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from app.llm.base import BaseModelT, LLMClient, LLMMessage
+from app.llm.base import BaseModelT, LLMClient, LLMMessage, ToolTurn
 from app.obs import body, get_logger
 
 _log = get_logger("llm")
@@ -50,4 +50,26 @@ class LoggingLLMClient(LLMClient):
         )
         _log.info("← structured #%d  %.0fms  -> %s", call, (time.perf_counter() - t0) * 1000, schema.__name__)
         _log.debug("   #%d result: %s", call, body(out.model_dump_json()))
+        return out
+
+    async def generate_with_tools(
+        self, *, system: str, messages: list, tools: list[dict],
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.2,
+    ) -> ToolTurn:
+        self._n += 1
+        call = self._n
+        names = [t.get("name") for t in tools]
+        _log.info("→ tools #%d  model=%s  msgs=%d  tools=%s", call, model or "default",
+                  len(messages), names)
+        _log.debug("   #%d system: %s", call, body(system))
+        _log.debug("   #%d msgs:   %s", call, body(str(messages[-1]) if messages else ""))
+        t0 = time.perf_counter()
+        out = await self._inner.generate_with_tools(
+            system=system, messages=messages, tools=tools, model=model,
+            max_tokens=max_tokens, temperature=temperature,
+        )
+        _log.info("← tools #%d  %.0fms  tool_calls=%s  text=%d chars", call,
+                  (time.perf_counter() - t0) * 1000,
+                  [c.name for c in out.tool_calls], len(out.text))
+        _log.debug("   #%d out: %s", call, body(out.model_dump_json()))
         return out

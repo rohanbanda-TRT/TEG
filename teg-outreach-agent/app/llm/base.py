@@ -15,6 +15,25 @@ class LLMMessage(TypedDict):
     content: str
 
 
+class ToolResultMessage(TypedDict):
+    role: Literal["tool"]
+    tool_call_id: str
+    content: str
+
+
+class ToolCall(BaseModel):
+    id: str
+    name: str
+    args: dict = {}
+
+
+class ToolTurn(BaseModel):
+    """One model response in a tool-use loop: either tool calls, or a final text answer."""
+
+    tool_calls: list[ToolCall] = []
+    text: str = ""
+
+
 class LLMClient(ABC):
     @abstractmethod
     async def generate(
@@ -27,6 +46,13 @@ class LLMClient(ABC):
         self, *, system: str, messages: list[LLMMessage],
         schema: type[BaseModelT], model: str | None = None,
     ) -> BaseModelT: ...
+
+    @abstractmethod
+    async def generate_with_tools(
+        self, *, system: str, messages: list,
+        tools: list[dict], model: str | None = None,
+        max_tokens: int = 2048, temperature: float = 0.2,
+    ) -> ToolTurn: ...
 
 
 def get_llm() -> LLMClient:

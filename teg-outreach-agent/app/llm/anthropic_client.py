@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from anthropic import AsyncAnthropic
 
-from app.llm.base import BaseModelT, LLMClient, LLMMessage
+from app.llm.base import BaseModelT, LLMClient, LLMMessage, ToolTurn
 from config.settings import get_settings
 
 
@@ -46,3 +46,9 @@ class AnthropicClient(LLMClient):
             if block.type == "tool_use" and block.name == "emit":
                 return schema.model_validate(block.input)
         raise RuntimeError("model did not return the expected tool call")
+
+    async def generate_with_tools(
+        self, *, system: str, messages: list, tools: list[dict],
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.2,
+    ) -> ToolTurn:
+        raise NotImplementedError("AnthropicClient.generate_with_tools not implemented")

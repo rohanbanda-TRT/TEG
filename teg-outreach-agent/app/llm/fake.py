@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.llm.base import BaseModelT, LLMClient, LLMMessage
+from app.llm.base import BaseModelT, LLMClient, LLMMessage, ToolTurn
 
 
 class FakeLLMClient(LLMClient):
@@ -8,9 +8,11 @@ class FakeLLMClient(LLMClient):
         self,
         responses: list[str] | None = None,
         structured: list | None = None,
+        tool_turns: list[ToolTurn] | None = None,
     ) -> None:
         self._responses = list(responses or [])
         self._structured = list(structured or [])
+        self._tool_turns = list(tool_turns or [])
         self.calls: list[dict] = []
 
     async def generate(
@@ -35,3 +37,11 @@ class FakeLLMClient(LLMClient):
                 return self._structured.pop(i)
         # No exact match (e.g. a test queued only one type of stub) -> FIFO.
         return self._structured.pop(0)
+
+    async def generate_with_tools(
+        self, *, system: str, messages: list, tools: list[dict],
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.2,
+    ) -> ToolTurn:
+        self.calls.append({"kind": "tools", "system": system, "messages": messages})
+        assert self._tool_turns, "FakeLLMClient.generate_with_tools called with empty queue"
+        return self._tool_turns.pop(0)
