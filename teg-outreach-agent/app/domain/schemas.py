@@ -79,3 +79,43 @@ class HandoffPacket(BaseModel):
     suggested_followup_message: str
     prospect_confidence: Literal["high", "medium", "low"]
     key_facts: dict = Field(default_factory=dict)
+
+
+class ProposalPain(BaseModel):
+    pain: str
+    teg_answer: str
+
+
+class ProposalPackage(BaseModel):
+    name: str
+    price_line: str
+    includes: list[str] = Field(default_factory=list)
+    payment_plan: str
+
+
+class Proposal(BaseModel):
+    company: str
+    person: str
+    person_role: str | None = None
+    sector: str | None = None
+    persona: Persona
+    generated_on: str
+    session_ref: str
+    version: int
+    what_you_told_us: str
+    pains: list[ProposalPain] = Field(default_factory=list)
+    lead_generation: str
+    proof: list[str] = Field(default_factory=list)
+    recommended_package: ProposalPackage
+    peer_companies: list[str] = Field(default_factory=list)
+    next_steps: list[str] = Field(default_factory=list)
+    contact: str
+
+
+class ProposalCard(BaseModel):
+    proposal_id: str
+    version: int
+    filename: str
+    bytes: int
+    pdf_url: str
+    png_url: str
