@@ -23,6 +23,18 @@ _AWAITING = re.compile(
     r"(the ticket price is|tickets cost ₹|confirmed sponsors include|the 2026 sponsors are)", re.I
 )
 
+# Names of other Gujarat / India tech expos and generic competitor phrasing.
+_COMPETITOR = re.compile(
+    r"\b(EFY\s*Expo|Tech\s*Vapi|Vibrant\s*Gujarat|"
+    r"other\s+(?:expos?|events?|shows?)|compared\s+to\s+other|unlike\s+(?:other|the\s+other|EFY|Tech))\b",
+    re.I,
+)
+_COMMITMENT = re.compile(
+    r"\b(by\s+signing|you\s+(?:hereby\s+)?agree\s+to|this\s+(?:proposal|document)\s+constitutes|"
+    r"binding\s+(?:offer|agreement|quote)|authoris?ed\s+signator|signature\s*[:_]|signatory\s*[:_])",
+    re.I,
+)
+
 
 @dataclass
 class GuardrailViolation:
@@ -91,6 +103,16 @@ def check_message(text: str, *, allowed_peers: list[str], persona: Persona) -> l
     if am:
         out.append(GuardrailViolation("awaiting_as_confirmed", am.group(0)))
 
+    # competitor mention (proposals must not name / compare against other events)
+    cm = _COMPETITOR.search(text)
+    if cm:
+        out.append(GuardrailViolation("competitor_mention", cm.group(0)))
+
+    # commitment / signature language (a proposal is an information document, not a contract)
+    lm = _COMMITMENT.search(text)
+    if lm:
+        out.append(GuardrailViolation("commitment_language", lm.group(0)))
+
     return out
 
 
@@ -122,4 +144,38 @@ SAFE_TEMPLATES: dict[Persona, str] = {
         "ticketed (there is no free entry); current pricing is on the official ticketing "
         "portal. Would you like the registration link?"
     ),
+}
+
+
+PROPOSAL_SAFE_SECTIONS: dict[str, dict[Persona, str]] = {
+    "what_you_told_us": {
+        "it_tech_service": "You run a technology services company and are exploring how Tech Expo Gujarat 2026 could support your business development.",
+        "ai_startup": "You run an early-stage AI/technology company and are exploring an affordable way to showcase it and meet investors and buyers at Tech Expo Gujarat 2026.",
+        "non_tech_sponsor": "Your company is exploring a sponsorship association with Tech Expo Gujarat 2026 to build brand presence around the region's innovation story.",
+        "visitor": "You are considering attending Tech Expo Gujarat 2026 to discover technology solutions relevant to your work.",
+    },
+    "lead_generation": {
+        "it_tech_service": "Tech Expo Gujarat runs pre-scheduled 1:1 B2B meetings and a networking app, so you engage qualified decision-makers rather than waiting for casual footfall, with a live demo space to show your product working.",
+        "ai_startup": "The event's pre-scheduled B2B meetings, Experience Zone demos and investor track put you in front of enterprise buyers and a 15+ VC pool in a few days.",
+        "non_tech_sponsor": "A category-exclusive sponsorship gives you omnichannel visibility (venue, digital, print, regional media) and C-suite networking alongside keynote speakers.",
+        "visitor": "In three days you can meet 250+ exhibitors across 18 industries and follow up through the TEG app, compressing months of vendor evaluation.",
+    },
+    "pain_answer": {
+        "it_tech_service": "Tech Expo Gujarat connects you with 15,000+ cross-industry decision-makers and pre-scheduled meetings tuned to your target sectors.",
+        "ai_startup": "The Catalyst Zone (₹35,000 + GST, indicative and confirmed at booking) plus the investor track give a small team an affordable route to buyers and VCs.",
+        "non_tech_sponsor": "Category exclusivity means once you lock a category, direct competitors are excluded, and your brand is tied to the region's innovation narrative.",
+        "visitor": "All the relevant providers are in one place, demonstrating live, so you can shortlist and meet founders directly.",
+    },
+    "proof_bullet": {
+        "it_tech_service": "TEG 2024 drew 8,000+ attendees and 125+ exhibitors; TEG 2026 targets 15,000+ and 250+.",
+        "ai_startup": "The TEG Business Retreat 2025 helped facilitate ₹1.5 crore in funding raised in one day (organizer-stated).",
+        "non_tech_sponsor": "TEG 2024 had 50+ sponsors and 8,000+ attendees; it is Gujarat's largest tech expo.",
+        "visitor": "TEG 2024 brought 8,000+ attendees and 125+ exhibitors together over two days.",
+    },
+    "next_step": {
+        "it_tech_service": "Review the stall options and book at techexpogujarat.com/become-an-exhibitor, or reply here to have the team walk you through it.",
+        "ai_startup": "Ask about the Catalyst Zone or the startup pitch track at techexpogujarat.com, or reply here.",
+        "non_tech_sponsor": "Request a sponsorship call via techexpogujarat.com/become-a-sponsor.",
+        "visitor": "Register at events.techexpogujarat.com when you're ready.",
+    },
 }
