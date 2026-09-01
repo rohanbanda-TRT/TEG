@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", "Helvetica", "Arial", sans-serif; color: #1f2430; font-size: 10.5pt; line-height: 1.45; }
+  .cover { background: #1b2a5b; color: #fff; padding: 18px 20px; border-radius: 6px; }
+  .cover h1 { margin: 0 0 4px; font-size: 18pt; }
+  .cover .sub { opacity: .85; font-size: 10pt; }
+  .accent { height: 4px; background: linear-gradient(90deg,#e4572e,#f3a712,#2e9e4f,#1b6ca8); margin: 10px 0 16px; border-radius: 2px; }
+  h2 { font-size: 12pt; color: #1b2a5b; border-bottom: 1px solid #d7dbe6; padding-bottom: 3px; margin: 16px 0 8px; }
+  table { width: 100%; border-collapse: collapse; margin: 6px 0; }
+  th, td { text-align: left; vertical-align: top; padding: 5px 8px; border: 1px solid #d7dbe6; font-size: 9.5pt; }
+  th { background: #eef1f7; }
+  ul { margin: 4px 0 4px 18px; padding: 0; }
+  .pkg { background: #f6f8fc; border: 1px solid #d7dbe6; border-radius: 6px; padding: 10px 12px; }
+  .pkg .price { font-weight: bold; color: #1b2a5b; }
+  .peers { font-size: 9.5pt; }
+  .footer { margin-top: 18px; padding-top: 8px; border-top: 1px solid #d7dbe6; font-size: 8pt; color: #6a7180; }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <h1>Tech Expo Gujarat 2026 &mdash; Proposal for {{ p.company }}</h1>
+    <div class="sub">
+      Prepared for {{ p.person }}{% if p.person_role %}, {{ p.person_role }}{% endif %}
+      &nbsp;&middot;&nbsp; {{ p.sector or "&mdash;" }}
+      &nbsp;&middot;&nbsp; {{ p.generated_on }} &nbsp;&middot;&nbsp; Version {{ p.version }} &nbsp;&middot;&nbsp; Ref {{ p.session_ref }}
+    </div>
+  </div>
+  <div class="accent"></div>
+
+  <h2>What you told us</h2>
+  <p>{{ p.what_you_told_us }}</p>
+
+  <h2>Where TEG can help &mdash; your priorities</h2>
+  <table>
+    <tr><th>Your challenge</th><th>How Tech Expo Gujarat 2026 addresses it</th></tr>
+    {% for pain in p.pains %}
+    <tr><td>{{ pain.pain }}</td><td>{{ pain.teg_answer }}</td></tr>
+    {% endfor %}
+  </table>
+
+  <h2>How you'd generate leads at TEG</h2>
+  <p>{{ p.lead_generation }}</p>
+
+  <h2>The track record</h2>
+  <ul>{% for pr in p.proof %}<li>{{ pr }}</li>{% endfor %}</ul>
+
+  <h2>Recommended for {{ p.company }}</h2>
+  <div class="pkg">
+    <div class="price">{{ p.recommended_package.name }} &mdash; {{ p.recommended_package.price_line }}</div>
+    <ul>{% for inc in p.recommended_package.includes %}<li>{{ inc }}</li>{% endfor %}</ul>
+    <div>Payment: {{ p.recommended_package.payment_plan }}</div>
+  </div>
+
+  {% if p.peer_companies %}
+  <h2>Companies like yours taking part</h2>
+  <p class="peers">{{ p.peer_companies | join(" &middot; ") }}</p>
+  {% endif %}
+
+  <h2>Next steps</h2>
+  <ul>{% for ns in p.next_steps %}<li>{{ ns }}</li>{% endfor %}</ul>
+  <p><strong>Contact:</strong> {{ p.contact }}</p>
+
+  <div class="footer">
+    Generated {{ p.generated_on }} &middot; Version {{ p.version }} &middot; Session ref {{ p.session_ref }}.
+    All figures are indicative and subject to confirmation at booking. This document is for information
+    only &mdash; it is not a contract, a binding quote, or an offer requiring signature.
+  </div>
+</body>
+</html>
