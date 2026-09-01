@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
@@ -7,7 +8,8 @@ from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from app.api.inquiries import get_orchestrator
 from app.orchestrator import Orchestrator
 from app.store.db import SessionLocal
-from app.store.repositories import MessageRepo, SessionRepo
+from app.store.repositories import InquiryRepo, MessageRepo, SessionRepo
+from config.settings import get_settings
 
 router = APIRouter()
 
@@ -25,6 +27,8 @@ async def chat(
         if cs is None:
             await websocket.close(code=4404)
             return
+        inq = await InquiryRepo(s).get(cs.inquiry_id)
+        company = (inq.company_name_canonical or inq.company_name_raw) if inq else "your company"
         history = await MessageRepo(s).history(session_id)
 
     opening = next((m["content"] for m in history if m["role"] == "agent"), "")
@@ -50,6 +54,17 @@ async def chat(
             })
             if turn.should_handoff:
                 await websocket.send_json({"type": "handoff"})
+
+            if turn.wants_proposal:
+                await websocket.send_json({"type": "proposal_pending", "company": company})
+                try:
+                    card = await asyncio.wait_for(
+                        orch.generate_proposal(session_id),
+                        timeout=get_settings().proposal_hard_timeout_s,
+                    )
+                    await websocket.send_json({"type": "attachment", **card.model_dump()})
+                except Exception:  # noqa: BLE001 — a failed proposal must not kill the chat
+                    await websocket.send_json({"type": "proposal_failed"})
     except WebSocketDisconnect:
         reason = "bounced" if prospect_turns == 0 else "left"
         await orch.end_session(session_id, reason=reason)

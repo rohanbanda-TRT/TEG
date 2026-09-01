@@ -114,6 +114,7 @@ class Proposal(BaseModel):
 
 
 class ProposalCard(BaseModel):
+    kind: str = "proposal"
     proposal_id: str
     version: int
     filename: str
