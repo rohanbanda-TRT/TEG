@@ -10,7 +10,7 @@ from app.domain.schemas import (
     ResearchDossier, SourceRef,
 )
 from app.store.models import (
-    ChatMessage, ChatSession, HandoffPacketRow, Inquiry, ResearchDossierRow,
+    ChatMessage, ChatSession, HandoffPacketRow, Inquiry, ProposalRow, ResearchDossierRow,
 )
 
 
@@ -126,11 +126,12 @@ class MessageRepo:
 
     async def append(
         self, session_id, role, content, *, turn_index: int,
-        guardrail_flags=None, detected_intent=None,
+        guardrail_flags=None, detected_intent=None, attachment: dict | None = None,
     ) -> ChatMessage:
         row = ChatMessage(
             session_id=session_id, turn_index=turn_index, role=role, content=content,
             guardrail_flags=guardrail_flags or [], detected_intent=detected_intent or {},
+            attachment=attachment,
         )
         self.s.add(row)
         return row
@@ -161,3 +162,35 @@ class HandoffRepo:
         return (await self.s.execute(
             select(HandoffPacketRow).where(HandoffPacketRow.session_id == session_id)
         )).scalars().first()
+
+
+class ProposalRepo:
+    def __init__(self, session: AsyncSession) -> None:
+        self.s = session
+
+    async def next_version(self, session_id) -> int:
+        rows = (await self.s.execute(
+            select(ProposalRow.version).where(ProposalRow.session_id == session_id)
+        )).scalars().all()
+        return (max(rows) + 1) if rows else 1
+
+    async def create(
+        self, session_id, *, proposal, version: int, pdf_path: str, png_path: str,
+        bytes_: int, guardrail_flags: list[str], emailed_to: str | None = None,
+    ) -> ProposalRow:
+        row = ProposalRow(
+            session_id=session_id, version=version,
+            proposal_json=proposal.model_dump(), pdf_path=pdf_path, png_path=png_path,
+            bytes=bytes_, guardrail_flags=guardrail_flags, emailed_to=emailed_to,
+        )
+        self.s.add(row)
+        return row
+
+    async def get(self, proposal_id) -> ProposalRow | None:
+        return await self.s.get(ProposalRow, proposal_id)
+
+    async def list_for_session(self, session_id) -> list[ProposalRow]:
+        return list((await self.s.execute(
+            select(ProposalRow).where(ProposalRow.session_id == session_id)
+            .order_by(ProposalRow.version)
+        )).scalars().all())
