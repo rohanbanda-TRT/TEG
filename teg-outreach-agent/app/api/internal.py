@@ -5,7 +5,13 @@ import uuid
 from fastapi import APIRouter, HTTPException
 
 from app.store.db import SessionLocal
-from app.store.repositories import DossierRepo, HandoffRepo, MessageRepo, SessionRepo
+from app.store.repositories import (
+    DossierRepo,
+    HandoffRepo,
+    MessageRepo,
+    ProposalRepo,
+    SessionRepo,
+)
 
 router = APIRouter()
 
@@ -19,6 +25,7 @@ async def get_session(session_id: uuid.UUID) -> dict:
         drow = await DossierRepo(s).get(cs.dossier_id)
         transcript = await MessageRepo(s).history(session_id)
         h = await HandoffRepo(s).get_by_session(session_id)
+        prows = await ProposalRepo(s).list_for_session(session_id)
         return {
             "session": {
                 "id": str(cs.id), "persona": cs.persona, "target_cta": cs.target_cta,
@@ -37,4 +44,15 @@ async def get_session(session_id: uuid.UUID) -> dict:
                 "suggested_followup_message": h.suggested_followup_message,
                 "prospect_confidence": h.prospect_confidence, "key_facts": h.key_facts,
             },
+            "proposals": [
+                {
+                    "version": p.version,
+                    "created_at": p.created_at.isoformat() if p.created_at else None,
+                    "pdf_url": f"/proposals/{p.id}.pdf",
+                    "png_url": f"/proposals/{p.id}/preview.png",
+                    "guardrail_flags": p.guardrail_flags or [],
+                    "emailed_to": p.emailed_to,
+                }
+                for p in prows
+            ],
         }
