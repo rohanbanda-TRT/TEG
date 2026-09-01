@@ -6,7 +6,7 @@ from typing import Any
 from google import genai
 from google.genai import types
 
-from app.llm.base import BaseModelT, LLMClient, LLMMessage, ToolTurn
+from app.llm.base import BaseModelT, LLMClient, LLMMessage, ToolCall, ToolTurn
 from config.settings import get_settings
 
 
@@ -19,6 +19,34 @@ def _to_contents(messages: list[LLMMessage]) -> list[types.Content]:
         )
         for m in messages
     ]
+
+
+def _contents_with_tools(messages: list) -> list[types.Content]:
+    """Like _to_contents but understands {"role": "tool", ...} results."""
+    role_map = {"user": "user", "assistant": "model"}
+    out: list[types.Content] = []
+    for m in messages:
+        if m.get("role") == "tool":
+            # Gemini carries function results on a USER-role turn.
+            out.append(
+                types.Content(
+                    role="user",
+                    parts=[
+                        types.Part.from_function_response(
+                            name=m.get("name", m["tool_call_id"]),
+                            response={"result": m["content"]},
+                        )
+                    ],
+                )
+            )
+        else:
+            out.append(
+                types.Content(
+                    role=role_map[m["role"]],
+                    parts=[types.Part.from_text(text=m["content"])],
+                )
+            )
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -152,4 +180,26 @@ class GeminiClient(LLMClient):
         self, *, system: str, messages: list, tools: list[dict],
         model: str | None = None, max_tokens: int = 2048, temperature: float = 0.2,
     ) -> ToolTurn:
-        raise NotImplementedError("implemented in Task 4")
+        decls = [
+            types.FunctionDeclaration(
+                name=t["name"],
+                description=t.get("description", ""),
+                parameters=_sanitise(t.get("parameters", {"type": "object"}), "", set()),
+            )
+            for t in tools
+        ]
+        resp = await self._client.aio.models.generate_content(
+            model=model or self._model_main,
+            contents=_contents_with_tools(messages),
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                temperature=temperature,
+                max_output_tokens=max(max_tokens * 2, 4096),
+                tools=[types.Tool(function_declarations=decls)],
+            ),
+        )
+        calls = [
+            ToolCall(id=f"c{i}", name=fc.name, args=dict(fc.args or {}))
+            for i, fc in enumerate(resp.function_calls or [])
+        ]
+        return ToolTurn(tool_calls=calls, text=(resp.text or "").strip())
