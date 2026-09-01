@@ -61,6 +61,46 @@ class PricingInfo:
     raw: str = ""
 
 
+@dataclass
+class PersonaPains:
+    persona_key: str
+    pains: list[tuple[str, str]]
+
+
+@dataclass
+class GoalsAndPains:
+    problem: str
+    goals: str
+    mechanism: str
+    evidence: str
+    what_teg_is_not: str
+    pains_by_persona: dict[str, "PersonaPains"]
+
+
+_PERSONA_HEADING_MAP = {
+    "IT/Tech Service": "it_tech_service",
+    "AI/Deep-Tech Startup": "ai_startup",
+    "Non-Tech Sponsor": "non_tech_sponsor",
+    "Visitor": "visitor",
+}
+
+
+def _parse_pain_table(block: str) -> list[tuple[str, str]]:
+    rows: list[tuple[str, str]] = []
+    for raw_line in block.splitlines():
+        line = raw_line.strip()
+        if not line.startswith("|") or set(line) <= set("|- "):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        if len(cells) != 2:
+            continue
+        if cells[0].lower() == "pain" or cells[1].lower().startswith("how teg"):
+            continue
+        if cells[0] and cells[1]:
+            rows.append((cells[0], cells[1]))
+    return rows
+
+
 def _title_of(md: str, fallback: str) -> str:
     m = re.search(r"^#\s+(.+?)\s*$", md, re.M)
     if not m:
@@ -290,6 +330,32 @@ class KnowledgeBase:
                     }
                 )
         return out
+
+    def goals_and_pains(self) -> GoalsAndPains:
+        md = (self.root / "event_goals_and_problem.md").read_text(encoding="utf-8")
+
+        def sect(n: int) -> str:
+            marker = f"## {n}. "
+            if marker not in md:
+                return ""
+            # everything after the "## N. <title>" line, up to the next "## " heading
+            after_marker = md.split(marker, 1)[1]
+            body = after_marker.split("\n", 1)[1] if "\n" in after_marker else ""
+            return body.split("\n## ", 1)[0].strip()
+
+        pains_section = sect(5)
+        pains_by_persona: dict[str, PersonaPains] = {}
+        for heading, key in _PERSONA_HEADING_MAP.items():
+            token = f"### {heading}"
+            if token not in pains_section:
+                continue
+            block = pains_section.split(token, 1)[1].split("\n### ", 1)[0]
+            pains_by_persona[key] = PersonaPains(persona_key=key, pains=_parse_pain_table(block))
+
+        return GoalsAndPains(
+            problem=sect(1), goals=sect(2), mechanism=sect(3), evidence=sect(4),
+            what_teg_is_not=sect(6), pains_by_persona=pains_by_persona,
+        )
 
 
 @lru_cache
