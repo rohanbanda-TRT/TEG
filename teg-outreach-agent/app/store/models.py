@@ -81,6 +81,7 @@ class ChatMessage(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     guardrail_flags: Mapped[list] = mapped_column(JSONB, default=list)
     detected_intent: Mapped[dict] = mapped_column(JSONB, default=dict)
+    attachment: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class HandoffPacketRow(Base):
@@ -94,3 +95,17 @@ class HandoffPacketRow(Base):
     prospect_confidence: Mapped[str | None] = mapped_column(String(8))
     key_facts: Mapped[dict] = mapped_column(JSONB, default=dict)
     delivered_to: Mapped[str | None] = mapped_column(Text)
+
+
+class ProposalRow(Base):
+    __tablename__ = "proposals"
+    id: Mapped[uuid.UUID] = _uuid_col(primary_key=True)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("chat_sessions.id"), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    proposal_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    pdf_path: Mapped[str | None] = mapped_column(Text)
+    png_path: Mapped[str | None] = mapped_column(Text)
+    bytes: Mapped[int | None] = mapped_column(Integer)
+    guardrail_flags: Mapped[list] = mapped_column(JSONB, default=list)
+    emailed_to: Mapped[str | None] = mapped_column(Text)
