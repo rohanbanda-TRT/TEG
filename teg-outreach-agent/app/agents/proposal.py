@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 
 from app.agents.base import Agent
-from app.agents.guardrails import PROPOSAL_SAFE_SECTIONS, check_message
+from app.agents.guardrails import (
+    PROPOSAL_SAFE_SECTIONS,
+    check_message,
+    check_overpromise,
+    check_testimonial,
+)
 from app.domain.schemas import (
     IntakeResult,
     Persona,
@@ -11,6 +16,7 @@ from app.domain.schemas import (
     ProposalPackage,
     ProposalPain,
     ResearchDossier,
+    SectorFitRow,
 )
 from app.kb.explorer import KBExplorer
 from app.kb.facts import load as _load_facts
@@ -89,6 +95,7 @@ class ProposalAgent(Agent):
     async def build(
         self, *, intake: IntakeResult, dossier: ResearchDossier, persona: Persona,
         transcript: list[dict], learned_facts: dict, session_ref: str, version: int,
+        price_requested: bool = False,
     ) -> tuple[Proposal, list[str]]:
         own = intake.company_name_canonical.lower()
         heading = _PERSONA_KB_HEADING.get(persona, "Visitor")
@@ -125,9 +132,20 @@ class ProposalAgent(Agent):
             for t in _load_facts().cleared_testimonials
         ]
         fallback_pkg = _PRICING_BY_PERSONA[persona]
+        if price_requested:
+            pkg_line = (
+                f"Recommended package: {fallback_pkg.model_dump()} — use it unless the "
+                "conversation points elsewhere, and include its price_line and payment_plan."
+            )
+        else:
+            pkg_line = (
+                f"Recommended package name: '{fallback_pkg.name}' with includes "
+                f"{fallback_pkg.includes}. Set recommended_package.price_line and payment_plan "
+                "to EMPTY strings — state NO figures anywhere in the proposal."
+            )
 
         system = (
-            "You write a one-page personalized proposal for a Tech Expo Gujarat 2026 inquiry. "
+            "You write a detailed personalized proposal for a Tech Expo Gujarat 2026 inquiry. "
             "Ground every claim in the facts provided. RULES: no invented statistics. "
             "For testimonials: prefer NOT to quote any; if you do, use ONLY the exact wording and "
             "exact attributed name from the cleared list below, at most 2, and never paraphrase or "
@@ -150,8 +168,15 @@ class ProposalAgent(Agent):
             f"Base pain points for this persona (personalize, keep 2-4):\n{pain_lines}\n\n"
             f"Cleared testimonials (quote at most 2 verbatim):\n{testi}\n\n"
             f"Peer companies you may name (only these): {peers}\n\n"
-            f"Fallback recommended package (use unless the conversation points elsewhere): "
-            f"{fallback_pkg.model_dump()}\n\n"
+            f"{pkg_line}\n\n"
+            "Also produce:\n"
+            "- executive_summary: 3-4 sentences (their role + company, their goal, why TEG fits, "
+            "the headline recommendation)\n"
+            "- how_a_teg_plays_out: 3-6 bullets walking the 3 days, tuned to their goal\n"
+            "- roi_framing: a value paragraph with NO numbers and NO promised outcomes — phrase it "
+            "'if a single engagement covers the investment many times over'\n"
+            "- sector_fit: 4-6 {lever, weight} rows; weight 1-5 = how much each TEG lever matters "
+            f"for the '{dossier.sector}' sector (use the pain library)\n\n"
             f"Echo these exactly: generated_on='__DATE__', session_ref='{session_ref}', version={version}, "
             f"company='{intake.company_name_canonical}', person='{intake.person_name}', persona='{persona}'.\n"
             "Produce the Proposal."
@@ -167,11 +192,23 @@ class ProposalAgent(Agent):
             schema=Proposal, model=self._model,
         )
 
+        def _clamp_sector_fit(p: Proposal) -> None:
+            p.sector_fit = [
+                SectorFitRow(lever=r.lever, weight=max(1, min(5, r.weight)))
+                for r in p.sector_fit[:6]
+            ]
+
+        def _force_no_price(p: Proposal) -> None:
+            p.recommended_package.price_line = ""
+            p.recommended_package.payment_plan = ""
+
         def all_violations(p: Proposal) -> list:
             texts: list[tuple[str, str]] = [
                 ("what_you_told_us", p.what_you_told_us),
                 ("lead_generation", p.lead_generation),
                 ("price_line", p.recommended_package.price_line),
+                ("executive_summary", p.executive_summary),
+                ("roi_framing", p.roi_framing),
             ]
             for i, pn in enumerate(p.pains):
                 texts.append((f"pain::{i}", pn.pain))
@@ -180,13 +217,33 @@ class ProposalAgent(Agent):
                 texts.append((f"proof::{i}", pr))
             for i, ns in enumerate(p.next_steps):
                 texts.append((f"next_step::{i}", ns))
+            for i, st in enumerate(p.how_a_teg_plays_out):
+                texts.append((f"walkthrough::{i}", st))
             found = []
             for label, txt in texts:
-                for v in check_message(txt, allowed_peers=peers, persona=persona):
+                for v in check_message(txt, allowed_peers=peers, persona=persona,
+                                       price_ok=price_requested):
                     found.append((label, v))
+            op = check_overpromise(p.roi_framing)
+            if op:
+                found.append(("roi_framing", op))
             return found
 
+        async def _testimonial_violation(p: Proposal):
+            blob = " ".join([
+                p.what_you_told_us, p.lead_generation, p.executive_summary, p.roi_framing,
+                *(pn.teg_answer for pn in p.pains), *p.proof,
+            ])
+            return await check_testimonial(blob, self.llm)
+
+        if not price_requested:
+            _force_no_price(proposal)
+        _clamp_sector_fit(proposal)
         violations = all_violations(proposal)
+        t_v = await _testimonial_violation(proposal)
+        if t_v:
+            violations.append(("proof::0", t_v))
+
         if violations:
             codes = sorted({v.code for _, v in violations})
             _log.warning("proposal draft violated %s -> regenerating once", codes)
@@ -195,7 +252,13 @@ class ProposalAgent(Agent):
                 messages=[{"role": "user", "content": user}],
                 schema=Proposal, model=self._model,
             )
+            if not price_requested:
+                _force_no_price(proposal)
+            _clamp_sector_fit(proposal)
             violations = all_violations(proposal)
+            t_v = await _testimonial_violation(proposal)
+            if t_v:
+                violations.append(("proof::0", t_v))
 
         flags: list[str] = []
         if violations:
@@ -205,8 +268,14 @@ class ProposalAgent(Agent):
                 proposal.what_you_told_us = PROPOSAL_SAFE_SECTIONS["what_you_told_us"][persona]
             if "lead_generation" in bad:
                 proposal.lead_generation = PROPOSAL_SAFE_SECTIONS["lead_generation"][persona]
+            if "executive_summary" in bad:
+                proposal.executive_summary = PROPOSAL_SAFE_SECTIONS["executive_summary"][persona]
+            if "roi_framing" in bad:
+                proposal.roi_framing = PROPOSAL_SAFE_SECTIONS["roi_framing"][persona]
             if "price_line" in bad:
                 proposal.recommended_package = fallback_pkg
+                if not price_requested:
+                    _force_no_price(proposal)
             for i in range(len(proposal.pains)):
                 if f"pain::{i}" in bad or f"teg_answer::{i}" in bad:
                     src = (

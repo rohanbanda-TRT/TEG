@@ -105,6 +105,7 @@ class Orchestrator:
             "learned_facts": cs.learned_facts or {},
             "persona_remapped": cs.persona_remapped,
             "needs_review": cs.needs_review,
+            "price_requested": cs.price_requested,
         }
 
     async def run_turn(self, session_id: uuid.UUID, prospect_message: str) -> PersuasionTurn:
@@ -145,6 +146,7 @@ class Orchestrator:
                 persona=turn.persona,
                 persona_remapped=turn.updated_state.get("persona_remapped", False),
                 needs_review=turn.updated_state.get("needs_review", False),
+                price_requested=turn.updated_state.get("price_requested", False),
             )
             await s.commit()
             return turn
@@ -212,21 +214,23 @@ class Orchestrator:
             transcript = await MessageRepo(s).history(session_id)
             persona = cs.persona or "visitor"
             learned = cs.learned_facts or {}
+            price_requested = bool(cs.price_requested)
             version = await ProposalRepo(s).next_version(session_id)
 
-        _log.info("=== generate_proposal  session=%s  v%d  persona=%s ===",
-                  str(session_id)[:8], version, persona)
+        _log.info("=== generate_proposal  session=%s  v%d  persona=%s  price_requested=%s ===",
+                  str(session_id)[:8], version, persona, price_requested)
         proposal, flags = await asyncio.wait_for(
             self.proposal.build(
                 intake=intake, dossier=dossier, persona=persona, transcript=transcript,
                 learned_facts=learned, session_ref=str(session_id)[:8], version=version,
+                price_requested=price_requested,
             ),
             timeout=settings.proposal_hard_timeout_s,
         )
         proposal.generated_on = datetime.now(UTC).date().isoformat()
         _log.info("proposal built  flags=%s  rendering pdf/png", flags or "-")
 
-        html = render_html(proposal)
+        html = render_html(proposal, price_requested=price_requested)
         pdf = await asyncio.to_thread(render_pdf, html)
         png = await asyncio.to_thread(render_first_page_png, html)
 

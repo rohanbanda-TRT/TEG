@@ -5,6 +5,7 @@ from app.domain.schemas import (
     ProposalPackage,
     ProposalPain,
     ResearchDossier,
+    SectorFitRow,
 )
 from app.kb.explorer import ExploreResult, KBExplorer
 from app.llm.fake import FakeLLMClient
@@ -67,6 +68,11 @@ def _good_proposal(**over):
         peer_companies=["NeuraMonks", "ViitorCloud"],
         next_steps=["Book at techexpogujarat.com/become-an-exhibitor"],
         contact="info@techexpogujarat.com",
+        executive_summary="DataZen Analytics builds BI dashboards and is exploring TEG 2026 for India buyers.",
+        how_a_teg_plays_out=["Pre-event matchmaking", "Day 1 demos", "Day 2 buyer meetings"],
+        roi_framing="If one India-market engagement covers the cost several times over, it pays for itself.",
+        sector_fit=[SectorFitRow(lever="Buyer access", weight=5), SectorFitRow(lever="Demos", weight=4),
+                    SectorFitRow(lever="Meetings", weight=5), SectorFitRow(lever="Visibility", weight=3)],
     )
     return base.model_copy(update=over)
 
@@ -77,11 +83,47 @@ async def test_build_returns_clean_proposal():
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
         transcript=[{"role": "prospect", "content": "we want India-market clients"}],
         learned_facts={"target_market": "India"}, session_ref="ab12cd34", version=2,
+        price_requested=True,
     )
     assert flags == []
     assert p.version == 2 and p.session_ref == "ab12cd34"
     assert p.company == "DataZen Analytics" and p.persona == "it_tech_service"
     assert "DataZen Analytics" not in p.peer_companies
+
+
+async def test_build_populates_new_fields():
+    llm = FakeLLMClient(structured=[_good_proposal()])
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={"goal": "India clients"}, session_ref="x", version=1,
+        price_requested=True,
+    )
+    assert p.executive_summary
+    assert len(p.how_a_teg_plays_out) >= 3
+    assert p.roi_framing
+    assert 4 <= len(p.sector_fit) <= 6
+    assert all(1 <= r.weight <= 5 for r in p.sector_fit)
+
+
+async def test_build_omits_price_when_not_requested():
+    llm = FakeLLMClient(structured=[_good_proposal()])
+    p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=False,
+    )
+    assert p.recommended_package.price_line == ""
+    assert p.recommended_package.payment_plan == ""
+
+
+async def test_build_flags_overpromising_roi():
+    bad = _good_proposal(roi_framing="You will close 5 deals and see a guaranteed ROI of 400%.")
+    llm = FakeLLMClient(structured=[bad, bad])
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+    )
+    assert "overpromise" in flags
+    assert "guaranteed" not in p.roi_framing.lower()
 
 
 async def test_build_falls_back_on_repeated_violation():
@@ -91,7 +133,7 @@ async def test_build_falls_back_on_repeated_violation():
     llm = FakeLLMClient(structured=[bad, bad])
     p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
-        transcript=[], learned_facts={}, session_ref="x", version=1,
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
     )
     assert "competitor_mention" in flags
     assert "other expos" not in p.lead_generation.lower()
@@ -103,7 +145,7 @@ async def test_build_survives_explorer_miss():
     llm = FakeLLMClient(structured=[_good_proposal()])
     p, flags = await ProposalAgent(llm, explorer=explorer).build(
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
-        transcript=[], learned_facts={}, session_ref="x", version=1,
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
     )
     assert p.company == "DataZen Analytics"
     assert p.peer_companies  # falls back to the dossier's peers
