@@ -7,18 +7,21 @@ import { PeerStat } from "./PeerStat";
 import { SectorFitBars } from "./SectorFitBars";
 
 describe("charts", () => {
-  it("GrowthBars renders an svg", () => {
-    const { container } = render(<GrowthBars />);
-    expect(container.querySelector("svg")).toBeTruthy();
+  it("GrowthBars renders both group labels and start-at-0 value spans", () => {
+    const { getByText, getAllByText } = render(<GrowthBars />);
+    expect(getByText("Attendees")).toBeInTheDocument();
+    expect(getByText("Exhibitors")).toBeInTheDocument();
+    // 4 value spans (2024 + 2026 per group), all at 0 before reveal
+    expect(getAllByText("0", { selector: ".growth-bar__value" }).length).toBe(4);
   });
 
-  it("IndustryMix renders a bar per industry", () => {
+  it("IndustryMix renders a row per industry", () => {
     const { container } = render(<IndustryMix />);
-    expect(container.querySelectorAll("rect").length).toBeGreaterThanOrEqual(18);
+    expect(container.querySelectorAll(".chart-row").length).toBe(18);
   });
 
-  it("Funnel renders 4 segments", () => {
-    const { container } = render(
+  it("Funnel renders one band per step with legible labels", () => {
+    const { container, getByText } = render(
       <Funnel
         steps={[
           ["a", "1"],
@@ -28,11 +31,12 @@ describe("charts", () => {
         ]}
       />,
     );
-    expect(container.querySelectorAll("path").length).toBe(4);
+    expect(container.querySelectorAll(".funnel__band").length).toBe(4);
+    expect(getByText("a")).toBeInTheDocument();
   });
 
-  it("SectorFitBars renders a bar per row and clamps weight", () => {
-    const { container } = render(
+  it("SectorFitBars renders a row per lever and clamps the weight to 5/5", () => {
+    const { container, getByText } = render(
       <SectorFitBars
         rows={[
           { lever: "A", weight: 9 },
@@ -40,7 +44,9 @@ describe("charts", () => {
         ]}
       />,
     );
-    expect(container.querySelectorAll("rect").length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelectorAll(".chart-row").length).toBe(2);
+    expect(getByText("5/5")).toBeInTheDocument();
+    expect(getByText("2/5")).toBeInTheDocument();
   });
 
   it("PeerStat lists names and shows the count", () => {

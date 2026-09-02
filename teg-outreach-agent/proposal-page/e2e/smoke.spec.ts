@@ -9,7 +9,7 @@ const fixture = JSON.parse(
 test("proposal page renders hero, a chart, and a mailto CTA", async ({ page }) => {
   await page.goto(`/p/${fixture.id}`);
   await expect(page.getByText(fixture.proposal.hero_headline)).toBeVisible();
-  await expect(page.locator("svg").first()).toBeVisible();
+  await expect(page.locator(".chart-rows").first()).toBeVisible();
   await expect(page.locator('a[href^="mailto:"]').first()).toBeVisible();
 });
 
