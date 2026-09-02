@@ -97,3 +97,48 @@ def test_get_missing_proposal_404(tmp_path, monkeypatch):
     r = client.get("/proposals/00000000-0000-0000-0000-000000000000.pdf")
     assert r.status_code == 404
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def built_proposal(tmp_path, monkeypatch):
+    """A generated proposal: yields (proposal_id, TestClient)."""
+    monkeypatch.setenv("PROPOSAL_DIR", str(tmp_path / "proposals"))
+    from config.settings import get_settings
+    get_settings.cache_clear()
+    app = create_app()
+    app.dependency_overrides[get_orchestrator] = lambda: _orch()
+    client = TestClient(app)
+    posted = client.post(
+        "/inquiries", json={"person_name": "Tapan Patel", "company_name": "Third Rock Techkno"}
+    ).json()
+    card = client.post(f"/sessions/{posted['session_id']}/proposal", json={}).json()
+    yield card["proposal_id"], client
+    get_settings.cache_clear()
+
+
+def test_get_proposal_json(built_proposal):
+    pid, client = built_proposal
+    r = client.get(f"/proposals/{pid}.json")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["id"] == str(pid)
+    assert body["version"] >= 1
+    assert body["pdf_url"] == f"/proposals/{pid}.pdf"
+    assert body["proposal"]["company"]
+
+
+def test_get_proposal_json_404(built_proposal):
+    _, client = built_proposal
+    import uuid
+    r = client.get(f"/proposals/{uuid.uuid4()}.json")
+    assert r.status_code == 404
+
+
+def test_get_proposal_page(built_proposal):
+    pid, client = built_proposal
+    from pathlib import Path
+    r = client.get(f"/p/{pid}")
+    if Path("app/static/proposal/index.html").is_file():
+        assert r.status_code == 200 and "text/html" in r.headers["content-type"]
+    else:
+        assert r.status_code == 503

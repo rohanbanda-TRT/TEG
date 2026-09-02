@@ -38,6 +38,14 @@ def create_app() -> FastAPI:
     if widget_dir.is_dir():
         app.mount("/demo", StaticFiles(directory=str(widget_dir), html=True), name="demo")
 
+    # Serve the built proposal landing-page SPA (proposal-page/ -> app/static/proposal/).
+    proposal_static = Path(__file__).parent / "static" / "proposal"
+    if proposal_static.is_dir():
+        app.mount(
+            "/static/proposal", StaticFiles(directory=str(proposal_static)),
+            name="proposal-static",
+        )
+
     return app
 
 
