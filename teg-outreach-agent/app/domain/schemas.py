@@ -121,6 +121,9 @@ class Proposal(BaseModel):
     how_a_teg_plays_out: list[str] = Field(default_factory=list)
     roi_framing: str = ""
     sector_fit: list[SectorFitRow] = Field(default_factory=list)
+    peers_in_sector_total: int = 0
+    peer_context_line: str = ""
+    scale_note: str = ""
     hero_headline: str = ""
     hero_subline: str = ""
     section_ctas: dict[str, str] = Field(default_factory=dict)

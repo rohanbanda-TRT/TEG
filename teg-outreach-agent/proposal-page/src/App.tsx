@@ -7,6 +7,7 @@ import { Journey } from "./sections/Journey";
 import { TheAsk } from "./sections/TheAsk";
 import { Section } from "./components/Section";
 import { Reveal } from "./components/Reveal";
+import { TEG_LOGO_DATA_URI } from "./lib/brand";
 
 function linkify(step: string) {
   const m = step.match(/https?:\/\/\S+|[\w.-]+\.com\/\S+/);
@@ -45,16 +46,14 @@ export function App({ payload }: { payload: Payload }) {
       <Journey p={p} />
       <TheAsk p={p} />
 
-      <footer className="footer">
+      <footer className="footer section--dark">
         <div className="container">
-          <p style={{ color: "var(--ink)", fontWeight: 600 }}>
-            Contact: {p.contact}
-          </p>
+          <img src={TEG_LOGO_DATA_URI} alt="Tech Expo Gujarat" className="footer__logo" />
+          <p className="footer__tagline">Beacon of Rising Innovation &amp; AI</p>
+          <p style={{ fontWeight: 600, marginTop: "1.25rem" }}>Contact: {p.contact}</p>
           <ul>
             {p.next_steps.map((s, i) => (
-              <li key={i} style={{ color: "var(--slate)" }}>
-                {linkify(s)}
-              </li>
+              <li key={i}>{linkify(s)}</li>
             ))}
           </ul>
           <small>
@@ -64,6 +63,7 @@ export function App({ payload }: { payload: Payload }) {
               Download as PDF
             </a>
           </small>
+          <small>© AIMED TECH EXPO GUJARAT LLP</small>
         </div>
       </footer>
     </>

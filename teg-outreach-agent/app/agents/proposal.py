@@ -108,7 +108,13 @@ class ProposalAgent(Agent):
             f"- pains: a JSON array of [pain, how_TEG_addresses_it] pairs from the "
             f"'### {heading}' subsection of the section 5 pain library (2-4 pairs)\n"
             f"- sector_peers: up to 5 TEG exhibitors in the '{dossier.sector}' sector, "
-            f"excluding {intake.company_name_canonical} (comma-separated)"
+            f"excluding {intake.company_name_canonical} (comma-separated)\n"
+            f"- sector_peer_count: the TOTAL number of companies that participated in the "
+            f"'{dossier.sector}' sector at TEG 2024 (from that sector's table/summary in "
+            "sector_wise_participation.md) — a single integer, or 0 if the sector is not listed\n"
+            "- scale_note: one sentence stating the TEG 2024 -> TEG 2026 scale, using ONLY "
+            "verbatim numbers from the KB (e.g. '125+ exhibitors and 8,000+ visitors at TEG "
+            "2024; 250+ exhibitors and 15,000+ visitors targeted for TEG 2026')"
         )
         gp_goals = ex.facts.get("goals", "")
         gp_mechanism = ex.facts.get("mechanism", "")
@@ -127,6 +133,12 @@ class ProposalAgent(Agent):
             )
             if p.lower() != own
         ][:5]
+        try:
+            sector_peer_count = int(str(ex.facts.get("sector_peer_count", "0")).strip() or 0)
+        except (ValueError, TypeError):
+            sector_peer_count = 0
+        sector_peer_count = max(sector_peer_count, len(peers))
+        scale_note = ex.facts.get("scale_note", "")
         testimonials = [
             {"name": t.name, "role": t.role, "quote": t.quote}
             for t in _load_facts().cleared_testimonials
@@ -167,7 +179,9 @@ class ProposalAgent(Agent):
             f"TEG goals: {gp_goals}\n\nTEG mechanism: {gp_mechanism}\n\nEvidence: {gp_evidence}\n\n"
             f"Base pain points for this persona (personalize, keep 2-4):\n{pain_lines}\n\n"
             f"Cleared testimonials (quote at most 2 verbatim):\n{testi}\n\n"
-            f"Peer companies you may name (only these): {peers}\n\n"
+            f"Peer companies you may name (only these): {peers}\n"
+            f"Companies in the '{dossier.sector}' sector at TEG 2024 (total): {sector_peer_count}\n"
+            f"Scale note (use verbatim, do not alter numbers): {scale_note!r}\n\n"
             f"{pkg_line}\n\n"
             "Also produce:\n"
             "- executive_summary: 3-4 sentences (their role + company, their goal, why TEG fits, "
@@ -177,6 +191,11 @@ class ProposalAgent(Agent):
             "'if a single engagement covers the investment many times over'\n"
             "- sector_fit: 4-6 {lever, weight} rows; weight 1-5 = how much each TEG lever matters "
             f"for the '{dossier.sector}' sector (use the pain library)\n"
+            f"- peers_in_sector_total: echo the integer {sector_peer_count} exactly\n"
+            "- peer_context_line: ONE sentence giving the named peers their context, e.g. "
+            f"'{sector_peer_count} companies in {dossier.sector} exhibited at TEG 2024 — "
+            "including the names below.' Use the real sector name and the real count; if the "
+            "count is 0 or there are no named peers, set this to an empty string.\n"
             "Also write landing-page copy:\n"
             "- hero_headline: a punchy 6-12 word line naming the outcome for "
             f"{intake.company_name_canonical} (e.g. 'Turn TEG 2026 into your India-market "
@@ -222,6 +241,7 @@ class ProposalAgent(Agent):
                 ("hero_headline", p.hero_headline),
                 ("hero_subline", p.hero_subline),
                 ("closing_cta_body", p.closing_cta_body),
+                ("peer_context_line", p.peer_context_line),
             ]
             for i, pn in enumerate(p.pains):
                 texts.append((f"pain::{i}", pn.pain))
@@ -332,6 +352,10 @@ class ProposalAgent(Agent):
         proposal.session_ref = session_ref
         proposal.version = version
         proposal.peer_companies = [p for p in proposal.peer_companies if p in peers][:5] or peers[:3]
+        proposal.peers_in_sector_total = sector_peer_count
+        proposal.scale_note = scale_note
+        if not proposal.peer_companies or "peer_context_line" in {label for label, _ in violations}:
+            proposal.peer_context_line = ""
         if not proposal.contact:
             proposal.contact = "info@techexpogujarat.com · +91 98989 23712"
         _log.info("build done  package=%r  pains=%d  flags=%s",

@@ -38,24 +38,48 @@ export function TheRoom({ p }: { p: Proposal }) {
       <div className="sec-head">
         <span className="eyebrow">The audience</span>
         <h2>Who's in the room</h2>
-        <p>A growing, cross-industry crowd of buyers — and companies like yours already committed.</p>
+        <p>A growing, cross-industry crowd of buyers — and companies in your space already on the floor.</p>
       </div>
 
-      {p.proof.length > 0 && (
+      {p.peer_companies.length > 0 && (
         <Reveal>
           <div className="chart-block">
-            <h3>The track record</h3>
-            <ul style={{ color: "var(--slate)", paddingLeft: "1.2rem", margin: "0.75rem 0 1.5rem" }}>
+            <h3>Your peers were here</h3>
+            <div style={{ marginTop: "1rem" }}>
+              <PeerStat
+                names={p.peer_companies}
+                sector={p.sector}
+                sectorTotal={p.peers_in_sector_total}
+                contextLine={p.peer_context_line}
+              />
+            </div>
+          </div>
+        </Reveal>
+      )}
+
+      <Reveal>
+        <div className="chart-block">
+          <h3>The room is growing</h3>
+          {p.scale_note ? (
+            <p className="chart-caption">{p.scale_note}</p>
+          ) : (
+            <p className="chart-caption">
+              125+ exhibitors and 8,000+ visitors at TEG 2024 — 250+ exhibitors and 15,000+
+              visitors targeted for TEG 2026.
+            </p>
+          )}
+          <GrowthBars />
+          {p.proof.length > 0 && (
+            <ul style={{ color: "var(--slate)", paddingLeft: "1.2rem", margin: "1.25rem 0 0" }}>
               {p.proof.map((x, i) => (
                 <li key={i} style={{ margin: "0.4rem 0" }}>
                   {x}
                 </li>
               ))}
             </ul>
-            <GrowthBars />
-          </div>
-        </Reveal>
-      )}
+          )}
+        </div>
+      </Reveal>
 
       <Reveal>
         <div className="chart-block">
@@ -63,17 +87,6 @@ export function TheRoom({ p }: { p: Proposal }) {
           <IndustryMix />
         </div>
       </Reveal>
-
-      {p.peer_companies.length > 0 && (
-        <Reveal>
-          <div className="chart-block">
-            <h3>Peers already confirmed</h3>
-            <div style={{ marginTop: "1rem" }}>
-              <PeerStat names={p.peer_companies} />
-            </div>
-          </div>
-        </Reveal>
-      )}
     </Section>
   );
 }

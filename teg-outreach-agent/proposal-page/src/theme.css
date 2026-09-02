@@ -148,9 +148,19 @@ a {
   padding-top: clamp(4rem, 10vw, 8rem);
   padding-bottom: clamp(4rem, 10vw, 7rem);
 }
+.hero__brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.9rem;
+}
+.hero__logo {
+  height: 46px;
+  width: auto;
+}
 .hero__tag {
   display: inline-flex;
-  align-self: flex-start;
   gap: 0.5rem;
   font-size: 0.78rem;
   font-weight: 600;
@@ -160,7 +170,6 @@ a {
   border: 1px solid rgba(169, 192, 255, 0.32);
   border-radius: 999px;
   padding: 0.4rem 0.95rem;
-  margin-bottom: 1.6rem;
 }
 .hero h1 {
   color: #fff;
@@ -455,34 +464,26 @@ a {
 
 /* ============ chart: peer stat ============ */
 .peer-stat {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  gap: 1.25rem;
 }
-.stat-badge {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.4rem 0;
+.peer-stat__lead {
+  color: var(--ink);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 52ch;
+  margin: 0;
 }
-.stat-badge b {
-  font-size: 3rem;
+.peer-stat__lead b {
+  font-size: 1.35rem;
   font-weight: 800;
   color: var(--cyan);
-  letter-spacing: -0.03em;
-  line-height: 1;
 }
-.stat-badge span {
-  font-size: 0.95rem;
-  color: var(--slate);
-  max-width: 22ch;
+.section--dark .peer-stat__lead {
+  color: #dbe3f6;
 }
-.section--dark .stat-badge b {
+.section--dark .peer-stat__lead b {
   color: var(--gold);
-}
-.section--dark .stat-badge span {
-  color: #c3cde8;
 }
 .peer-grid {
   display: flex;
@@ -617,17 +618,31 @@ a {
 
 /* ============ footer ============ */
 .footer {
-  padding: 3.5rem 1.5rem;
-  border-top: 1px solid var(--line);
+  padding: clamp(3rem, 7vw, 4.5rem) 1.5rem;
+}
+.footer__logo {
+  height: 52px;
+  width: auto;
+}
+.footer__tagline {
+  margin-top: 0.9rem;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold) !important;
 }
 .footer ul {
   padding-left: 1.2rem;
+  margin: 0.75rem 0 0;
+}
+.footer li {
+  margin: 0.35rem 0;
 }
 .footer small {
   display: block;
-  margin-top: 1.5rem;
-  color: var(--slate);
+  margin-top: 1.25rem;
   font-size: 0.82rem;
+  color: #9fb0dc !important;
 }
 
 /* ============ responsive ============ */

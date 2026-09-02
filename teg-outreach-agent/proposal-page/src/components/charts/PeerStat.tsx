@@ -1,10 +1,28 @@
-import { StatBadge } from "../StatBadge";
+interface PeerStatProps {
+  names: string[];
+  sector?: string | null;
+  sectorTotal?: number;
+  contextLine?: string;
+}
 
-export function PeerStat({ names }: { names: string[] }) {
+/**
+ * Named peers WITH context. The count is the sector's TEG 2024 participation
+ * total (>= the named list, which may be truncated); the context line explains
+ * what the number means so it never reads as a bare "4".
+ */
+export function PeerStat({ names, sector, sectorTotal, contextLine }: PeerStatProps) {
+  const total = Math.max(sectorTotal ?? 0, names.length);
+  // Strip any leading count the model may have written — we render it ourselves.
+  const tail =
+    contextLine?.trim().replace(/^\d[\d,]*\s+/, "") ||
+    `companies in ${sector ?? "your space"} exhibited at TEG 2024 — including the names below.`;
+
   return (
-    <div style={{ display: "flex", gap: "1.75rem", flexWrap: "wrap", alignItems: "center" }}>
-      <StatBadge value={names.length} label="companies already confirmed for TEG 2026" />
-      <div className="peer-grid" style={{ flex: 1, minWidth: 220 }}>
+    <div className="peer-stat">
+      <p className="peer-stat__lead">
+        <b>{total}</b> {tail}
+      </p>
+      <div className="peer-grid">
         {names.map((n) => (
           <span key={n}>{n}</span>
         ))}

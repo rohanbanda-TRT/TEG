@@ -49,8 +49,31 @@ describe("charts", () => {
     expect(getByText("2/5")).toBeInTheDocument();
   });
 
-  it("PeerStat lists names and shows the count", () => {
-    const { getByText } = render(<PeerStat names={["X", "Y", "Z"]} />);
+  it("PeerStat lists names and shows the sector count with context", () => {
+    const { getByText, container } = render(
+      <PeerStat names={["X", "Y", "Z"]} sector="Digital Marketing & SEO" sectorTotal={4} />,
+    );
     expect(getByText("X")).toBeTruthy();
+    expect(container.querySelector(".peer-stat__lead b")?.textContent).toBe("4");
+    expect(container.querySelector(".peer-stat__lead")?.textContent).toMatch(
+      /Digital Marketing & SEO exhibited at TEG 2024/,
+    );
+  });
+
+  it("PeerStat clamps the count up to the number of names when sectorTotal is smaller", () => {
+    const { container } = render(<PeerStat names={["A", "B", "C", "D", "E"]} sectorTotal={2} />);
+    expect(container.querySelector(".peer-stat__lead b")?.textContent).toBe("5");
+  });
+
+  it("PeerStat strips a leading count the model may have written in contextLine", () => {
+    const { container } = render(
+      <PeerStat
+        names={["A", "B"]}
+        sectorTotal={9}
+        contextLine="9 companies in Fintech exhibited at TEG 2024 — including the names below."
+      />,
+    );
+    const text = container.querySelector(".peer-stat__lead")?.textContent ?? "";
+    expect(text).toBe("9 companies in Fintech exhibited at TEG 2024 — including the names below.");
   });
 });

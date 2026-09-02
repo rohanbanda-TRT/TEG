@@ -29,6 +29,9 @@ def _explorer(**facts_over):
         "pains": '[["Revenue concentrated in US clients", "15,000+ India-market decision-makers"], '
                  '["Long sales cycles", "Pre-scheduled B2B meetings compress evaluation"]]',
         "sector_peers": "NeuraMonks, ViitorCloud, Perigeon",
+        "sector_peer_count": "12",
+        "scale_note": "125+ exhibitors and 8,000+ visitors at TEG 2024; 250+ exhibitors and "
+                      "15,000+ visitors targeted for TEG 2026.",
     }
     facts.update(facts_over)
     return _FixedExplorer(ExploreResult(found=True, confidence=0.9, facts=facts,
@@ -78,6 +81,8 @@ def _good_proposal(**over):
         section_ctas={"priorities": "See the plan", "charts": "Explore the numbers", "investment": "Get your quote"},
         closing_cta_headline="Let's make TEG 2026 count for DataZen Analytics",
         closing_cta_body="Reply in the chat, or reach the team directly — we'll take it from here.",
+        peers_in_sector_total=12,
+        peer_context_line="12 companies in Software Development exhibited at TEG 2024 — including the names below.",
     )
     return base.model_copy(update=over)
 
@@ -107,6 +112,9 @@ async def test_build_populates_new_fields():
     assert len(p.how_a_teg_plays_out) >= 3
     assert p.roi_framing
     assert 4 <= len(p.sector_fit) <= 6
+    assert p.peers_in_sector_total == 12
+    assert p.scale_note.startswith("125+ exhibitors")
+    assert "Software Development" in p.peer_context_line
     assert all(1 <= r.weight <= 5 for r in p.sector_fit)
 
 

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import type { Proposal } from "../lib/types";
 import { heroHeadline, heroSubline } from "../lib/fallbacks";
 import { CtaButton } from "../components/CtaButton";
+import { TEG_LOGO_DATA_URI } from "../lib/brand";
 
 export function Hero({
   p,
@@ -17,12 +18,13 @@ export function Hero({
     <section className="section section--dark hero" id="top">
       <div className="container">
         <motion.div
-          className="hero__tag"
+          className="hero__brand"
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          Tech Expo Gujarat 2026 · Proposal for {p.company}
+          <img src={TEG_LOGO_DATA_URI} alt="Tech Expo Gujarat" className="hero__logo" />
+          <span className="hero__tag">Tech Expo Gujarat 2026 · Proposal for {p.company}</span>
         </motion.div>
         <motion.h1
           initial={{ y: 18 }}

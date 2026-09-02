@@ -1,6 +1,9 @@
 import { GROWTH } from "../../lib/chartData";
 
-function Group({ label, a, b, max }: { label: string; a: number; b: number; max: number }) {
+function Group({ label, a, b }: { label: string; a: number; b: number }) {
+  // Each group scales to its own 2026 target so both read as "~2x growth"
+  // regardless of the raw magnitude gap between attendees and exhibitors.
+  const max = Math.max(a, b);
   return (
     <div className="growth-group">
       <div className="growth-group__bars">
@@ -25,12 +28,11 @@ function Group({ label, a, b, max }: { label: string; a: number; b: number; max:
 }
 
 export function GrowthBars() {
-  const max = Math.max(GROWTH.attendees[1], GROWTH.exhibitors[1]);
   return (
     <div role="img" aria-label="TEG 2024 to 2026 growth">
       <div className="growth-chart">
-        <Group label="Attendees" a={GROWTH.attendees[0]} b={GROWTH.attendees[1]} max={max} />
-        <Group label="Exhibitors" a={GROWTH.exhibitors[0]} b={GROWTH.exhibitors[1]} max={max} />
+        <Group label="Attendees" a={GROWTH.attendees[0]} b={GROWTH.attendees[1]} />
+        <Group label="Exhibitors" a={GROWTH.exhibitors[0]} b={GROWTH.exhibitors[1]} />
       </div>
       <div className="growth-legend">
         <span>
