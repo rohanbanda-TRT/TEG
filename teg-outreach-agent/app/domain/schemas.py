@@ -124,6 +124,8 @@ class Proposal(BaseModel):
     peers_in_sector_total: int = 0
     peer_context_line: str = ""
     scale_note: str = ""
+    target_industries: list[str] = Field(default_factory=list)
+    target_industries_note: str = ""
     hero_headline: str = ""
     hero_subline: str = ""
     section_ctas: dict[str, str] = Field(default_factory=dict)

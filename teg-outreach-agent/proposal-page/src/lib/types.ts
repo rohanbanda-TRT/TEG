@@ -31,6 +31,8 @@ export interface Proposal {
   peers_in_sector_total?: number;
   peer_context_line?: string;
   scale_note?: string;
+  target_industries?: string[];
+  target_industries_note?: string;
   how_a_teg_plays_out: string[];
   roi_framing: string;
   recommended_package: Package;

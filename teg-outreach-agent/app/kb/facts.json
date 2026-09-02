@@ -198,5 +198,25 @@
     "iSmartRecruit (iSmartRecruit)",
     "iTech Nation",
     "iValue (iValue InfoSolutions / iValue Group)"
+  ],
+  "official_industries": [
+    "Manufacturing",
+    "Automobile",
+    "Power & Energy",
+    "Agriculture",
+    "Educational Institute",
+    "Healthcare",
+    "Electronics",
+    "Pharmaceutical",
+    "Jewelers",
+    "Textile",
+    "Retail",
+    "Logistics",
+    "Finance",
+    "Real Estate",
+    "FMCG",
+    "Travel",
+    "Insurance",
+    "Ceramic"
   ]
 }

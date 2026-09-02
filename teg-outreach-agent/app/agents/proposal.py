@@ -139,10 +139,12 @@ class ProposalAgent(Agent):
             sector_peer_count = 0
         sector_peer_count = max(sector_peer_count, len(peers))
         scale_note = ex.facts.get("scale_note", "")
+        facts = _load_facts()
         testimonials = [
             {"name": t.name, "role": t.role, "quote": t.quote}
-            for t in _load_facts().cleared_testimonials
+            for t in facts.cleared_testimonials
         ]
+        industries = list(facts.official_industries)
         fallback_pkg = _PRICING_BY_PERSONA[persona]
         if price_requested:
             pkg_line = (
@@ -179,6 +181,7 @@ class ProposalAgent(Agent):
             f"TEG goals: {gp_goals}\n\nTEG mechanism: {gp_mechanism}\n\nEvidence: {gp_evidence}\n\n"
             f"Base pain points for this persona (personalize, keep 2-4):\n{pain_lines}\n\n"
             f"Cleared testimonials (quote at most 2 verbatim):\n{testi}\n\n"
+            f"TEG's 18 official buyer industries: {industries}\n"
             f"Peer companies you may name (only these): {peers}\n"
             f"Companies in the '{dossier.sector}' sector at TEG 2024 (total): {sector_peer_count}\n"
             f"Scale note (use verbatim, do not alter numbers): {scale_note!r}\n\n"
@@ -192,6 +195,12 @@ class ProposalAgent(Agent):
             "- sector_fit: 4-6 {lever, weight} rows; weight 1-5 = how much each TEG lever matters "
             f"for the '{dossier.sector}' sector (use the pain library)\n"
             f"- peers_in_sector_total: echo the integer {sector_peer_count} exactly\n"
+            "- target_industries: from TEG's 18 official buyer industries listed above, the "
+            "3-6 whose buyers this company actually sells to, based on the conversation and "
+            "their company profile. Copy the names EXACTLY as listed. Most-relevant first. "
+            "If the conversation gives no signal about who they sell to, return an empty list.\n"
+            "- target_industries_note: one sentence saying why those industries are the ones "
+            "that matter for them. No numbers, no promised outcomes. Empty if the list is empty.\n"
             "- peer_context_line: ONE sentence giving the named peers their context, e.g. "
             f"'{sector_peer_count} companies in {dossier.sector} exhibited at TEG 2024 — "
             "including the names below.' Use the real sector name and the real count; if the "
@@ -263,6 +272,20 @@ class ProposalAgent(Agent):
                     found.append((label, op))
             return found
 
+        def _clamp_target_industries(p: Proposal) -> None:
+            """Only ever name real TEG sectors, matched case-insensitively, no dupes."""
+            by_lower = {i.lower(): i for i in industries}
+            seen: set[str] = set()
+            keep: list[str] = []
+            for raw in p.target_industries:
+                canon = by_lower.get(str(raw).strip().lower())
+                if canon and canon not in seen:
+                    seen.add(canon)
+                    keep.append(canon)
+            p.target_industries = keep[:6]
+            if not p.target_industries:
+                p.target_industries_note = ""
+
         def _clamp_section_ctas(p: Proposal) -> None:
             p.section_ctas = {
                 k: str(v)[:40]
@@ -281,6 +304,7 @@ class ProposalAgent(Agent):
         if not price_requested:
             _force_no_price(proposal)
         _clamp_sector_fit(proposal)
+        _clamp_target_industries(proposal)
         _clamp_section_ctas(proposal)
         violations = all_violations(proposal)
         t_v = await _testimonial_violation(proposal)
@@ -298,6 +322,7 @@ class ProposalAgent(Agent):
             if not price_requested:
                 _force_no_price(proposal)
             _clamp_sector_fit(proposal)
+            _clamp_target_industries(proposal)
             _clamp_section_ctas(proposal)
             violations = all_violations(proposal)
             t_v = await _testimonial_violation(proposal)

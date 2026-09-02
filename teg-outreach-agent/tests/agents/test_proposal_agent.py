@@ -83,6 +83,8 @@ def _good_proposal(**over):
         closing_cta_body="Reply in the chat, or reach the team directly — we'll take it from here.",
         peers_in_sector_total=12,
         peer_context_line="12 companies in Software Development exhibited at TEG 2024 — including the names below.",
+        target_industries=["Manufacturing", "Finance"],
+        target_industries_note="Your BI dashboards sell into operations and finance teams.",
     )
     return base.model_copy(update=over)
 
@@ -203,3 +205,34 @@ async def test_build_clamps_section_ctas():
     )
     assert set(p.section_ctas) <= {"priorities", "charts", "investment"}
     assert all(len(v) <= 40 for v in p.section_ctas.values())
+
+
+async def test_build_clamps_target_industries_to_the_official_list():
+    bad = _good_proposal(target_industries=[
+        "manufacturing",          # wrong case -> canonicalized
+        "Blockchain Consulting",  # not a TEG industry -> dropped
+        "Textile", "Textile",     # duplicate -> deduped
+        "Finance", "Retail", "Logistics", "Healthcare", "Agriculture",  # -> capped at 6
+    ])
+    llm = FakeLLMClient(structured=[bad])
+    p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+    )
+    assert "Blockchain Consulting" not in p.target_industries
+    assert p.target_industries[0] == "Manufacturing"  # canonical casing
+    assert len(p.target_industries) == len(set(p.target_industries)) <= 6
+
+
+async def test_build_drops_the_industry_note_when_no_industries_survive():
+    bad = _good_proposal(
+        target_industries=["Blockchain Consulting"],
+        target_industries_note="These are your buyers.",
+    )
+    llm = FakeLLMClient(structured=[bad])
+    p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+    )
+    assert p.target_industries == []
+    assert p.target_industries_note == ""

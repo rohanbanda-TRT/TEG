@@ -15,9 +15,22 @@ describe("charts", () => {
     expect(getByText("250")).toBeInTheDocument();
   });
 
-  it("IndustryMix renders a row per industry", () => {
+  it("IndustryMix lists all 18 industries when nothing is highlighted", () => {
     const { container } = render(<IndustryMix />);
-    expect(container.querySelectorAll(".chart-row").length).toBe(18);
+    expect(container.querySelectorAll(".ind-chip").length).toBe(18);
+    expect(container.querySelectorAll(".ind-chip--on").length).toBe(0);
+  });
+
+  it("IndustryMix pulls the highlighted industries out and keeps the rest", () => {
+    const { container, getByText } = render(
+      <IndustryMix highlight={["Manufacturing", "Textile"]} note="Your buyers sit here." />,
+    );
+    const on = container.querySelectorAll(".ind-chip--on");
+    expect(on.length).toBe(2);
+    expect(Array.from(on).map((e) => e.textContent)).toEqual(["Manufacturing", "Textile"]);
+    // highlighted ones are not repeated in the remainder
+    expect(container.querySelectorAll(".ind-chip").length).toBe(18);
+    expect(getByText("Your buyers sit here.")).toBeInTheDocument();
   });
 
   it("Funnel renders one band per step with legible labels", () => {

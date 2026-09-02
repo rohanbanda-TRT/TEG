@@ -83,8 +83,13 @@ export function TheRoom({ p }: { p: Proposal }) {
 
       <Reveal>
         <div className="chart-block">
-          <h3>Every industry, under one roof</h3>
-          <IndustryMix />
+          <h3>
+            {p.target_industries?.length ? "The buyers you came for" : "Every industry, under one roof"}
+          </h3>
+          <IndustryMix
+            highlight={p.target_industries}
+            note={p.target_industries_note}
+          />
         </div>
       </Reveal>
     </Section>

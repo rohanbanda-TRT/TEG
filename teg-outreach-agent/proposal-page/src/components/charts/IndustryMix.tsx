@@ -1,27 +1,48 @@
 import { INDUSTRIES } from "../../lib/chartData";
 
-export function IndustryMix() {
+/**
+ * The 18 buyer industries TEG draws, with the ones this prospect actually
+ * sells to pulled out and highlighted. Deliberately NOT a bar chart: we have
+ * no per-industry attendance split, and inventing bar lengths to look like
+ * data would be a fabricated statistic.
+ */
+export function IndustryMix({
+  highlight = [],
+  note,
+}: {
+  highlight?: string[];
+  note?: string;
+}) {
+  const hl = new Set(highlight.map((h) => h.toLowerCase()));
+  const rest = INDUSTRIES.filter((n) => !hl.has(n.toLowerCase()));
+
   return (
     <div>
-      <p className="chart-caption">
-        Buyers attend across every sector — illustrative, not to scale
-      </p>
-      <div className="chart-rows" role="img" aria-label="Industries represented at TEG">
-        {INDUSTRIES.map((name, i) => {
-          const frac = 0.5 + (0.45 * i) / (INDUSTRIES.length - 1);
-          return (
-            <div className="chart-row" key={name}>
-              <span className="chart-row__label">{name}</span>
-              <span className="chart-row__track">
-                <span
-                  className="chart-row__fill chart-row__fill--cyan reveal-bar"
-                  style={{ "--w": `${frac * 100}%`, "--d": `${i * 0.03}s` } as React.CSSProperties}
-                />
+      {highlight.length > 0 ? (
+        <>
+          <p className="chart-caption">
+            {note || "The industries TEG draws that matter most for you."}
+          </p>
+          <div className="ind-grid ind-grid--hl">
+            {highlight.map((name) => (
+              <span className="ind-chip ind-chip--on" key={name}>
+                {name}
               </span>
-              <span className="chart-row__value" aria-hidden="true" />
-            </div>
-          );
-        })}
+            ))}
+          </div>
+          <p className="ind-rest-label">Plus buyers from every other TEG industry:</p>
+        </>
+      ) : (
+        <p className="chart-caption">
+          TEG 2026 draws buyers across all {INDUSTRIES.length} of these industries.
+        </p>
+      )}
+      <div className="ind-grid">
+        {rest.map((name) => (
+          <span className="ind-chip" key={name}>
+            {name}
+          </span>
+        ))}
       </div>
     </div>
   );

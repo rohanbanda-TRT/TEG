@@ -69,12 +69,32 @@ def _exhibitor_names(root: Path) -> list[str]:
     return sorted(names)
 
 
+def _official_industries(root: Path) -> list[str]:
+    """The official TEG 2026 target sectors, in the KB's own order.
+
+    Shaped as a numbered list under the '## Official Industry Sectors' heading:
+        1. Manufacturing
+        2. Automobile
+    """
+    swp = (root / "sector_wise_participation.md").read_text("utf-8")
+    m = re.search(
+        r"^##\s+Official Industry Sectors.*?$(.*?)^##\s", swp, re.MULTILINE | re.DOTALL
+    )
+    if not m:
+        return []
+    return [
+        line.group(1).strip()
+        for line in re.finditer(r"^\s*\d+\.\s+(.+?)\s*$", m.group(1), re.MULTILINE)
+    ]
+
+
 def build() -> dict:
     root = Path(get_settings().kb_path).resolve()
     return {
         "generated_from_kb_at": datetime.now(UTC).date().isoformat(),
         "cleared_testimonials": _cleared_testimonials(root),
         "exhibitor_names": _exhibitor_names(root),
+        "official_industries": _official_industries(root),
     }
 
 

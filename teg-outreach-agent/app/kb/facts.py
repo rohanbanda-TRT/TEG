@@ -27,6 +27,7 @@ class Facts:
     cleared_testimonials: tuple[Testimonial, ...]
     exhibitor_names: frozenset[str]
     exhibitor_names_lower: frozenset[str]
+    official_industries: tuple[str, ...]
 
 
 @lru_cache
@@ -38,4 +39,5 @@ def load() -> Facts:
         cleared_testimonials=tuple(Testimonial(**t) for t in raw["cleared_testimonials"]),
         exhibitor_names=names,
         exhibitor_names_lower=frozenset(n.lower() for n in names),
+        official_industries=tuple(raw.get("official_industries", ())),
     )

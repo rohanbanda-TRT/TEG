@@ -3,23 +3,28 @@ export const GROWTH = {
   exhibitors: [125, 250] as [number, number],
 };
 
+/**
+ * TEG's 18 official target industries — the BUYER industries the expo draws,
+ * from techexpogujarat.com/industries/ via the KB's sector_wise_participation.md.
+ * Keep in sync with `official_industries` in app/kb/facts.json.
+ */
 export const INDUSTRIES = [
   "Manufacturing",
   "Automobile",
   "Power & Energy",
   "Agriculture",
-  "Education",
+  "Educational Institute",
   "Healthcare",
   "Electronics",
   "Pharmaceutical",
-  "Jewellery",
+  "Jewelers",
   "Textile",
   "Retail",
   "Logistics",
   "Finance",
-  "IT & Software",
-  "AI & Machine Learning",
-  "Fintech",
   "Real Estate",
-  "Cybersecurity",
+  "FMCG",
+  "Travel",
+  "Insurance",
+  "Ceramic",
 ];

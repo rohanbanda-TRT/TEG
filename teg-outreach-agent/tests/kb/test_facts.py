@@ -25,6 +25,16 @@ def test_exhibitor_names_contains_known():
     assert "third rock techkno" in f.exhibitor_names_lower
 
 
+def test_official_industries_are_the_teg_18():
+    ind = facts.load().official_industries
+    assert len(ind) == 18
+    assert ind[0] == "Manufacturing"
+    assert "Ceramic" in ind
+    assert "Textile" in ind
+    # buyer industries, not exhibitor tech categories
+    assert "Cybersecurity" not in ind
+
+
 def test_build_check_matches_committed_file():
     r = subprocess.run(
         [sys.executable, "scripts/build_kb_facts.py", "--check"],
