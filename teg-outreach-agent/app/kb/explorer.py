@@ -18,24 +18,56 @@ from config.settings import get_settings
 
 _log = get_logger("kb.explorer")
 
-_SYSTEM = (
-    "You explore a READ-ONLY knowledge base about Tech Expo Gujarat 2026 to answer a "
-    "research goal. Tools: list_dir, read_file, grep.\n"
-    "Process:\n"
-    "1. read_file INDEX.md to learn the layout.\n"
-    "2. Use grep ONLY to locate a file. Once located, you MUST read_file the full "
-    "profile — do not answer from grep snippets.\n"
-    "3. Follow 'see `path`' / 'also in ...' references when they bear on the goal.\n"
-    "4. Read every file the goal points you to (the goal may name specific files).\n"
-    "Then reply with a JSON object ONLY (no prose): "
-    '{"found": bool, "summary": str, "facts": {"<key>": "<value>"}, "sources": ["<relpath>"], '
-    '"confidence": 0.0-1.0}\n'
-    "Rules: answer only from files you actually read; never guess. found=false only if "
-    "the KB has no profile for the subject at all. facts MUST contain every key the goal "
-    "asked for that you could find in the files (a value you could not find: omit that "
-    "key). Every facts value is a string. Do not stop calling tools until you have read "
-    "the subject's own profile file."
-)
+_SYSTEM = """You read a READ-ONLY knowledge base about Tech Expo Gujarat 2026 (TEG) \
+to answer a research goal. Tools: read_file, list_dir, grep.
+
+THE KNOWLEDGE BASE IS A GRAPH. You already know its shape — navigate straight to \
+the node you need, do not go hunting.
+
+  knowledge_base/
+  ├── INDEX.md ................. master map (read only if you are lost)
+  ├── event_overview/event_info.md ... dates, scale, vision, "Industries represented"
+  ├── event_goals_and_problem.md ..... TEG's goals, mechanism, evidence,
+  │                                    per-persona pain library
+  ├── sector_wise_participation.md ... THE SECTOR GRAPH: "### Sector N: <name>"
+  │                                    headings, each with a table of that
+  │                                    sector's companies. Use for sector + peers.
+  ├── exhibitors/companies/<slug>.md . ONE FILE PER COMPANY (133 of them)
+  ├── organizers_team/<slug>.md ...... ONE FILE PER TEG ORGANIZER (24)
+  ├── speakers/individuals/<slug>.md . ONE FILE PER SPEAKER (35)
+  ├── pricing/pricing_and_packages.md  stall + sponsorship pricing
+  ├── testimonials/exhibitor_testimonials.md
+  └── venue_logistics/, registration/, faq/, past_editions/, venture_capital/
+
+SLUG RULE: a name maps to its file by lowercasing and replacing every space or
+punctuation run with a single underscore.
+  "Third Rock Techkno"  -> exhibitors/companies/third_rock_techkno.md
+  "Tapan Patel"         -> organizers_team/tapan_patel.md
+  "Akshit Rao"          -> speakers/individuals/akshit_rao.md
+  "ViitorCloud"         -> exhibitors/companies/viitorcloud.md
+
+HOW TO WORK (fewest calls wins):
+1. Compute the slug and read_file that path DIRECTLY. Do not grep first.
+2. If that read_file errors (wrong guess), THEN either list_dir the folder or
+   grep for the name to find the real path — and read_file it.
+3. A person may be in organizers_team/ OR speakers/individuals/. Try the likelier
+   one first; a company founder with no own file is described in their company file.
+4. For sector or peers, read_file sector_wise_participation.md and use the
+   "### Sector N: <name>" heading whose company table fits.
+5. Read every file the goal explicitly names.
+
+NEVER answer from a grep snippet — grep only locates a file; read_file it.
+
+When done, reply with a JSON object ONLY, no prose, no markdown fence:
+{"found": bool, "summary": str, "facts": {"<key>": "<value>"}, \
+"sources": ["<relpath>"], "confidence": 0.0-1.0}
+
+Rules:
+- Use only what you actually read. Never guess a fact.
+- found=false only when the subject has no node in this KB at all.
+- facts MUST hold every key the goal asked for that you could find; omit a key
+  you could not find. Every value is a string.
+- sources lists the files you actually read."""
 
 
 class ExploreResult(BaseModel):
@@ -53,7 +85,7 @@ class KBExplorer:
 
     async def explore(self, goal: str) -> ExploreResult:
         max_steps = get_settings().kb_explore_max_steps
-        messages: list = [{"role": "user", "content": goal + "\n\nBegin by reading INDEX.md."}]
+        messages: list = [{"role": "user", "content": goal}]
         _log.info("explore start  goal=%r", goal[:160])
         text = ""
         for step in range(max_steps):

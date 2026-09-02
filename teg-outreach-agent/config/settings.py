@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     log_body_chars: int = 800        # truncation for logged prompt/response bodies
 
     # --- KB explorer ---
-    kb_explore_model: str = "gemini-3.1-pro-preview"  # stronger model drives the tool loop
+    kb_explore_model: str = "gemini-3.7-flash"  # the graph map in _SYSTEM keeps flash on track
     kb_explore_timeout_s: int = 45   # wall-clock per explore() call
     kb_explore_max_steps: int = 8    # model turns before a forced answer
     kb_read_file_max_bytes: int = 6144  # read_file page size

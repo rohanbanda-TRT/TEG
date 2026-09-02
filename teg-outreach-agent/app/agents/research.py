@@ -32,9 +32,8 @@ _TEG_SECTORS = (
 
 _COMPANY_GOAL = (
     "Profile the company {company} for a Tech Expo Gujarat 2026 outreach dossier.\n"
-    "Read INDEX.md, then the company's own profile in exhibitors/companies/ (use grep "
-    "only to locate it), then sector_wise_participation.md, and "
-    "event_overview/event_info.md if you need the industry list.\n"
+    "Read its profile in exhibitors/companies/ (compute the slug), then "
+    "sector_wise_participation.md for the sector and its peer table.\n"
     "Return facts:\n"
     "- sector: the ONE best-fitting TEG sector. TEG is NOT IT-only; choose from: "
     + _TEG_SECTORS
@@ -47,11 +46,13 @@ _COMPANY_GOAL = (
 )
 
 _PERSON_GOAL = (
-    "Profile {person}, associated with {company}. Read INDEX.md, then look in "
-    "organizers_team/ and speakers/individuals/ for this person's profile.\n"
+    "Profile {person}, associated with {company}. Compute the slug and try "
+    "organizers_team/<slug>.md, then speakers/individuals/<slug>.md. If neither "
+    "exists, check the company's file exhibitors/companies/<company-slug>.md for a "
+    "founder/leadership mention.\n"
     "Return facts: designation, seniority, is_technical (true/false), teg_role "
     "(organizer / speaker / founder / none), background.\n"
-    "If the KB has no profile for this person, set found=false."
+    "If this person has no node in the KB, set found=false."
 )
 
 _PEERS_GOAL = (
@@ -161,16 +162,23 @@ class ResearchAgent(Agent):
             )
             llm_calls = 1
 
-        sector = c_fields.get("sector") or synth.sector
-        _log.info("[sector] kb=%r  synth=%r  -> %r",
-                  c_fields.get("sector"), synth.sector, sector)
+        # A KB hit means we read the company's own profile — trust its sector.
+        # A KB miss leaves only the explorer's guess from the company name, which
+        # is weaker than a classification made from real web text about the firm.
+        if c_ex.found:
+            sector = c_fields.get("sector") or synth.sector
+        else:
+            sector = synth.sector or c_fields.get("sector")
+        _log.info("[sector] kb=%r (found=%s)  synth=%r  -> %r",
+                  c_fields.get("sector"), c_ex.found, synth.sector, sector)
 
         peers = _split_peers(c_fields.get("sector_peers", ""), company)
-        if sector and not peers:
-            # the company is not itself a KB exhibitor: ask the explorer for that
-            # sector's exhibitors in one small bounded call
+        # Re-fetch peers when we have a sector but no peers for it, or when the
+        # sector we settled on is not the one those peers were drawn from.
+        if sector and (not peers or sector != c_fields.get("sector")):
             ex = await self._explore(_PEERS_GOAL.format(sector=sector, company=company))
-            peers = _split_peers(ex.facts.get("sector_peers", ""), company)
+            fresh = _split_peers(ex.facts.get("sector_peers", ""), company)
+            peers = fresh or peers
         _log.info("[peers] sector=%r -> %s", sector, peers or "none")
 
         company_profile = {
