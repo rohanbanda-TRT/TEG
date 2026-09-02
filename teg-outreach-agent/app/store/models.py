@@ -69,6 +69,7 @@ class ChatSession(Base):
     learned_facts: Mapped[dict] = mapped_column(JSONB, default=dict)
     persona_remapped: Mapped[bool] = mapped_column(Boolean, default=False)
     needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    price_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class ChatMessage(Base):

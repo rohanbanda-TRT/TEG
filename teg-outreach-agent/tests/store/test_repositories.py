@@ -67,3 +67,27 @@ async def test_full_persistence_roundtrip():
         assert h.prospect_confidence == "high"
         dom = DossierRepo.to_domain(await DossierRepo(s).get(drow.id))
         assert dom.sector == "AI"
+
+
+async def test_update_state_sets_price_requested():
+    async with SessionLocal() as s:
+        inq = await InquiryRepo(s).create(
+            IntakePayload(person_name="A", company_name="B"), _intake(),
+        )
+        await s.flush()
+        drow = await DossierRepo(s).create(inq.id, ResearchDossier(relationship="cold"))
+        await s.flush()
+        cs = await SessionRepo(s).create(
+            inq.id, drow.id,
+            PersuasionInit(persona="visitor", target_cta="register_visitor", opening_message="hi"),
+        )
+        await s.flush()
+        assert cs.price_requested is False
+
+        await SessionRepo(s).update_state(
+            cs.id, cta_status="none", cta_type=None, cta_detail={}, learned_facts={},
+            persona="visitor", persona_remapped=False, needs_review=False,
+            price_requested=True,
+        )
+        await s.commit()
+        assert (await SessionRepo(s).get(cs.id)).price_requested is True
