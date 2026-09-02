@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 
 from app.domain.schemas import Persona
-from app.kb.loader import get_kb
+from app.kb.facts import load as _load_facts
 
 _RUPEE = re.compile(r"₹\s?[\d,]+(?:\.\d+)?\s*(?:crore|cr|lakh|lac|k)?", re.I)
 _VISITOR_CTX = re.compile(r"\b(visitor|golden ticket)\b", re.I)
@@ -43,11 +43,11 @@ class GuardrailViolation:
 
 
 def _cleared_names() -> set[str]:
-    return {t["name"] for t in get_kb().cleared_testimonials()}
+    return {t.name for t in _load_facts().cleared_testimonials}
 
 
 def _kb_company_names() -> set[str]:
-    return {c.name for c in get_kb()._companies}  # noqa: SLF001
+    return set(_load_facts().exhibitor_names)
 
 
 def check_message(text: str, *, allowed_peers: list[str], persona: Persona) -> list[GuardrailViolation]:

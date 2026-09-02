@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.agents.base import Agent
 from app.domain.schemas import IntakePayload, IntakeResult, IntentHint
 from app.kb._names import _token_set_ratio
-from app.kb.loader import get_kb
+from app.kb.facts import load as _load_facts
 from app.obs import get_logger
 
 _log = get_logger("agent.analysis")
@@ -55,8 +55,7 @@ class AnalysisAgent(Agent):
         person = _clean_name(payload.person_name)
         raw_company = payload.company_name.strip()
 
-        kb = get_kb()
-        kb_names = [c.name for c in kb._companies]  # noqa: SLF001
+        kb_names = sorted(_load_facts().exhibitor_names)
         system = (
             "You normalise a company name for an event CRM. Only expand an abbreviation "
             "or partial name if it clearly matches one of the known companies provided. "
