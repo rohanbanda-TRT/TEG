@@ -187,38 +187,38 @@ text], schema=ExploreResult)`. On any parse failure it returns
 
 `run()` keeps `asyncio.gather` over two coroutines:
 
-```python
-company_goal = (
-    f"Profile the company {intake.company_name_canonical}. "
-    "Return facts: sector (the canonical TEG sector), company_size, hq, founder, "
-    "website, teg_history (which past editions / sponsor tier), booth_number. "
-    "Also list up to 5 OTHER TEG exhibitors in the same sector from "
-    "sector_wise_participation.md (exclude the company itself) as facts key 'sector_peers' "
-    "(comma-separated)."
-)
-person_goal = (
-    f"Profile {intake.person_name}, who is associated with "
-    f"{intake.company_name_canonical}. Return facts: designation, seniority, "
-    "is_technical (true/false), teg_role (organizer / speaker / founder / none), "
-    "background. If the KB has no profile for this person, set found=false."
-)
-```
+The company goal makes the model read both `event_overview/event_info.md`
+("Industries represented") and `sector_wise_participation.md`, then pick the ONE
+best-fitting TEG sector. **TEG is not IT-only** — the sector list spans tech
+verticals (AI & Machine Learning, Fintech, Cybersecurity, Cloud &
+Infrastructure, Data & Analytics, Software Development & IT Services, Digital
+Marketing & SEO, HR Tech, IoT & Hardware, Enterprise Software, Healthcare Tech,
+EdTech) *and* broader industries (Manufacturing, Automobile, Power & Energy,
+Agriculture, Education, Healthcare, Pharmaceutical, Textile, Jewellery, Retail,
+Logistics, Finance). Full goal text is in the plan (Task 8). The person goal is
+as before (designation, seniority, is_technical, teg_role, background;
+`found=false` if no profile).
 
-- `sector` in the dossier is whatever the explorer put in `facts["sector"]`.
-  The company goal instructs the model to use one of the sector names defined
-  in `sector_wise_participation.md` (its `### Sector N: <name>` headings —
-  e.g. "AI & Machine Learning", "Fintech", "Software Development & IT
-  Services"). The model reads that file and picks the best-fitting heading,
-  replacing the deleted `canonical_sector` keyword map.
+- `sector` in the dossier is `explorer facts["sector"]` when the explorer found
+  it, else `synth.sector` from the web-fallback classifier (see below). No
+  regex keyword map, no `canonical_sector()`.
 - `peer_companies` is `facts["sector_peers"]` split on commas, stripped,
   de-duplicated, own-company removed, capped at 5.
 - `relationship` logic unchanged (`teg_role == "organizer"` -> `insider`,
   etc.), reading `person facts["teg_role"]` and `company facts["teg_history"]`.
-- **Web fallback unchanged**: if a company/person `explore()` returns
-  `found=False` or `confidence < 0.5`, the existing Tavily -> scrape -> `_Synthesis`
-  cascade runs for that track exactly as now. `ask_prospect` is set from the
-  post-fallback id-confidence, same thresholds (`company_description` if company
-  still unresolved, `role` if person still unresolved).
+- **Web fallback**: if a company/person `explore()` returns `found=False` or
+  `confidence < 0.5`, the existing Tavily -> scrape -> `_Synthesis` cascade runs
+  for that track. **`_Synthesis` now also classifies the sector**: its prompt
+  passes the same broad TEG-sector list and instructs the model, when the web
+  text describes the business but names no formal industry, to pick the closest
+  TEG sector (fixes the observed `sector=None` for a non-KB company like "Itorix
+  Infotech LLP", an SEO firm -> "Digital Marketing & SEO"). `ask_prospect` is
+  set from the post-fallback id-confidence, same thresholds.
+- If a sector is known but `peer_companies` is empty (typical for a web-fallback
+  company that is not itself a TEG exhibitor), the ResearchAgent makes ONE small
+  bounded `explore("List up to 5 TEG exhibitors in the '<sector>' sector from
+  sector_wise_participation.md")` to populate peers — keeping all KB reading
+  inside the explorer.
 
 `_track()` loses its KB branch entirely — it becomes the web-only cascade,
 invoked only when the explorer missed.

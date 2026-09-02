@@ -1196,13 +1196,25 @@ Key changes:
 
   ```python
   _COMPANY_GOAL = (
-      "Profile the company {company}. Return facts: sector (use one of the "
-      "'### Sector N: <name>' headings from sector_wise_participation.md, e.g. "
-      "'AI & Machine Learning', 'Fintech', 'Software Development & IT Services'), "
-      "company_size, hq, founder, website, teg_history (which past editions / "
-      "sponsor tier). Also list up to 5 OTHER TEG exhibitors in that same sector "
-      "from sector_wise_participation.md, excluding {company} itself, as facts key "
-      "'sector_peers' (comma-separated)."
+      "Profile the company {company} for a Tech Expo Gujarat 2026 outreach dossier.\n"
+      "Read INDEX.md, then event_overview/event_info.md ('Industries represented') "
+      "and sector_wise_participation.md ('### Sector N: <name>' headings).\n"
+      "Return facts:\n"
+      "- sector: the ONE best-fitting TEG sector for this company. TEG is NOT "
+      "IT-only — sectors span tech verticals (AI & Machine Learning, Fintech, "
+      "Cybersecurity, Cloud & Infrastructure, Data & Analytics, Software "
+      "Development & IT Services, Digital Marketing & SEO, HR Tech, IoT & "
+      "Hardware, Enterprise Software, Healthcare Tech, EdTech) AND broader "
+      "industries (Manufacturing, Automobile, Power & Energy, Agriculture, "
+      "Education, Healthcare, Pharmaceutical, Textile, Jewellery, Retail, "
+      "Logistics, Finance). Pick the sector name as written in the KB.\n"
+      "- company_size, hq, founder, website\n"
+      "- teg_history: which past editions / sponsor tier, or 'none'\n"
+      "- sector_peers: up to 5 OTHER TEG exhibitors in that same sector from "
+      "sector_wise_participation.md, excluding {company} itself (comma-separated). "
+      "If that file has no companies for the sector, return an empty string.\n"
+      "If the KB has no profile for {company}, set found=false but still return a "
+      "best-guess 'sector' fact if the KB context makes one obvious."
   )
   _PERSON_GOAL = (
       "Profile {person}, associated with {company}. Return facts: designation, "
@@ -1248,10 +1260,36 @@ Key changes:
   `_track()` from the `need_web` line onward — web search, then optional scrape,
   merged into `fields`, `id_conf` bumped to 0.6 on a `web_context` hit. Delete
   the old `_track()`.
-- `relationship`, `ask_prospect`, `_Synthesis` LLM call over pooled
-  `web_context`/`page_text`, `research_cost`, and all the `_log` lines: unchanged.
-- `sector` in the dossier: `c_fields.get("sector")` — already the canonical name
-  the model chose; no post-processing.
+- **`_Synthesis` gains a sector classifier.** Add `sector: str | None = None`
+  is already there — change its extraction prompt so that when the web text
+  describes what the company does but names no formal industry, the model
+  classifies it into the closest TEG sector from an explicit list passed in the
+  prompt (the same broad list as `_COMPANY_GOAL`: tech verticals + Manufacturing,
+  Healthcare, Education, Textile, Retail, Finance, ...). Then in `run()`:
+  `sector = c_fields.get("sector") or synth.sector` (unchanged line, but
+  `synth.sector` is now populated for the Itorix / "SEO firm not in KB" case).
+  Add a log line: `_log.info("[sector] kb=%r  synth=%r  -> %r", c_fields.get("sector"), synth.sector, sector)`.
+- `relationship`, `ask_prospect`, the pooled-text `_Synthesis` call,
+  `research_cost`, and the other `_log` lines: unchanged.
+- `sector` in the dossier: `c_fields.get("sector") or synth.sector` — the KB
+  explorer's choice wins; the web-fallback classifier fills the gap. No regex
+  keyword map, no `canonical_sector()`.
+- **Peers when the company is not a KB exhibitor but the sector is now known.**
+  The `_COMPANY_GOAL` already asks the explorer for `sector_peers` and to
+  "return a best-guess sector fact if the KB context makes one obvious" even
+  when `found=false` — so for a company like Itorix the explorer reads
+  `sector_wise_participation.md`, classifies it as "Digital Marketing & SEO",
+  and returns that sector's other exhibitors as `sector_peers` in the SAME
+  call. No second call, no `fs_tools` outside the loop. If the explorer genuinely
+  returns no peers, the dossier has none — acceptable; the web-fallback company
+  is not itself a TEG exhibitor.
+- One nuance: if the explorer returned `found=false` with a `sector` guess but
+  the web fallback *then* overrode `sector` via `synth.sector`, and the explorer
+  gave no `sector_peers`, the ResearchAgent makes **one** extra
+  `explorer.explore("List up to 5 TEG exhibitors in the '<sector>' sector from "
+  "sector_wise_participation.md.")` — a tiny, bounded call — to populate peers.
+  Guard it with `if sector and not peers`. This keeps all KB reading inside the
+  explorer.
 
 - [ ] **Step 4: Update `orchestrator.py`**
 
