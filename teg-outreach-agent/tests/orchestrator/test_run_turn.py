@@ -49,7 +49,7 @@ async def test_run_turn_persists_pair_and_state():
             _Analysis(
                 reply="Shall I send the stall booking link?", detected_cta="book_stall",
                 cta_status="offered", cta_type=None, cta_detail={}, should_handoff=False,
-                learned_facts={"budget_mentioned": False},
+                discovery={"scale": "small"},
             ),
         ],
     )
@@ -61,7 +61,7 @@ async def test_run_turn_persists_pair_and_state():
         assert [m.role for m in msgs] == ["agent", "prospect", "agent"]
         cs = (await s.execute(select(ChatSession))).scalars().first()
         assert cs.cta_status == "offered"
-        assert cs.learned_facts == {"budget_mentioned": False}
+        assert cs.learned_facts == {"scale": "small"}
 
 
 async def test_end_session_generates_handoff_when_cta_incomplete():
@@ -71,7 +71,7 @@ async def test_end_session_generates_handoff_when_cta_incomplete():
             _PersonaChoice(persona="it_tech_service", reason="software company"),
             _Analysis(reply="No worries, I'll pass you to the team.", detected_cta=None,
                       cta_status="none", cta_type=None, cta_detail={}, should_handoff=True,
-                      learned_facts={}),
+                      discovery={}),
             HandoffPacket(summary="Rohan from TRT, exploring exhibiting, not ready to commit.",
                           recommended_next_step="Sales rep to email stall deck.",
                           suggested_followup_message="Hi Rohan, following up on TEG 2026...",

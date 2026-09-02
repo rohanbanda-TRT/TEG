@@ -23,7 +23,7 @@ async def test_respond_basic_turn_updates_cta():
     llm = FakeLLMClient(structured=[_Analysis(
         reply="Happy to help — shall I send the registration link?",
         detected_cta="register_visitor", cta_status="offered", cta_type=None,
-        cta_detail={}, should_handoff=False, learned_facts={},
+        cta_detail={}, should_handoff=False, discovery={},
     )])
     d = ResearchDossier(sector="Software Development", relationship="cold", peer_companies=["NeuraMonks"])
     turn = await PersuasionAgent(llm).respond(
@@ -42,7 +42,7 @@ async def test_respond_reclassifies_persona_on_first_reply_after_unresolved():
             _Analysis(
                 reply="A category-exclusive sponsorship could work well. Shall I set up a call?",
                 detected_cta="request_sponsor_call", cta_status="offered", cta_type=None,
-                cta_detail={}, should_handoff=False, learned_facts={"sector": "Real Estate"},
+                cta_detail={}, should_handoff=False, discovery={"sector": "Real Estate"},
             ),
         ],
     )
@@ -59,7 +59,7 @@ async def test_respond_reclassifies_persona_on_first_reply_after_unresolved():
 async def test_respond_does_not_reclassify_once_remapped():
     llm = FakeLLMClient(structured=[_Analysis(
         reply="Sounds good.", detected_cta=None, cta_status="offered", cta_type=None,
-        cta_detail={}, should_handoff=False, learned_facts={},
+        cta_detail={}, should_handoff=False, discovery={},
     )])
     d = ResearchDossier(sector=None, relationship="cold", ask_prospect=["role"])
     turn = await PersuasionAgent(llm).respond(
@@ -76,7 +76,7 @@ async def test_respond_handoff_after_repeated_deflection():
     llm = FakeLLMClient(structured=[_Analysis(
         reply="No problem — I'll have the team follow up when you're ready.",
         detected_cta=None, cta_status="none", cta_type=None, cta_detail={},
-        should_handoff=True, learned_facts={},
+        should_handoff=True, discovery={},
     )])
     d = ResearchDossier(sector="Software Development", relationship="cold")
     turn = await PersuasionAgent(llm).respond(
@@ -89,7 +89,7 @@ async def test_respond_handoff_after_repeated_deflection():
 async def test_respond_guardrail_fallback_sets_needs_review():
     bad = _Analysis(
         reply="Visitor tickets are ₹400, super cheap!", detected_cta=None,
-        cta_status="none", cta_type=None, cta_detail={}, should_handoff=False, learned_facts={},
+        cta_status="none", cta_type=None, cta_detail={}, should_handoff=False, discovery={},
     )
     llm = FakeLLMClient(structured=[bad, bad])
     d = ResearchDossier(sector="Software Development", relationship="cold", peer_companies=["NeuraMonks"])

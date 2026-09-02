@@ -16,7 +16,7 @@ def _state(persona="it_tech_service"):
 async def test_respond_propagates_wants_proposal():
     llm = FakeLLMClient(structured=[_Analysis(
         reply="Sure — one moment.", detected_cta=None, cta_status="offered", cta_type=None,
-        cta_detail={}, should_handoff=False, learned_facts={}, wants_proposal=True,
+        cta_detail={}, should_handoff=False, discovery={}, wants_proposal=True,
     )])
     d = ResearchDossier(sector="Software Development", relationship="cold", peer_companies=["NeuraMonks"])
     turn = await PersuasionAgent(llm).respond(
@@ -30,7 +30,7 @@ async def test_respond_propagates_wants_proposal():
 async def test_respond_wants_proposal_defaults_false():
     llm = FakeLLMClient(structured=[_Analysis(
         reply="Ok.", detected_cta=None, cta_status="offered", cta_type=None,
-        cta_detail={}, should_handoff=False, learned_facts={},
+        cta_detail={}, should_handoff=False, discovery={},
     )])
     d = ResearchDossier(sector="Software Development", relationship="cold")
     turn = await PersuasionAgent(llm).respond(
