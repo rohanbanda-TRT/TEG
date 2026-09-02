@@ -10,7 +10,52 @@ os.environ.setdefault(
     "postgresql+psycopg://teg@127.0.0.1:5433/teg_outreach_test",
 )
 
-import pytest  # noqa: E402
+from typing import ClassVar
+
+import pytest
+
+
+class StubExplorer:
+    """A KBExplorer stand-in for tests: canned results, no LLM and no file reads.
+
+    Defaults describe the KB-known fixtures the suite uses (Third Rock Techkno /
+    Tapan Patel). Anything else comes back as a miss, which is what an unknown
+    company or person should produce.
+    """
+
+    _COMPANY: ClassVar[dict] = {
+        "sector": "AI & Machine Learning",
+        "website": "https://www.thirdrocktechkno.com/",
+        "teg_history": "TEG 2024 exhibitor; TEG 2026 exhibitor",
+        "sector_peers": "ViitorCloud, Green Apex, NeuraMonks, ZeroThreat",
+    }
+    _PERSON: ClassVar[dict] = {"designation": "CMO", "teg_role": "organizer"}
+
+    def __init__(self, known: dict | None = None) -> None:
+        from app.kb.explorer import ExploreResult
+
+        self._ExploreResult = ExploreResult
+        self._known = known if known is not None else {
+            "third rock techkno": self._COMPANY,
+            "tapan patel": self._PERSON,
+        }
+        self.goals: list[str] = []
+
+    async def explore(self, goal: str):
+        self.goals.append(goal)
+        g = goal.lower()
+        for key, facts in self._known.items():
+            if key in g:
+                return self._ExploreResult(
+                    found=True, confidence=0.9, facts=dict(facts),
+                    summary=f"KB profile for {key}", sources=[f"stub/{key}.md"],
+                )
+        return self._ExploreResult()
+
+
+@pytest.fixture
+def stub_explorer():
+    return StubExplorer()
 
 
 @pytest.fixture

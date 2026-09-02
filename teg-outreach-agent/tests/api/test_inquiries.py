@@ -9,7 +9,7 @@ from app.api.inquiries import get_orchestrator
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, engine
 
@@ -42,7 +42,7 @@ def _fake_orchestrator() -> Orchestrator:
                 sector="AI Consulting", company_size="200", hq=None, founder=None,
                 designation=None, seniority=None, is_technical=None, person_company_match=None,
             )]),
-            tools=[KBRetriever(), _DeadWeb()],
+            explorer=StubExplorer(), tools=[_DeadWeb()],
         ),
         persuasion=PersuasionAgent(FakeLLMClient(
             structured=[_PersonaChoice(persona="it_tech_service", reason="software services")],

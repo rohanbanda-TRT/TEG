@@ -11,7 +11,7 @@ from app.domain.schemas import HandoffPacket, Proposal, ProposalPackage, Proposa
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 
 pytestmark = pytest.mark.usefixtures("db_schema")
@@ -45,7 +45,7 @@ def _orch(proposal_llm):
         research=ResearchAgent(FakeLLMClient(structured=[_Synthesis(
             sector="AI Consulting", company_size="200", hq=None, founder=None,
             designation=None, seniority=None, is_technical=None, person_company_match=None)]),
-            tools=[KBRetriever(), _DeadWeb()]),
+            explorer=StubExplorer(), tools=[_DeadWeb()]),
         persuasion=PersuasionAgent(FakeLLMClient(
             structured=[_PersonaChoice(persona="it_tech_service", reason="s"),
                         _Analysis(reply="Sure, one moment.", detected_cta=None, cta_status="offered",

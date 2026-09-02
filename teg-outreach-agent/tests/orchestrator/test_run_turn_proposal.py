@@ -7,7 +7,7 @@ from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import IntakePayload
 from app.llm.fake import FakeLLMClient
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, SessionLocal, engine
 from app.store.models import ProposalRow
@@ -35,7 +35,7 @@ async def test_run_turn_populates_wants_proposal_without_generating():
         research=ResearchAgent(FakeLLMClient(structured=[_Synthesis(
             sector="AI Consulting", company_size="200", hq=None, founder=None,
             designation=None, seniority=None, is_technical=None, person_company_match=None)]),
-            tools=[KBRetriever(), _DeadWeb()]),
+            explorer=StubExplorer(), tools=[_DeadWeb()]),
         persuasion=PersuasionAgent(FakeLLMClient(
             structured=[_PersonaChoice(persona="it_tech_service", reason="s"),
                         _Analysis(reply="Sure.", detected_cta=None, cta_status="offered", cta_type=None,

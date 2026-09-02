@@ -6,7 +6,7 @@ from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import HandoffPacket, IntakePayload
 from app.llm.fake import FakeLLMClient
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, SessionLocal, engine
 from app.store.models import ChatMessage, ChatSession, HandoffPacketRow
@@ -34,7 +34,7 @@ async def _seed_session(persuasion_llm) -> tuple[Orchestrator, "uuid.UUID"]:
     research = ResearchAgent(FakeLLMClient(structured=[_Synthesis(
         sector="AI Consulting", company_size="200", hq=None, founder=None,
         designation=None, seniority=None, is_technical=None, person_company_match=None,
-    )]), tools=[KBRetriever(), _DeadWeb()])
+    )]), explorer=StubExplorer(), tools=[_DeadWeb()])
     persuasion = PersuasionAgent(persuasion_llm)
     orch = Orchestrator(analysis=analysis, research=research, persuasion=persuasion)
     res = await orch.run_pipeline(IntakePayload(person_name="Tapan Patel", company_name="Third Rock Techkno"))

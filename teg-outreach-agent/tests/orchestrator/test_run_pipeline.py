@@ -7,7 +7,7 @@ from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import IntakePayload
 from app.llm.fake import FakeLLMClient
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, SessionLocal, engine
 from app.store.models import ChatMessage, ChatSession, Inquiry
@@ -39,7 +39,7 @@ async def test_run_pipeline_persists_and_returns_opening():
             sector="AI Consulting", company_size="200", hq=None, founder=None,
             designation=None, seniority=None, is_technical=None, person_company_match=None,
         )]),
-        tools=[KBRetriever(), _DeadWeb()],
+        explorer=StubExplorer(), tools=[_DeadWeb()],
     )
     persuasion = PersuasionAgent(FakeLLMClient(responses=[
         "Welcome back, Third Rock Techkno. Companies like NeuraMonks and ViitorCloud are "
@@ -70,7 +70,7 @@ async def test_run_pipeline_research_timeout_uses_empty_dossier(monkeypatch):
             raise AssertionError("should have timed out")
 
     analysis = AnalysisAgent(FakeLLMClient(structured=[_CanonResult(canonical="Acme", intent_hint="unknown")]))
-    research = _SlowResearch(FakeLLMClient(), tools=[KBRetriever(), _DeadWeb()])
+    research = _SlowResearch(FakeLLMClient(), explorer=StubExplorer(), tools=[_DeadWeb()])
     persuasion = PersuasionAgent(FakeLLMClient(responses=["What does your company do, and what's your role?"]))
     orch = Orchestrator(analysis=analysis, research=research, persuasion=persuasion)
     res = await orch.run_pipeline(IntakePayload(person_name="X", company_name="Acme"))

@@ -10,7 +10,7 @@ from app.domain.schemas import Proposal, ProposalPackage, ProposalPain
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 
 pytestmark = pytest.mark.usefixtures("db_schema")
@@ -45,7 +45,7 @@ def _orch():
         research=ResearchAgent(FakeLLMClient(structured=[_Synthesis(
             sector="AI Consulting", company_size="200", hq="Ahmedabad", founder=None,
             designation=None, seniority=None, is_technical=None, person_company_match=None)]),
-            tools=[KBRetriever(), _DeadWeb()]),
+            explorer=StubExplorer(), tools=[_DeadWeb()]),
         persuasion=PersuasionAgent(FakeLLMClient(
             structured=[_PersonaChoice(persona="it_tech_service", reason="software services")],
             responses=["Welcome. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."])),

@@ -27,7 +27,7 @@ from app.domain.schemas import HandoffPacket
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import SessionLocal
 from app.store.models import ChatSession, HandoffPacketRow
@@ -54,7 +54,12 @@ def test_happy_path_kb_company_completes_cta():
                 sector="Software Development", company_size="200", hq="Ahmedabad", founder=None,
                 designation=None, seniority=None, is_technical=None, person_company_match=None,
             )]),
-            tools=[KBRetriever(), _DeadWeb()],
+            explorer=StubExplorer({"codemech": {
+                "sector": "Software Development & IT Services",
+                "teg_history": "TEG 2024 exhibitor",
+                "sector_peers": "Techalmas, TechEniac, AppsRow",
+            }}),
+            tools=[_DeadWeb()],
         ),
         persuasion=PersuasionAgent(FakeLLMClient(
             responses=[
@@ -121,7 +126,7 @@ def test_handoff_path_unknown_company_deflect():
             FakeLLMClient(structured=[_CanonResult(canonical="Obscure Local Co", intent_hint="unknown")])
         ),
         research=ResearchAgent(
-            FakeLLMClient(structured=[]), tools=[KBRetriever(), _DeadWeb()]
+            FakeLLMClient(structured=[]), explorer=StubExplorer(), tools=[_DeadWeb()]
         ),
         persuasion=PersuasionAgent(FakeLLMClient(
             responses=["So I can tailor this -- what does your company do, and what's your role there?"],

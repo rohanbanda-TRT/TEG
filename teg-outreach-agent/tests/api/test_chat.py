@@ -11,7 +11,7 @@ from app.api.inquiries import get_orchestrator
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from app.research.kb_retriever import KBRetriever
+from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, engine
 
@@ -48,7 +48,7 @@ def _orch():
         research=ResearchAgent(FakeLLMClient(structured=[_Synthesis(
             sector="AI Consulting", company_size="200", hq=None, founder=None,
             designation=None, seniority=None, is_technical=None, person_company_match=None,
-        )]), tools=[KBRetriever(), _DeadWeb()]),
+        )]), explorer=StubExplorer(), tools=[_DeadWeb()]),
         persuasion=PersuasionAgent(FakeLLMClient(
             responses=["opening: a 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."],
             structured=[

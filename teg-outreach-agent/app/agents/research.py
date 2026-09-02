@@ -6,20 +6,59 @@ from pydantic import BaseModel
 
 from app.agents.base import Agent
 from app.domain.schemas import IntakeResult, ResearchDossier, SourceRef
-from app.kb.loader import get_kb
+from app.kb._names import _norm
+from app.kb.explorer import ExploreResult, KBExplorer
 from app.obs import get_logger
-
-_log = get_logger("agent.research")
-from app.research.kb_retriever import KBRetriever
 from app.research.linkedin import LinkedInStub
 from app.research.page_scraper import PageScraper
-from app.research.tools import ResearchQuery, ResearchResult, ResearchTool
+from app.research.tools import ResearchQuery, ResearchTool
 from app.research.web_search import get_web_search
 from config.outreach_rules import load_rules
 from config.settings import get_settings
 
-_COMPANY_WANT = ["sector", "company_size", "hq", "founder", "website", "teg_history", "booth_number"]
-_PERSON_WANT = ["designation", "seniority", "is_technical", "linkedin_url", "teg_role", "background"]
+_log = get_logger("agent.research")
+
+# TEG spans tech verticals AND broader industries — the event is explicitly not
+# IT-only. Both the explorer goal and the web-fallback classifier use this list.
+_TEG_SECTORS = (
+    "AI & Machine Learning, Fintech, Cybersecurity, Cloud & Infrastructure, "
+    "Data & Analytics, Software Development & IT Services, Digital Marketing & SEO, "
+    "HR Tech, IoT & Hardware, Enterprise Software (ERP, CRM, HRMS), Healthcare Tech, "
+    "E-commerce & Retail Technology, Telecom & VoIP, Energy & Power, "
+    "Real Estate & Construction Technology, Manufacturing & Industrial Technology, "
+    "Consulting & Professional Services, Education, Agriculture, Automobile, "
+    "Pharmaceutical, Textile, Jewellery, Retail, Logistics, Finance"
+)
+
+_COMPANY_GOAL = (
+    "Profile the company {company} for a Tech Expo Gujarat 2026 outreach dossier.\n"
+    "Read INDEX.md, then the company's own profile in exhibitors/companies/ (use grep "
+    "only to locate it), then sector_wise_participation.md, and "
+    "event_overview/event_info.md if you need the industry list.\n"
+    "Return facts:\n"
+    "- sector: the ONE best-fitting TEG sector. TEG is NOT IT-only; choose from: "
+    + _TEG_SECTORS
+    + "\n- company_size, hq, founder, website\n"
+    "- teg_history: which past editions / sponsor tier, or omit if none\n"
+    "- sector_peers: up to 5 OTHER TEG exhibitors in that same sector from "
+    "sector_wise_participation.md, excluding {company} itself (comma-separated)\n"
+    "If the KB has no profile for {company}, set found=false — but still return a "
+    "best-guess 'sector' and its 'sector_peers' if the KB makes one obvious."
+)
+
+_PERSON_GOAL = (
+    "Profile {person}, associated with {company}. Read INDEX.md, then look in "
+    "organizers_team/ and speakers/individuals/ for this person's profile.\n"
+    "Return facts: designation, seniority, is_technical (true/false), teg_role "
+    "(organizer / speaker / founder / none), background.\n"
+    "If the KB has no profile for this person, set found=false."
+)
+
+_PEERS_GOAL = (
+    "List up to 5 TEG exhibitors in the '{sector}' sector from "
+    "sector_wise_participation.md. Return them in facts key 'sector_peers' "
+    "(comma-separated). Exclude {company}."
+)
 
 
 class _Synthesis(BaseModel):
@@ -42,35 +81,56 @@ class _Budget:
         self.scrape_calls = 0
 
 
+def _split_peers(raw: str, own: str) -> list[str]:
+    own_n = _norm(own)
+    out: list[str] = []
+    seen: set[str] = set()
+    for part in (raw or "").split(","):
+        name = part.strip().strip("*")
+        if not name:
+            continue
+        n = _norm(name)
+        if not n or n == own_n or n in seen:
+            continue
+        seen.add(n)
+        out.append(name)
+    return out[:5]
+
+
 class ResearchAgent(Agent):
-    def __init__(self, llm, tools: list[ResearchTool] | None = None) -> None:
+    def __init__(
+        self, llm, *,
+        explorer: KBExplorer | None = None,
+        tools: list[ResearchTool] | None = None,
+    ) -> None:
         super().__init__(llm)
+        self._explorer = explorer or KBExplorer(llm)
         if tools is None:
-            tools = [KBRetriever(), get_web_search(), PageScraper(), LinkedInStub()]
+            tools = [get_web_search(), PageScraper(), LinkedInStub()]
         tools = [t for t in tools if t is not None]
-        self._kb = next((t for t in tools if t.name == "kb"), KBRetriever())
         self._web = next((t for t in tools if t.name == "web"), None)
         self._scraper = next((t for t in tools if t.name == "scrape"), None)
         self._linkedin = next((t for t in tools if t.name == "linkedin"), None)
         self._rules = load_rules()
-        self._auto = self._rules.confidence_thresholds["company_name"]["auto_accept"]
+        # The explorer reports its own confidence in having read the right profile.
+        # That is a different scale from the fuzzy name-match score in
+        # outreach_rules (auto_accept=0.95), so it gets its own threshold: at or
+        # above this we trust the KB and skip the web spend.
+        self._kb_trust = 0.7
 
     async def run(self, intake: IntakeResult) -> ResearchDossier:
         s = get_settings()
         budget = _Budget(s.research_max_searches_per_track, s.research_max_scrapes)
+        company = intake.company_name_canonical
+        person = intake.person_name
         _log.info("research start  company=%r  person=%r  (web=%s)",
-                  intake.company_name_canonical, intake.person_name,
-                  "on" if self._web is not None else "off")
+                  company, person, "on" if self._web is not None else "off")
 
-        company_task = self._track(
-            "company", intake.company_name_canonical, intake.person_name, _COMPANY_WANT, budget,
-        )
-        person_task = self._track(
-            "person", intake.person_name, intake.company_name_canonical, _PERSON_WANT, budget,
-        )
-        (c_fields, c_conf, c_sources, c_id_conf, c_kb_notes), \
-        (p_fields, p_conf, p_sources, p_id_conf, p_kb_notes) = await asyncio.gather(
-            company_task, person_task
+        (c_fields, c_id_conf, c_sources, c_ex), (p_fields, p_id_conf, p_sources, p_ex) = (
+            await asyncio.gather(
+                self._company_track(intake, budget),
+                self._person_track(intake, budget),
+            )
         )
 
         raw_ctx = " ".join(
@@ -82,58 +142,68 @@ class ResearchAgent(Agent):
         synth = _Synthesis()
         llm_calls = 0
         if raw_ctx.strip():
-            _log.info("synthesising %d chars of web/scrape text into firmographic facts", len(raw_ctx))
+            _log.info("synthesising %d chars of web/scrape text into firmographic facts",
+                      len(raw_ctx))
             synth = await self.llm.generate_structured(
                 system=(
                     "Extract firmographic and role facts from research text. "
                     "Only state a field if the text supports it; else leave it null. "
-                    "person_company_match: does the text place this person at this company?"
+                    "person_company_match: does the text place this person at this company?\n"
+                    "sector: if the text describes what the company does but names no formal "
+                    "industry, classify it into the CLOSEST Tech Expo Gujarat sector from this "
+                    "list (TEG is not IT-only): " + _TEG_SECTORS + ". Leave sector null only "
+                    "if the text says nothing about what the company does."
                 ),
                 messages=[{"role": "user", "content": (
-                    f"Person: {intake.person_name}\nCompany: {intake.company_name_canonical}\n\n"
-                    f"Research text:\n{raw_ctx[:6000]}"
+                    f"Person: {person}\nCompany: {company}\n\nResearch text:\n{raw_ctx[:6000]}"
                 )}],
                 schema=_Synthesis,
             )
             llm_calls = 1
 
+        sector = c_fields.get("sector") or synth.sector
+        _log.info("[sector] kb=%r  synth=%r  -> %r",
+                  c_fields.get("sector"), synth.sector, sector)
+
+        peers = _split_peers(c_fields.get("sector_peers", ""), company)
+        if sector and not peers:
+            # the company is not itself a KB exhibitor: ask the explorer for that
+            # sector's exhibitors in one small bounded call
+            ex = await self._explore(_PEERS_GOAL.format(sector=sector, company=company))
+            peers = _split_peers(ex.facts.get("sector_peers", ""), company)
+        _log.info("[peers] sector=%r -> %s", sector, peers or "none")
+
         company_profile = {
-            "sector": c_fields.get("sector") or synth.sector,
-            "company_size": synth.company_size,
-            "hq": synth.hq,
-            "founder": synth.founder,
+            "sector": sector,
+            "company_size": c_fields.get("company_size") or synth.company_size,
+            "hq": c_fields.get("hq") or synth.hq,
+            "founder": c_fields.get("founder") or synth.founder,
             "website": c_fields.get("website"),
             "teg_history": c_fields.get("teg_history"),
-            "overview": c_fields.get("overview"),
+            "overview": c_ex.summary or None,
         }
         person_profile = {
-            "designation": p_fields.get("role") or synth.designation,
-            "seniority": synth.seniority,
+            "designation": p_fields.get("designation") or synth.designation,
+            "seniority": p_fields.get("seniority") or synth.seniority,
             "is_technical": synth.is_technical,
             "linkedin_url": p_fields.get("linkedin_url"),
             "teg_role": p_fields.get("teg_role"),
-            "background": p_fields.get("overview"),
+            "background": p_fields.get("background") or (p_ex.summary or None),
         }
 
-        # relationship
         relationship = "cold"
         teg_hist = (company_profile.get("teg_history") or "").lower()
         if p_fields.get("teg_role") == "organizer":
             relationship = "insider"
-        elif any(k in teg_hist for k in ("2024", "2026", "sponsor")) or p_fields.get("teg_role") == "speaker":
+        elif any(k in teg_hist for k in ("2024", "2026", "sponsor")) or \
+                p_fields.get("teg_role") == "speaker":
             relationship = "returning"
 
-        sector = company_profile.get("sector")
-        peers: list[str] = []
-        if sector:
-            own = intake.company_name_canonical.lower()
-            peers = [p for p in get_kb().peers_in_sector(sector, 6) if p.lower() != own][:5]
-
         field_confidence: dict[str, float] = {}
-        for k, v in list(c_conf.items()) + list(p_conf.items()):
-            field_confidence[k] = max(field_confidence.get(k, 0.0), v)
-
-        sources = c_sources + p_sources
+        for k in c_fields:
+            field_confidence[k] = max(field_confidence.get(k, 0.0), c_id_conf)
+        for k in p_fields:
+            field_confidence[k] = max(field_confidence.get(k, 0.0), p_id_conf)
 
         ask_prospect: list[str] = []
         if c_id_conf < 0.5:
@@ -159,7 +229,7 @@ class ResearchAgent(Agent):
             sector=sector,
             peer_companies=peers,
             field_confidence=field_confidence,
-            sources=sources,
+            sources=c_sources + p_sources,
             review_flags=(["person_company_mismatch"] if synth.person_company_match is False else []),
             ask_prospect=ask_prospect,
             research_cost={
@@ -169,56 +239,89 @@ class ResearchAgent(Agent):
             },
         )
 
-    async def _track(self, track, subject, context, want, budget):
-        fields: dict[str, str] = {}
-        conf: dict[str, float] = {}
-        sources: list[SourceRef] = []
+    # ---- tracks ----
 
-        kb_res = await self._kb.lookup(ResearchQuery(track=track, subject=subject, context=context, want=want))
-        id_field = "sector" if track == "company" else "teg_role"
-        id_conf = 0.0
-        if kb_res.available:
-            fields.update(kb_res.fields)
-            conf.update(kb_res.confidence)
-            id_conf = max(id_conf, kb_res.confidence.get(id_field, 0.0), kb_res.confidence.get("role", 0.0))
-            for f in kb_res.fields:
-                sources.append(SourceRef(field=f, url=None, tool="kb", confidence=kb_res.confidence.get(f, 0.0)))
-        _log.info("[%s] KB %s  id_conf=%.2f  fields=%s", track,
-                  "hit" if kb_res.available else "miss", id_conf, list(kb_res.fields.keys()) or "-")
+    async def _explore(self, goal: str) -> ExploreResult:
+        try:
+            return await asyncio.wait_for(
+                self._explorer.explore(goal), timeout=get_settings().kb_explore_timeout_s
+            )
+        except TimeoutError:
+            _log.warning("kb explore timed out after %ss", get_settings().kb_explore_timeout_s)
+            return ExploreResult()
 
-        need_web = (not kb_res.available) or id_conf < self._auto or any(w not in fields for w in ("sector", "role", "designation"))
+    async def _company_track(self, intake: IntakeResult, budget):
+        company = intake.company_name_canonical
+        ex = await self._explore(_COMPANY_GOAL.format(company=company))
+        fields = dict(ex.facts)
+        id_conf = ex.confidence if ex.found else 0.0
+        sources = [
+            SourceRef(field=k, url=None, tool="kb", confidence=ex.confidence) for k in ex.facts
+        ]
+        _log.info("[company] KB %s  id_conf=%.2f  fields=%s",
+                  "hit" if ex.found else "miss", id_conf, list(fields) or "-")
+        if not ex.found or ex.confidence < self._kb_trust:
+            fields, id_conf, sources = await self._web_fallback(
+                "company", company, intake.person_name, budget, fields, id_conf, sources,
+            )
+        return fields, id_conf, sources, ex
+
+    async def _person_track(self, intake: IntakeResult, budget):
+        person = intake.person_name
+        ex = await self._explore(
+            _PERSON_GOAL.format(person=person, company=intake.company_name_canonical)
+        )
+        fields = dict(ex.facts)
+        id_conf = ex.confidence if ex.found else 0.0
+        sources = [
+            SourceRef(field=k, url=None, tool="kb", confidence=ex.confidence) for k in ex.facts
+        ]
+        _log.info("[person] KB %s  id_conf=%.2f  fields=%s",
+                  "hit" if ex.found else "miss", id_conf, list(fields) or "-")
+        if not ex.found:
+            fields, id_conf, sources = await self._web_fallback(
+                "person", person, intake.company_name_canonical, budget, fields, id_conf, sources,
+            )
+        return fields, id_conf, sources, ex
+
+    async def _web_fallback(self, track, subject, context, budget, fields, id_conf, sources):
+        """Tavily search -> optional scrape, when the KB explorer came up short."""
         web_left = budget.web_left_company if track == "company" else budget.web_left_person
-        if need_web and self._web is not None and web_left > 0:
-            _log.info("[%s] web search  subject=%r  context=%r", track, subject, context)
-            res = await self._web.lookup(ResearchQuery(track=track, subject=subject, context=context, want=want))
-            budget.web_calls += 1
-            if track == "company":
-                budget.web_left_company -= 1
-            else:
-                budget.web_left_person -= 1
-            _log.info("[%s] web %s  url=%s  fields=%s", track,
-                      "hit" if res.available else "miss", res.source_url or "-",
-                      list(res.fields.keys()) or "-")
-            if res.available:
-                fields.update(res.fields)
-                conf.update({k: max(conf.get(k, 0.0), v) for k, v in res.confidence.items()})
-                for f in res.fields:
-                    sources.append(SourceRef(field=f, url=res.source_url, tool="web", confidence=res.confidence.get(f, 0.0)))
-                # a web hit that returned context is a real "found something" signal
-                if res.fields.get("web_context"):
-                    id_conf = max(id_conf, 0.6)
-                # try a scrape on the surfaced url
-                if self._scraper is not None and res.source_url and budget.scrapes_left > 0:
-                    _log.info("[%s] scrape  url=%s", track, res.source_url)
-                    sc = await self._scraper.lookup(ResearchQuery(track=track, subject=res.source_url, context=context, want=["page_text"]))
-                    budget.scrape_calls += 1
-                    budget.scrapes_left -= 1
-                    if sc.available:
-                        fields.update(sc.fields)
-                        conf.update(sc.confidence)
-                        sources.append(SourceRef(field="page_text", url=sc.source_url, tool="scrape", confidence=0.6))
+        if self._web is None or web_left <= 0:
+            return fields, id_conf, sources
 
-        if self._linkedin is not None:
-            await self._linkedin.lookup(ResearchQuery(track=track, subject=subject, context=context, want=["linkedin_url"]))
+        _log.info("[%s] web search  subject=%r  context=%r", track, subject, context)
+        res = await self._web.lookup(
+            ResearchQuery(track=track, subject=subject, context=context, want=[])
+        )
+        budget.web_calls += 1
+        if track == "company":
+            budget.web_left_company -= 1
+        else:
+            budget.web_left_person -= 1
+        _log.info("[%s] web %s  url=%s  fields=%s", track,
+                  "hit" if res.available else "miss", res.source_url or "-",
+                  list(res.fields.keys()) or "-")
+        if not res.available:
+            return fields, id_conf, sources
 
-        return fields, conf, sources, id_conf, kb_res.notes
+        fields.update(res.fields)
+        for f in res.fields:
+            sources.append(SourceRef(field=f, url=res.source_url, tool="web",
+                                     confidence=res.confidence.get(f, 0.0)))
+        # a web hit that returned context is a real "found something" signal
+        if res.fields.get("web_context"):
+            id_conf = max(id_conf, 0.6)
+
+        if self._scraper is not None and res.source_url and budget.scrapes_left > 0:
+            _log.info("[%s] scrape  url=%s", track, res.source_url)
+            sc = await self._scraper.lookup(ResearchQuery(
+                track=track, subject=res.source_url, context=context, want=["page_text"],
+            ))
+            budget.scrape_calls += 1
+            budget.scrapes_left -= 1
+            if sc.available:
+                fields.update(sc.fields)
+                sources.append(SourceRef(field="page_text", url=sc.source_url,
+                                         tool="scrape", confidence=0.6))
+        return fields, id_conf, sources
