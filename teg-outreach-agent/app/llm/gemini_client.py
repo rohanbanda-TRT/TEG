@@ -22,15 +22,23 @@ def _to_contents(messages: list[LLMMessage]) -> list[types.Content]:
 
 
 def _contents_with_tools(messages: list) -> list[types.Content]:
-    """Like _to_contents but understands {"role": "tool", ...} results."""
+    """Like _to_contents but understands tool-call and tool-result turns.
+
+    Recognised message shapes:
+      {"role": "user"|"assistant", "content": str}
+      {"role": "assistant", "tool_calls": [{"id","name","args"}, ...]}
+      {"role": "tool", "tool_call_id": str, "name": str, "content": str}
+    """
     role_map = {"user": "user", "assistant": "model"}
     out: list[types.Content] = []
     for m in messages:
-        if m.get("role") == "tool":
-            # Gemini carries function results on a USER-role turn.
+        role = m.get("role")
+        if m.get("raw") is not None:  # a provider Content echoed back verbatim
+            out.append(m["raw"])
+        elif role == "tool":
             out.append(
                 types.Content(
-                    role="user",
+                    role="user",  # Gemini carries function results on a USER turn
                     parts=[
                         types.Part.from_function_response(
                             name=m.get("name", m["tool_call_id"]),
@@ -39,10 +47,20 @@ def _contents_with_tools(messages: list) -> list[types.Content]:
                     ],
                 )
             )
+        elif role == "assistant" and m.get("tool_calls"):
+            out.append(
+                types.Content(
+                    role="model",
+                    parts=[
+                        types.Part.from_function_call(name=c["name"], args=c.get("args") or {})
+                        for c in m["tool_calls"]
+                    ],
+                )
+            )
         else:
             out.append(
                 types.Content(
-                    role=role_map[m["role"]],
+                    role=role_map[role],
                     parts=[types.Part.from_text(text=m["content"])],
                 )
             )
@@ -158,7 +176,7 @@ class GeminiClient(LLMClient):
         sane_schema, coerced = _prepare_schema(schema)
         resp = await self._client.aio.models.generate_content(
             model=model or self._model_main,
-            contents=_to_contents(messages),
+            contents=_contents_with_tools(messages),
             config=types.GenerateContentConfig(
                 system_instruction=system,
                 response_mime_type="application/json",
@@ -202,4 +220,16 @@ class GeminiClient(LLMClient):
             ToolCall(id=f"c{i}", name=fc.name, args=dict(fc.args or {}))
             for i, fc in enumerate(resp.function_calls or [])
         ]
-        return ToolTurn(tool_calls=calls, text=(resp.text or "").strip())
+        # resp.text warns/omits when function_call and text parts coexist; pull
+        # text straight from the candidate parts instead.
+        text = ""
+        raw = None
+        try:
+            cand = (resp.candidates or [None])[0]
+            raw = cand.content if cand else None
+            for part in (raw.parts if raw else []) or []:
+                if getattr(part, "text", None):
+                    text += part.text
+        except (AttributeError, TypeError, IndexError):
+            text = resp.text or ""
+        return ToolTurn(tool_calls=calls, text=text.strip(), raw=raw)

@@ -28,10 +28,18 @@ class ToolCall(BaseModel):
 
 
 class ToolTurn(BaseModel):
-    """One model response in a tool-use loop: either tool calls, or a final text answer."""
+    """One model response in a tool-use loop: either tool calls, or a final text answer.
+
+    ``raw`` carries the provider's native turn object (e.g. a Gemini ``Content``)
+    so the caller can echo it back verbatim on the next request — required by
+    thinking models that sign their function-call parts.
+    """
+
+    model_config = {"arbitrary_types_allowed": True}
 
     tool_calls: list[ToolCall] = []
     text: str = ""
+    raw: object | None = None
 
 
 class LLMClient(ABC):
