@@ -47,11 +47,51 @@ address is supplied. Asking again produces a new version. Files live under
 - Config: `PROPOSAL_MODEL` (default = `LLM_MODEL_MAIN`), `PROPOSAL_HARD_TIMEOUT_S`,
   `PROPOSAL_DIR`, `EMAIL_ENABLED`, `SMTP_*`
 
+## Knowledge base
+
+The agents read `../teg-kb-agent/knowledge_base` **agentically** — `KBExplorer`
+(`app/kb/explorer.py`) runs a bounded LLM tool-use loop with read-only
+`list_dir` / `read_file` / `grep` and navigates the KB by computing file paths
+from names (the graph map is in the explorer's system prompt). No startup parse,
+no regex over KB markdown in `app/`.
+
+- **`app/kb/facts.json`** is a committed snapshot the deterministic guardrail
+  layer reads (cleared testimonial wording + attributed names, canonical
+  exhibitor name list). Regenerate after editing testimonials or the company
+  list:
+
+  ```bash
+  python scripts/build_kb_facts.py            # rewrite the snapshot
+  python scripts/build_kb_facts.py --check    # exit 1 if it is stale
+  ```
+
+  There is no CI yet, so run `--check` as part of the test command:
+
+  ```bash
+  python scripts/build_kb_facts.py --check && python -m pytest -q
+  ```
+
+- **Explorer transcripts** live in `tests/kb/transcripts/`. Replay tests run the
+  recorded model turns against the *live* KB files, so a moved or renamed KB
+  file fails the test. Re-record the named transcript when that happens:
+
+  ```bash
+  GEMINI_API_KEY=... python scripts/record_kb_transcript.py <name> "<goal>"
+  ```
+
 ## Tests
 
 ```bash
 createdb teg_outreach_test
-python -m pytest -q
+python scripts/build_kb_facts.py --check   # KB snapshot up to date?
+python -m pytest -q                        # unit + replay; integration deselected
+```
+
+Tests marked `integration` hit live Gemini / Tavily and are deselected by
+default. Run them explicitly:
+
+```bash
+GEMINI_API_KEY=... TAVILY_API_KEY=... python -m pytest -q -m integration
 ```
 
 ## Retention
@@ -66,3 +106,5 @@ python -m app.jobs.retention   # run from cron
 - Plan: `../docs/superpowers/plans/2026-08-31-teg-outreach-agent.md`
 - Proposal spec: `../docs/superpowers/specs/2026-09-01-teg-personalized-proposal-design.md`
 - Proposal plan: `../docs/superpowers/plans/2026-09-01-teg-personalized-proposal.md`
+- Agentic KB explorer spec: `docs/superpowers/specs/2026-09-01-agentic-kb-explorer-design.md`
+- Agentic KB explorer plan: `docs/superpowers/plans/2026-09-01-agentic-kb-explorer.md`
