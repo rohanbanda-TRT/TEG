@@ -176,7 +176,17 @@ class ProposalAgent(Agent):
             "- roi_framing: a value paragraph with NO numbers and NO promised outcomes — phrase it "
             "'if a single engagement covers the investment many times over'\n"
             "- sector_fit: 4-6 {lever, weight} rows; weight 1-5 = how much each TEG lever matters "
-            f"for the '{dossier.sector}' sector (use the pain library)\n\n"
+            f"for the '{dossier.sector}' sector (use the pain library)\n"
+            "Also write landing-page copy:\n"
+            "- hero_headline: a punchy 6-12 word line naming the outcome for "
+            f"{intake.company_name_canonical} (e.g. 'Turn TEG 2026 into your India-market "
+            "pipeline'). No numbers, no guaranteed outcomes.\n"
+            "- hero_subline: one sentence expanding the headline.\n"
+            "- closing_cta_headline: a short line for the final call-to-action section.\n"
+            "- closing_cta_body: 1-2 sentences pushing the reader to act (reply in chat / "
+            "reach the team). No numbers, no promises.\n"
+            "- section_ctas: a JSON object with short button labels for keys "
+            "'priorities', 'charts', 'investment'.\n\n"
             f"Echo these exactly: generated_on='__DATE__', session_ref='{session_ref}', version={version}, "
             f"company='{intake.company_name_canonical}', person='{intake.person_name}', persona='{persona}'.\n"
             "Produce the Proposal."
@@ -209,6 +219,9 @@ class ProposalAgent(Agent):
                 ("price_line", p.recommended_package.price_line),
                 ("executive_summary", p.executive_summary),
                 ("roi_framing", p.roi_framing),
+                ("hero_headline", p.hero_headline),
+                ("hero_subline", p.hero_subline),
+                ("closing_cta_body", p.closing_cta_body),
             ]
             for i, pn in enumerate(p.pains):
                 texts.append((f"pain::{i}", pn.pain))
@@ -224,14 +237,23 @@ class ProposalAgent(Agent):
                 for v in check_message(txt, allowed_peers=peers, persona=persona,
                                        price_ok=price_requested):
                     found.append((label, v))
-            op = check_overpromise(p.roi_framing)
-            if op:
-                found.append(("roi_framing", op))
+            for label in ("roi_framing", "hero_headline", "hero_subline", "closing_cta_body"):
+                op = check_overpromise(getattr(p, label))
+                if op:
+                    found.append((label, op))
             return found
+
+        def _clamp_section_ctas(p: Proposal) -> None:
+            p.section_ctas = {
+                k: str(v)[:40]
+                for k, v in (p.section_ctas or {}).items()
+                if k in ("priorities", "charts", "investment")
+            }
 
         async def _testimonial_violation(p: Proposal):
             blob = " ".join([
                 p.what_you_told_us, p.lead_generation, p.executive_summary, p.roi_framing,
+                p.hero_subline, p.closing_cta_body,
                 *(pn.teg_answer for pn in p.pains), *p.proof,
             ])
             return await check_testimonial(blob, self.llm)
@@ -239,6 +261,7 @@ class ProposalAgent(Agent):
         if not price_requested:
             _force_no_price(proposal)
         _clamp_sector_fit(proposal)
+        _clamp_section_ctas(proposal)
         violations = all_violations(proposal)
         t_v = await _testimonial_violation(proposal)
         if t_v:
@@ -255,6 +278,7 @@ class ProposalAgent(Agent):
             if not price_requested:
                 _force_no_price(proposal)
             _clamp_sector_fit(proposal)
+            _clamp_section_ctas(proposal)
             violations = all_violations(proposal)
             t_v = await _testimonial_violation(proposal)
             if t_v:
@@ -272,6 +296,12 @@ class ProposalAgent(Agent):
                 proposal.executive_summary = PROPOSAL_SAFE_SECTIONS["executive_summary"][persona]
             if "roi_framing" in bad:
                 proposal.roi_framing = PROPOSAL_SAFE_SECTIONS["roi_framing"][persona]
+            if "hero_headline" in bad:
+                proposal.hero_headline = PROPOSAL_SAFE_SECTIONS["hero_headline"][persona]
+            if "hero_subline" in bad:
+                proposal.hero_subline = PROPOSAL_SAFE_SECTIONS["hero_subline"][persona]
+            if "closing_cta_body" in bad:
+                proposal.closing_cta_body = PROPOSAL_SAFE_SECTIONS["closing_cta_body"][persona]
             if "price_line" in bad:
                 proposal.recommended_package = fallback_pkg
                 if not price_requested:

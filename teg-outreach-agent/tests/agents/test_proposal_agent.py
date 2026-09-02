@@ -73,6 +73,11 @@ def _good_proposal(**over):
         roi_framing="If one India-market engagement covers the cost several times over, it pays for itself.",
         sector_fit=[SectorFitRow(lever="Buyer access", weight=5), SectorFitRow(lever="Demos", weight=4),
                     SectorFitRow(lever="Meetings", weight=5), SectorFitRow(lever="Visibility", weight=3)],
+        hero_headline="Turn TEG 2026 into your India-market pipeline",
+        hero_subline="Three focused days from cold outreach to booked buyer meetings.",
+        section_ctas={"priorities": "See the plan", "charts": "Explore the numbers", "investment": "Get your quote"},
+        closing_cta_headline="Let's make TEG 2026 count for DataZen Analytics",
+        closing_cta_body="Reply in the chat, or reach the team directly — we'll take it from here.",
     )
     return base.model_copy(update=over)
 
@@ -155,3 +160,38 @@ async def test_pricing_fallback_table_has_all_personas():
     for k in ("it_tech_service", "ai_startup", "non_tech_sponsor", "visitor"):
         pkg = _PRICING_BY_PERSONA[k]
         assert "+ GST" in pkg.price_line or k == "visitor"
+
+
+async def test_build_writes_landing_page_fields():
+    llm = FakeLLMClient(structured=[_good_proposal()])
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={"goal": "leads"}, session_ref="x", version=1,
+        price_requested=True,
+    )
+    assert p.hero_headline and p.hero_subline
+    assert p.closing_cta_headline and p.closing_cta_body
+
+
+async def test_build_flags_overpromising_hero():
+    bad = _good_proposal(hero_headline="You will 10x your pipeline, guaranteed.")
+    llm = FakeLLMClient(structured=[bad, bad])
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+    )
+    assert "overpromise" in flags
+    assert "guaranteed" not in p.hero_headline.lower()
+
+
+async def test_build_clamps_section_ctas():
+    bad = _good_proposal(section_ctas={
+        "priorities": "x" * 80, "charts": "ok", "investment": "ok", "bogus": "drop me",
+    })
+    llm = FakeLLMClient(structured=[bad])
+    p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+    )
+    assert set(p.section_ctas) <= {"priorities", "charts", "investment"}
+    assert all(len(v) <= 40 for v in p.section_ctas.values())

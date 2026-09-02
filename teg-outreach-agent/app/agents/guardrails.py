@@ -244,4 +244,22 @@ PROPOSAL_SAFE_SECTIONS: dict[str, dict[Persona, str]] = {
         "non_tech_sponsor": "A category-exclusive association ties your brand to the region's innovation narrative across the venue, digital, and press; the value is in the sustained visibility rather than a single transaction.",
         "visitor": "Meeting 250+ exhibitors in one place compresses vendor evaluation that would otherwise take months.",
     },
+    "hero_headline": {
+        "it_tech_service": "Put your technology in front of the buyers you want",
+        "ai_startup": "Get your AI in front of buyers and investors in three days",
+        "non_tech_sponsor": "Own a category at Gujarat's largest tech expo",
+        "visitor": "Three days of technology you can actually use",
+    },
+    "hero_subline": {
+        "it_tech_service": "Tech Expo Gujarat 2026 concentrates cross-industry decision-makers and pre-scheduled meetings into one focused event.",
+        "ai_startup": "The Catalyst Zone and investor track give a small team a fast route to buyers and capital.",
+        "non_tech_sponsor": "A category-exclusive association ties your brand to the region's innovation story across the venue, digital and press.",
+        "visitor": "Meet 250+ exhibitors across every industry in one place, then follow up through the TEG app.",
+    },
+    "closing_cta_body": {
+        "it_tech_service": "Reply in the chat, or reach the team directly — we'll tailor the stall options to your goals and take it from there.",
+        "ai_startup": "Reply in the chat to ask about the Catalyst Zone or the pitch track — we'll help you pick the right fit.",
+        "non_tech_sponsor": "Reply in the chat to start a sponsorship conversation — we'll map the category options with you.",
+        "visitor": "Reply in the chat when you're ready and we'll send the registration link.",
+    },
 }
