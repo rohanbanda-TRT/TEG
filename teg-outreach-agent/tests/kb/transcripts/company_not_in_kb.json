@@ -1,0 +1,42 @@
+{
+  "goal": "Profile the company Zzxqwerty Nonexistent Ltd. Read its profile in exhibitors/companies/ if it exists. Return facts: sector, website. Set found=false if there is no profile.",
+  "model_turns": [
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "read_file",
+          "args": {
+            "path": "exhibitors/companies/zzxqwerty_nonexistent_ltd.md"
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "grep",
+          "args": {
+            "pattern": "Zzxqwerty"
+          }
+        }
+      ]
+    },
+    {
+      "final": "{\"found\": false, \"summary\": \"Zzxqwerty Nonexistent Ltd does not exist in the knowledge base.\", \"facts\": {}, \"sources\": [], \"confidence\": 1.0}"
+    }
+  ],
+  "final": "{\"found\": false, \"summary\": \"Zzxqwerty Nonexistent Ltd does not exist in the knowledge base.\", \"facts\": {}, \"sources\": [], \"confidence\": 1.0}",
+  "expected": {
+    "found": false,
+    "summary": "Zzxqwerty Nonexistent Ltd does not exist in the knowledge base.",
+    "facts": {},
+    "sources": [],
+    "confidence": 1.0
+  },
+  "reads_ok": [],
+  "reads_missed": [
+    "exhibitors/companies/zzxqwerty_nonexistent_ltd.md"
+  ]
+}

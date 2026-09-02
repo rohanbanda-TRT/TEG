@@ -1,0 +1,51 @@
+{
+  "goal": "Profile the company Third Rock Techkno for a TEG 2026 dossier. Read its profile in exhibitors/companies/, then sector_wise_participation.md. Return facts: sector (best-fitting TEG sector name), website, teg_history, and sector_peers (up to 5 other TEG exhibitors in that sector, excluding Third Rock Techkno, comma-separated).",
+  "model_turns": [
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "read_file",
+          "args": {
+            "path": "exhibitors/companies/third_rock_techkno.md"
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "read_file",
+          "args": {
+            "path": "sector_wise_participation.md"
+          }
+        }
+      ]
+    },
+    {
+      "final": "{\"found\": true, \"summary\": \"Third Rock Techkno is an Ahmedabad-based custom AI and software development firm founded in 2015. The company exhibited at TEG 2024 (Booth E-58) and is confirmed to exhibit at TEG 2026, with co-founder Tapan Patel also serving as a TEG core organizer.\", \"facts\": {\"sector\": \"AI & Machine Learning\", \"website\": \"https://www.thirdrocktechkno.com/\", \"teg_history\": \"Exhibited at TEG 2024 at Booth E-58; confirmed return exhibitor for TEG 2026; co-founder Tapan Patel is a TEG core organizer.\", \"sector_peers\": \"ViitorCloud, Green Apex, ZeroThreat, Bytes Technolabs, Eternal Web Pvt Ltd\"}, \"sources\": [\"exhibitors/companies/third_rock_techkno.md\", \"sector_wise_participation.md\"], \"confidence\": 1.0}"
+    }
+  ],
+  "final": "{\"found\": true, \"summary\": \"Third Rock Techkno is an Ahmedabad-based custom AI and software development firm founded in 2015. The company exhibited at TEG 2024 (Booth E-58) and is confirmed to exhibit at TEG 2026, with co-founder Tapan Patel also serving as a TEG core organizer.\", \"facts\": {\"sector\": \"AI & Machine Learning\", \"website\": \"https://www.thirdrocktechkno.com/\", \"teg_history\": \"Exhibited at TEG 2024 at Booth E-58; confirmed return exhibitor for TEG 2026; co-founder Tapan Patel is a TEG core organizer.\", \"sector_peers\": \"ViitorCloud, Green Apex, ZeroThreat, Bytes Technolabs, Eternal Web Pvt Ltd\"}, \"sources\": [\"exhibitors/companies/third_rock_techkno.md\", \"sector_wise_participation.md\"], \"confidence\": 1.0}",
+  "expected": {
+    "found": true,
+    "summary": "Third Rock Techkno is an Ahmedabad-based custom AI and software development firm founded in 2015. The company exhibited at TEG 2024 (Booth E-58) and is confirmed to exhibit at TEG 2026, with co-founder Tapan Patel also serving as a TEG core organizer.",
+    "facts": {
+      "sector": "AI & Machine Learning",
+      "website": "https://www.thirdrocktechkno.com/",
+      "teg_history": "Exhibited at TEG 2024 at Booth E-58; confirmed return exhibitor for TEG 2026; co-founder Tapan Patel is a TEG core organizer.",
+      "sector_peers": "ViitorCloud, Green Apex, ZeroThreat, Bytes Technolabs, Eternal Web Pvt Ltd"
+    },
+    "sources": [
+      "exhibitors/companies/third_rock_techkno.md",
+      "sector_wise_participation.md"
+    ],
+    "confidence": 1.0
+  },
+  "reads_ok": [
+    "exhibitors/companies/third_rock_techkno.md",
+    "sector_wise_participation.md"
+  ],
+  "reads_missed": []
+}

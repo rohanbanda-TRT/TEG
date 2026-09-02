@@ -1,0 +1,61 @@
+{
+  "goal": "Profile the company NeuraMonks for a TEG 2026 dossier. Read its profile in exhibitors/companies/, then sector_wise_participation.md. Return facts: sector, company_size, website, and sector_peers (up to 5, excluding NeuraMonks).",
+  "model_turns": [
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "read_file",
+          "args": {
+            "path": "exhibitors/companies/neuramonks.md"
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "read_file",
+          "args": {
+            "path": "sector_wise_participation.md"
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "grep",
+          "args": {
+            "pattern": "neuramonks"
+          }
+        }
+      ]
+    },
+    {
+      "final": "{\"found\": true, \"summary\": \"NeuraMonks (a brand under Kshatrainfotech Pvt Ltd) is an Ahmedabad-based enterprise AI and deep-tech consulting firm founded and led by Upendrasinh Zala. The company specializes in AI/ML consultancy, RAG systems, LLM development, and MLOps support, and is an exhibitor at TEG 2024 and confirmed for TEG 2026.\", \"facts\": {\"sector\": \"AI & Machine Learning\", \"website\": \"https://www.neuramonks.com/\", \"sector_peers\": \"Third Rock Techkno, ViitorCloud, Green Apex, ZeroThreat, Bytes Technolabs\"}, \"sources\": [\"exhibitors/companies/neuramonks.md\", \"sector_wise_participation.md\"], \"confidence\": 1.0}"
+    }
+  ],
+  "final": "{\"found\": true, \"summary\": \"NeuraMonks (a brand under Kshatrainfotech Pvt Ltd) is an Ahmedabad-based enterprise AI and deep-tech consulting firm founded and led by Upendrasinh Zala. The company specializes in AI/ML consultancy, RAG systems, LLM development, and MLOps support, and is an exhibitor at TEG 2024 and confirmed for TEG 2026.\", \"facts\": {\"sector\": \"AI & Machine Learning\", \"website\": \"https://www.neuramonks.com/\", \"sector_peers\": \"Third Rock Techkno, ViitorCloud, Green Apex, ZeroThreat, Bytes Technolabs\"}, \"sources\": [\"exhibitors/companies/neuramonks.md\", \"sector_wise_participation.md\"], \"confidence\": 1.0}",
+  "expected": {
+    "found": true,
+    "summary": "NeuraMonks (a brand under Kshatrainfotech Pvt Ltd) is an Ahmedabad-based enterprise AI and deep-tech consulting firm founded and led by Upendrasinh Zala. The company specializes in AI/ML consultancy, RAG systems, LLM development, and MLOps support, and is an exhibitor at TEG 2024 and confirmed for TEG 2026.",
+    "facts": {
+      "sector": "AI & Machine Learning",
+      "website": "https://www.neuramonks.com/",
+      "sector_peers": "Third Rock Techkno, ViitorCloud, Green Apex, ZeroThreat, Bytes Technolabs"
+    },
+    "sources": [
+      "exhibitors/companies/neuramonks.md",
+      "sector_wise_participation.md"
+    ],
+    "confidence": 1.0
+  },
+  "reads_ok": [
+    "exhibitors/companies/neuramonks.md",
+    "sector_wise_participation.md"
+  ],
+  "reads_missed": []
+}
