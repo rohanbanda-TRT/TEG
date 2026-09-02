@@ -33,7 +33,11 @@ export function mount(
       } else if (ev.type === "proposal_pending") {
         chat.showProposalPending((ev as { company?: string }).company);
       } else if (ev.type === "attachment") {
-        chat.showAttachment(ev as never);
+        if ((ev as { kind?: string }).kind === "proposal_link") {
+          chat.showProposalLink(ev as never);
+        } else {
+          chat.showAttachment(ev as never);
+        }
       } else if (ev.type === "proposal_failed") {
         chat.showProposalFailed();
       }

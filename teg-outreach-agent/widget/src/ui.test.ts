@@ -142,3 +142,34 @@ test("renderChat pending then attachment replaces skeleton", () => {
   const cards = JSON.stringify(root).match(/data-attachment/g) || [];
   assert.equal(cards.length, 1);
 });
+
+test("renderProposalLink shows title, blurb, open + pdf links", () => {
+  const root = new El("div") as any;
+  const chat = renderChat(root);
+  chat.showProposalLink({
+    kind: "proposal_link",
+    proposal_id: "p1",
+    version: 1,
+    page_url: "/p/p1",
+    pdf_url: "/proposals/p1.pdf",
+    title: "Your TEG 2026 proposal for Acme",
+    blurb: "Three focused days from cold outreach to booked meetings.",
+  });
+  const s = JSON.stringify(root);
+  assert.ok(s.includes("/p/p1"));
+  assert.ok(s.includes("/proposals/p1.pdf"));
+  assert.ok(s.includes("Your TEG 2026 proposal for Acme"));
+  assert.ok(s.includes("data-attachment"));
+});
+
+test("pending then proposal_link replaces skeleton", () => {
+  const root = new El("div") as any;
+  const chat = renderChat(root);
+  chat.showProposalPending("Acme");
+  chat.showProposalLink({
+    kind: "proposal_link", proposal_id: "p1", version: 1,
+    page_url: "/p/p1", pdf_url: "/proposals/p1.pdf", title: "t", blurb: "b",
+  });
+  const cards = JSON.stringify(root).match(/data-attachment/g) || [];
+  assert.equal(cards.length, 1);
+});

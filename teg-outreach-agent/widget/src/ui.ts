@@ -70,12 +70,23 @@ export interface AttachmentPayload {
   png_url: string;
 }
 
+export interface ProposalLinkPayload {
+  kind: "proposal_link";
+  proposal_id: string;
+  version: number;
+  page_url: string;
+  pdf_url: string;
+  title: string;
+  blurb: string;
+}
+
 export function renderChat(root: HTMLElement): {
   addMessage: (role: "agent" | "you", text: string) => void;
   setStatus: (s: string) => void;
   onSend: (cb: (text: string) => void) => void;
   showProposalPending: (company?: string) => void;
   showAttachment: (att: AttachmentPayload) => void;
+  showProposalLink: (card: ProposalLinkPayload) => void;
   showProposalFailed: () => void;
 } {
   const wrap = h("div", { class: "teg-chat" });
@@ -139,6 +150,22 @@ export function renderChat(root: HTMLElement): {
         (log as any).removeChild(pendingCard);
       }
       log.appendChild(card);
+      pendingCard = null;
+    },
+    showProposalLink(card: ProposalLinkPayload) {
+      const el = h("div", { "data-attachment": "proposal-link", class: "teg-card" });
+      el.appendChild(h("div", { class: "teg-card-title" }, card.title));
+      if (card.blurb) el.appendChild(h("div", { class: "teg-card-meta" }, card.blurb));
+      el.appendChild(
+        h("a", { href: card.page_url, target: "_blank", rel: "noopener", class: "teg-card-btn" },
+          "Open your proposal"),
+      );
+      el.appendChild(
+        h("a", { href: card.pdf_url, target: "_blank", rel: "noopener", class: "teg-card-btn teg-card-btn-ghost" },
+          "Download PDF"),
+      );
+      if (pendingCard && (log as any).removeChild) (log as any).removeChild(pendingCard);
+      log.appendChild(el);
       pendingCard = null;
     },
     showProposalFailed() {
