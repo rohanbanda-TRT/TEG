@@ -115,6 +115,10 @@ def test_full_proposal_flow(tmp_path, monkeypatch):
         assert ws.receive_json()["type"] == "proposal_pending"
         att = ws.receive_json()
         assert att["type"] == "attachment" and att["version"] == 1
+        assert att["kind"] == "proposal_link"
+        assert att["page_url"] == f"/p/{att['proposal_id']}"
+        assert att["pdf_url"] == f"/proposals/{att['proposal_id']}.pdf"
+        assert att["title"] and att["blurb"]
         pdf_url = att["pdf_url"]
         ws.send_json({"type": "end"})
         with pytest.raises(WebSocketDisconnect):
@@ -126,6 +130,7 @@ def test_full_proposal_flow(tmp_path, monkeypatch):
     sess = client.get(f"/sessions/{sid}").json()
     assert sess["proposals"][0]["version"] == 1
     assert sess["proposals"][0]["guardrail_flags"] == []
+    assert any("/p/" in m["content"] for m in sess["transcript"] if m["role"] == "agent")
 
     from sqlalchemy import select
 

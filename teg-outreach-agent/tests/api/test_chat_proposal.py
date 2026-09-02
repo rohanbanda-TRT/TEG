@@ -79,8 +79,9 @@ def test_ws_proposal_flow(tmp_path, monkeypatch):
         assert ws.receive_json()["type"] == "proposal_pending"
         att = ws.receive_json()
         assert att["type"] == "attachment"
-        assert att["kind"] == "proposal" and att["version"] == 1
+        assert att["kind"] == "proposal_link" and att["version"] == 1
         assert att["pdf_url"].endswith(".pdf")
+        assert att["page_url"] == f"/p/{att['proposal_id']}"
         ws.send_json({"type": "end"})
         with pytest.raises(WebSocketDisconnect):
             ws.receive_json()

@@ -86,8 +86,9 @@ async def test_generate_proposal_writes_files_row_and_message(tmp_path, monkeypa
         assert pr.version == 1
         assert pr.proposal_json["generated_on"] != "__DATE__"
         msgs = (await s.execute(select(ChatMessage).order_by(ChatMessage.turn_index))).scalars().all()
-        assert msgs[-1].attachment["kind"] == "proposal"
-        assert "download PDF" in msgs[-1].content
+        assert msgs[-1].attachment["kind"] == "proposal_link"
+        assert msgs[-1].attachment["page_url"] == f"/p/{card.proposal_id}"
+        assert "/p/" in msgs[-1].content
     get_settings.cache_clear()
 
 

@@ -256,17 +256,20 @@ class Orchestrator:
                 guardrail_flags=flags, emailed_to=emailed_to,
             )
             await s.flush()
+            page_url = f"/p/{row.id}"
             pdf_url = f"/proposals/{row.id}.pdf"
             png_url = f"/proposals/{row.id}/preview.png"
+            blurb = (proposal.hero_subline or proposal.executive_summary or "")[:160]
+            title = f"Your TEG 2026 proposal for {proposal.company}"
             card = {
-                "kind": "proposal", "proposal_id": str(row.id), "version": version,
-                "filename": filename, "bytes": len(pdf), "pdf_url": pdf_url, "png_url": png_url,
+                "kind": "proposal_link", "proposal_id": str(row.id), "version": version,
+                "page_url": page_url, "pdf_url": pdf_url, "png_url": png_url,
+                "title": title, "blurb": blurb,
             }
             mr = MessageRepo(s)
             await mr.append(
                 session_id, "agent",
-                f"Here's your proposal for {proposal.company} — [download PDF]({pdf_url}). "
-                "Feel free to share it with your team.",
+                f"I've put together a proposal for {proposal.company} — open it here: {page_url}",
                 turn_index=await mr.next_turn_index(session_id),
                 attachment=card,
             )
@@ -277,6 +280,7 @@ class Orchestrator:
             proposal_id = str(row.id)
 
         return ProposalCard(
-            proposal_id=proposal_id, version=version, filename=filename,
+            kind="proposal_link", proposal_id=proposal_id, version=version, filename=filename,
             bytes=len(pdf), pdf_url=pdf_url, png_url=png_url,
+            page_url=page_url, title=title, blurb=blurb,
         )
