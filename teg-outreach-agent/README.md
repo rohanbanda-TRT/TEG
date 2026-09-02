@@ -4,6 +4,23 @@ FastAPI service + chat widget that researches a TEG 2026 inquiry-page prospect
 (knowledge base first, then free web tools) and runs a persona-tuned,
 factually-guarded conversation to drive participation.
 
+## Conversation behaviour
+
+The chatbot acts as a consultative TEG business-development rep: discovery-first
+(it asks about the prospect's business and connects what it hears to what TEG
+offers), and it **never volunteers pricing** — a stall/sponsor figure appears
+in an agent message only after the prospect asks about cost (judged by the LLM,
+not a keyword match). A tailored proposal is offered only once the agent has
+learned the prospect's goal, target market and rough scale *and* they have shown
+genuine interest; if the prospect explicitly asks for one, that is honoured. A
+TEG organiser gets a peer check-in — no pitch, no price. All of this is
+prompt-driven; session state (`learned_facts`, `price_requested`) only informs
+the prompt.
+
+The proposal PDF mirrors this: its **Investment** section shows figures and a
+payment plan only when the prospect asked about cost; otherwise the package is
+listed without numbers.
+
 ## Setup
 
 ```bash
@@ -31,10 +48,14 @@ During the chat, when the prospect asks for a proposal / PDF / "something in wri
 (or accepts an offer of one), the Persuasion Agent sets `wants_proposal` and the
 orchestrator runs a `ProposalAgent`: one LLM call builds a `Proposal` from the
 conversation + research dossier + `event_goals_and_problem.md` (goals + per-persona
-pain library), every text field passes the chat guardrails plus two proposal-only
-checks (no competitor names, no commitment/signature language), and it renders through
-a Jinja2 template to a PDF with **WeasyPrint** (no browser) + a first-page PNG
-thumbnail (via `pymupdf`).
+pain library). It is a 2–4 page document — executive summary, priorities table,
+ROI framing (no numbers, no promised outcomes), a per-sector "how TEG's levers
+weigh" section, a 3-day walk-through, and five hand-built inline-SVG charts
+(growth, industry mix, funnel, sector peers, sector fit) from `charts.py`. Every
+text field passes the chat guardrails plus proposal-only checks (no competitor
+names, no commitment/signature language, no overpromising `roi_framing`, and an
+LLM-verified testimonial check). It renders through a Jinja2 template to a PDF
+with **WeasyPrint** (no browser) + a first-page PNG thumbnail (via `pymupdf`).
 
 The PDF appears inline in the chat as an attachment card (thumbnail + Open + Download),
 plus a download URL in the reply, plus optional email if `EMAIL_ENABLED=true` and an
@@ -108,3 +129,5 @@ python -m app.jobs.retention   # run from cron
 - Proposal plan: `../docs/superpowers/plans/2026-09-01-teg-personalized-proposal.md`
 - Agentic KB explorer spec: `docs/superpowers/specs/2026-09-01-agentic-kb-explorer-design.md`
 - Agentic KB explorer plan: `docs/superpowers/plans/2026-09-01-agentic-kb-explorer.md`
+- Salesperson conversation + charted proposal spec: `docs/superpowers/specs/2026-09-02-salesperson-conversation-and-charted-proposal-design.md`
+- Salesperson conversation + charted proposal plan: `docs/superpowers/plans/2026-09-02-salesperson-conversation-and-charted-proposal.md`
