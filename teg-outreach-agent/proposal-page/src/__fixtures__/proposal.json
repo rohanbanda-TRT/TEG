@@ -1,0 +1,52 @@
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "version": 2,
+  "generated_on": "2026-09-02",
+  "pdf_url": "/proposals/11111111-1111-1111-1111-111111111111.pdf",
+  "proposal": {
+    "company": "DataZen Analytics",
+    "person": "Rohan B",
+    "person_role": "CTO",
+    "sector": "AI & Machine Learning",
+    "persona": "it_tech_service",
+    "hero_headline": "Turn TEG 2026 into your India-market pipeline",
+    "hero_subline": "Three focused days from cold outreach to booked buyer meetings.",
+    "executive_summary": "DataZen Analytics builds BI dashboards and is exploring TEG 2026 to reach India enterprise buyers.",
+    "pains": [
+      { "pain": "Revenue concentrated in US clients", "teg_answer": "15,000+ India-market decision-makers plus pre-scheduled B2B meetings" },
+      { "pain": "Low brand visibility at home", "teg_answer": "On-ground, digital and regional PR presence at the state's largest tech expo" }
+    ],
+    "sector_fit": [
+      { "lever": "India-market buyer access", "weight": 5 },
+      { "lever": "Live demo space", "weight": 4 },
+      { "lever": "Pre-scheduled meetings", "weight": 5 },
+      { "lever": "Brand visibility", "weight": 3 }
+    ],
+    "proof": [
+      "TEG 2024 drew 8,000+ attendees and 125+ exhibitors; TEG 2026 targets 15,000+ and 250+.",
+      "The TEG Business Retreat 2025 helped facilitate 1.5 crore raised in one day."
+    ],
+    "peer_companies": ["ViitorCloud", "NeuraMonks", "Perigeon", "Green Apex"],
+    "how_a_teg_plays_out": [
+      "Pre-event: matchmaking with India buyers in your target sectors",
+      "Day 1: live demos at your stall",
+      "Day 2: pre-scheduled 1:1 meetings",
+      "After: follow-up through the TEG networking app"
+    ],
+    "roi_framing": "If a single India-market engagement that starts here covers the cost of taking part several times over, participation pays for itself.",
+    "recommended_package": {
+      "name": "3m x 6m stall",
+      "price_line": "2,34,000 + GST (indicative, confirmed at booking)",
+      "includes": ["4 exhibitor passes", "10 visitor passes", "pre-scheduled 1:1 B2B meetings", "live demo space"],
+      "payment_plan": "4 instalments of 25%"
+    },
+    "section_ctas": { "priorities": "See the plan", "charts": "Explore the numbers", "investment": "Get your quote" },
+    "closing_cta_headline": "Let's make TEG 2026 count for DataZen Analytics",
+    "closing_cta_body": "Reply in the chat, or reach the team directly — we'll take it from here.",
+    "next_steps": [
+      "Review stall options at techexpogujarat.com/become-an-exhibitor",
+      "Or reply in the chat and the team will walk you through booking"
+    ],
+    "contact": "info@techexpogujarat.com"
+  }
+}
