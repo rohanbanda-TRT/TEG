@@ -1,6 +1,31 @@
 from app.agents.proposal import ProposalAgent, _PRICING_BY_PERSONA
 from app.domain.schemas import IntakeResult, Proposal, ProposalPackage, ProposalPain, ResearchDossier
+from app.kb.explorer import ExploreResult, KBExplorer
 from app.llm.fake import FakeLLMClient
+
+
+class _FixedExplorer(KBExplorer):
+    def __init__(self, result: ExploreResult) -> None:
+        self._result = result
+        self.goals: list[str] = []
+
+    async def explore(self, goal: str) -> ExploreResult:
+        self.goals.append(goal)
+        return self._result
+
+
+def _explorer(**facts_over):
+    facts = {
+        "goals": "Connect Gujarat's businesses with AI and tech providers.",
+        "mechanism": "Pre-scheduled 1:1 B2B meetings, a networking app, live demo space.",
+        "evidence": "TEG 2024 drew 8,000+ attendees and 125+ exhibitors.",
+        "pains": '[["Revenue concentrated in US clients", "15,000+ India-market decision-makers"], '
+                 '["Long sales cycles", "Pre-scheduled B2B meetings compress evaluation"]]',
+        "sector_peers": "NeuraMonks, ViitorCloud, Perigeon",
+    }
+    facts.update(facts_over)
+    return _FixedExplorer(ExploreResult(found=True, confidence=0.9, facts=facts,
+                                        sources=["event_goals_and_problem.md"]))
 
 
 def _intake(company="DataZen Analytics"):
@@ -42,7 +67,7 @@ def _good_proposal(**over):
 
 async def test_build_returns_clean_proposal():
     llm = FakeLLMClient(structured=[_good_proposal()])
-    p, flags = await ProposalAgent(llm).build(
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
         transcript=[{"role": "prospect", "content": "we want India-market clients"}],
         learned_facts={"target_market": "India"}, session_ref="ab12cd34", version=2,
@@ -59,7 +84,7 @@ async def test_build_falls_back_on_repeated_violation():
         lead_generation="Unlike other expos in Gujarat, TEG has the best footfall.",
     )
     llm = FakeLLMClient(structured=[bad, bad])
-    p, flags = await ProposalAgent(llm).build(
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
         transcript=[], learned_facts={}, session_ref="x", version=1,
     )
@@ -67,6 +92,18 @@ async def test_build_falls_back_on_repeated_violation():
     assert "competitor_mention" in flags
     assert "Jane Doe" not in " ".join(p.proof)
     assert "other expos" not in p.lead_generation.lower()
+
+
+async def test_build_survives_explorer_miss():
+    """No KB goals/pains -> proposal still builds from dossier + persona fallbacks."""
+    explorer = _FixedExplorer(ExploreResult())  # found=False, empty facts
+    llm = FakeLLMClient(structured=[_good_proposal()])
+    p, flags = await ProposalAgent(llm, explorer=explorer).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1,
+    )
+    assert p.company == "DataZen Analytics"
+    assert p.peer_companies  # falls back to the dossier's peers
 
 
 async def test_pricing_fallback_table_has_all_personas():

@@ -30,6 +30,14 @@ class StubExplorer:
         "sector_peers": "ViitorCloud, Green Apex, NeuraMonks, ZeroThreat",
     }
     _PERSON: ClassVar[dict] = {"designation": "CMO", "teg_role": "organizer"}
+    _GOALS: ClassVar[dict] = {
+        "goals": "Connect Gujarat's businesses with AI and tech providers.",
+        "mechanism": "Pre-scheduled 1:1 B2B meetings, a networking app, live demo space.",
+        "evidence": "TEG 2024 drew 8,000+ attendees and 125+ exhibitors.",
+        "pains": '[["Reaching the right buyers", "15,000+ cross-industry decision-makers"], '
+                 '["Long sales cycles", "Pre-scheduled B2B meetings compress evaluation"]]',
+        "sector_peers": "NeuraMonks, ViitorCloud, Perigeon",
+    }
 
     def __init__(self, known: dict | None = None) -> None:
         from app.kb.explorer import ExploreResult
@@ -44,6 +52,12 @@ class StubExplorer:
     async def explore(self, goal: str):
         self.goals.append(goal)
         g = goal.lower()
+        # proposal goal: asks for goals / mechanism / pain library
+        if "event_goals_and_problem.md" in g or "pain library" in g:
+            return self._ExploreResult(
+                found=True, confidence=0.9, facts=dict(self._GOALS),
+                sources=["event_goals_and_problem.md"],
+            )
         for key, facts in self._known.items():
             if key in g:
                 return self._ExploreResult(

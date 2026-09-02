@@ -78,7 +78,7 @@ def test_full_proposal_flow(tmp_path, monkeypatch):
                               prospect_confidence="high", key_facts={}),
             ],
             responses=["Welcome back, TRT. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."])),
-        proposal=ProposalAgent(FakeLLMClient(structured=[proposal])),
+        proposal=ProposalAgent(FakeLLMClient(structured=[proposal]), explorer=StubExplorer()),
     )
     app = create_app()
     app.dependency_overrides[get_orchestrator] = lambda: orch

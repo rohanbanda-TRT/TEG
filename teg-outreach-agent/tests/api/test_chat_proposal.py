@@ -55,7 +55,7 @@ def _orch(proposal_llm):
                                       suggested_followup_message="m", prospect_confidence="medium",
                                       key_facts={})],
             responses=["Welcome. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."])),
-        proposal=ProposalAgent(proposal_llm),
+        proposal=ProposalAgent(proposal_llm, explorer=StubExplorer()),
     )
 
 

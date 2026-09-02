@@ -49,7 +49,7 @@ def _orch():
         persuasion=PersuasionAgent(FakeLLMClient(
             structured=[_PersonaChoice(persona="it_tech_service", reason="software services")],
             responses=["Welcome. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."])),
-        proposal=ProposalAgent(FakeLLMClient(structured=[_good_proposal()])),
+        proposal=ProposalAgent(FakeLLMClient(structured=[_good_proposal()]), explorer=StubExplorer()),
     )
 
 

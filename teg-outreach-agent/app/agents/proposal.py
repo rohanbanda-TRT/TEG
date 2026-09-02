@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 from app.agents.base import Agent
 from app.agents.guardrails import PROPOSAL_SAFE_SECTIONS, check_message
 from app.domain.schemas import (
@@ -10,11 +12,25 @@ from app.domain.schemas import (
     ProposalPain,
     ResearchDossier,
 )
-from app.kb.loader import get_kb
+from app.kb.explorer import KBExplorer
+from app.kb.facts import load as _load_facts
 from app.obs import get_logger
 from config.settings import get_settings
 
 _log = get_logger("agent.proposal")
+
+# KB persona-pain-library headings, keyed by our Persona literal
+_PERSONA_KB_HEADING = {
+    "it_tech_service": "IT/Tech Service",
+    "ai_startup": "AI/Deep-Tech Startup",
+    "non_tech_sponsor": "Non-Tech Sponsor",
+    "visitor": "Visitor",
+}
+
+
+def _split_csv(raw: str) -> list[str]:
+    return [p.strip().strip("*") for p in (raw or "").split(",") if p.strip()]
+
 
 _PRICING_BY_PERSONA: dict[Persona, ProposalPackage] = {
     "it_tech_service": ProposalPackage(
@@ -60,10 +76,12 @@ _PRICING_BY_PERSONA: dict[Persona, ProposalPackage] = {
 
 
 class ProposalAgent(Agent):
-    def __init__(self, llm, *, model: str | None = None) -> None:
+    def __init__(self, llm, *, model: str | None = None,
+                 explorer: KBExplorer | None = None) -> None:
         super().__init__(llm)
         s = get_settings()
         self._model = model or s.proposal_model or s.llm_model_main
+        self._explorer = explorer or KBExplorer(llm)
 
     async def run(self, data):  # ProposalAgent uses build(), not run()
         raise NotImplementedError("ProposalAgent has no run(); call build()")
@@ -72,15 +90,40 @@ class ProposalAgent(Agent):
         self, *, intake: IntakeResult, dossier: ResearchDossier, persona: Persona,
         transcript: list[dict], learned_facts: dict, session_ref: str, version: int,
     ) -> tuple[Proposal, list[str]]:
-        kb = get_kb()
-        gp = kb.goals_and_pains()
         own = intake.company_name_canonical.lower()
+        heading = _PERSONA_KB_HEADING.get(persona, "Visitor")
+        ex = await self._explorer.explore(
+            "Read event_goals_and_problem.md and sector_wise_participation.md.\n"
+            "Return facts:\n"
+            "- goals: TEG's stated goals (section 2), 2-3 sentences\n"
+            "- mechanism: how TEG delivers value (section 3), 2-3 sentences\n"
+            "- evidence: past-edition numbers from section 4, verbatim\n"
+            f"- pains: a JSON array of [pain, how_TEG_addresses_it] pairs from the "
+            f"'### {heading}' subsection of the section 5 pain library (2-4 pairs)\n"
+            f"- sector_peers: up to 5 TEG exhibitors in the '{dossier.sector}' sector, "
+            f"excluding {intake.company_name_canonical} (comma-separated)"
+        )
+        gp_goals = ex.facts.get("goals", "")
+        gp_mechanism = ex.facts.get("mechanism", "")
+        gp_evidence = ex.facts.get("evidence", "")
+        try:
+            base_pain_pairs: list = json.loads(ex.facts.get("pains", "[]"))
+        except (ValueError, TypeError):
+            base_pain_pairs = []
+        base_pain_pairs = [
+            tuple(p) for p in base_pain_pairs if isinstance(p, (list, tuple)) and len(p) == 2
+        ]
+
         peers = [
-            p for p in (dossier.peer_companies or kb.peers_in_sector(dossier.sector or "", 6))
+            p for p in (
+                _split_csv(ex.facts.get("sector_peers", "")) or dossier.peer_companies
+            )
             if p.lower() != own
         ][:5]
-        testimonials = kb.cleared_testimonials()
-        base_pains = gp.pains_by_persona.get(persona)
+        testimonials = [
+            {"name": t.name, "role": t.role, "quote": t.quote}
+            for t in _load_facts().cleared_testimonials
+        ]
         fallback_pkg = _PRICING_BY_PERSONA[persona]
 
         system = (
@@ -95,7 +138,7 @@ class ProposalAgent(Agent):
             "pain points from the actual conversation; keep 2-4 pains."
         )
         convo = "\n".join(f"{m['role']}: {m['content']}" for m in transcript) or "(no messages yet)"
-        pain_lines = "\n".join(f"- {p} -> {a}" for p, a in (base_pains.pains if base_pains else []))
+        pain_lines = "\n".join(f"- {p} -> {a}" for p, a in base_pain_pairs)
         testi = "\n".join(f'- {t["name"]} ({t["role"]}): "{t["quote"]}"' for t in testimonials)
         user = (
             f"Persona: {persona}\n"
@@ -103,7 +146,7 @@ class ProposalAgent(Agent):
             f"Company facts: {dossier.company_profile}\nPerson facts: {dossier.person_profile}\n"
             f"Learned in chat: {learned_facts}\n\n"
             f"Conversation:\n{convo}\n\n"
-            f"TEG goals: {gp.goals}\n\nTEG mechanism: {gp.mechanism}\n\nEvidence: {gp.evidence}\n\n"
+            f"TEG goals: {gp_goals}\n\nTEG mechanism: {gp_mechanism}\n\nEvidence: {gp_evidence}\n\n"
             f"Base pain points for this persona (personalize, keep 2-4):\n{pain_lines}\n\n"
             f"Cleared testimonials (quote at most 2 verbatim):\n{testi}\n\n"
             f"Peer companies you may name (only these): {peers}\n\n"
@@ -115,9 +158,9 @@ class ProposalAgent(Agent):
         )
 
         _log.info(
-            "build  persona=%s  company=%r  sector=%r  peers=%d  base_pains=%d  testimonials=%d",
+            "build  persona=%s  company=%r  sector=%r  peers=%d  base_pains=%d  testimonials=%d  kb_found=%s",
             persona, intake.company_name_canonical, dossier.sector, len(peers),
-            len(base_pains.pains) if base_pains else 0, len(testimonials),
+            len(base_pain_pairs), len(testimonials), ex.found,
         )
         proposal = await self.llm.generate_structured(
             system=system, messages=[{"role": "user", "content": user}],
@@ -167,8 +210,8 @@ class ProposalAgent(Agent):
             for i in range(len(proposal.pains)):
                 if f"pain::{i}" in bad or f"teg_answer::{i}" in bad:
                     src = (
-                        base_pains.pains[i % len(base_pains.pains)][0]
-                        if base_pains and base_pains.pains else "Reaching the right buyers"
+                        base_pain_pairs[i % len(base_pain_pairs)][0]
+                        if base_pain_pairs else "Reaching the right buyers"
                     )
                     proposal.pains[i] = ProposalPain(
                         pain=src, teg_answer=PROPOSAL_SAFE_SECTIONS["pain_answer"][persona]
