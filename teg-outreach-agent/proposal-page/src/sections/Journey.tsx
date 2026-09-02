@@ -9,21 +9,46 @@ export function Journey({ p }: { p: Proposal }) {
       <Reveal>
         <h2>How your three days play out</h2>
       </Reveal>
-      <ol style={{ listStyle: "none", padding: 0, marginTop: "1.5rem" }}>
+      <ol
+        style={{
+          listStyle: "none",
+          padding: 0,
+          margin: "2rem 0 0",
+          borderLeft: "2px solid var(--teg-line)",
+          marginLeft: "1.15rem",
+        }}
+      >
         {p.how_a_teg_plays_out.map((step, i) => (
           <Reveal key={i} delay={i * 0.1}>
             <li
               style={{
+                position: "relative",
                 display: "flex",
                 gap: "1rem",
-                padding: ".75rem 0",
-                borderLeft: "2px solid var(--teg-cyan)",
-                paddingLeft: "1rem",
-                marginLeft: ".5rem",
+                alignItems: "baseline",
+                padding: "0 0 1.75rem 1.75rem",
               }}
             >
-              <b style={{ color: "var(--teg-cyan)" }}>{i + 1}</b>
-              <span>{step}</span>
+              <span
+                style={{
+                  position: "absolute",
+                  left: "-1.15rem",
+                  transform: "translateX(-50%)",
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  background: "var(--teg-cyan)",
+                  color: "#fff",
+                  fontWeight: 800,
+                  fontSize: ".9rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {i + 1}
+              </span>
+              <span style={{ fontSize: "1.05rem" }}>{step}</span>
             </li>
           </Reveal>
         ))}

@@ -8,10 +8,30 @@ export function Hero({ p, version, generatedOn }: { p: Proposal; version?: numbe
   const mail = `mailto:${p.contact}?subject=${encodeURIComponent(`TEG 2026 — ${p.company}`)}`;
   return (
     <Section band="dark" id="top">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        style={{
+          display: "inline-block",
+          fontSize: ".8rem",
+          fontWeight: 600,
+          letterSpacing: ".08em",
+          textTransform: "uppercase",
+          color: "#9be3ee",
+          border: "1px solid rgba(155,227,238,.35)",
+          borderRadius: 999,
+          padding: ".35rem .9rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        Tech Expo Gujarat 2026 · A proposal for {p.company}
+      </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        style={{ maxWidth: "16ch" }}
       >
         {heroHeadline(p)}
       </motion.h1>
@@ -19,6 +39,7 @@ export function Hero({ p, version, generatedOn }: { p: Proposal; version?: numbe
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.15 }}
+        style={{ maxWidth: "48ch", fontSize: "1.2rem", color: "#d8e0f2" }}
       >
         {heroSubline(p)}
       </motion.p>

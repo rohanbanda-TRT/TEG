@@ -57,14 +57,25 @@ names, no commitment/signature language, no overpromising `roi_framing`, and an
 LLM-verified testimonial check). It renders through a Jinja2 template to a PDF
 with **WeasyPrint** (no browser) + a first-page PNG thumbnail (via `pymupdf`).
 
-The PDF appears inline in the chat as an attachment card (thumbnail + Open + Download),
-plus a download URL in the reply, plus optional email if `EMAIL_ENABLED=true` and an
-address is supplied. Asking again produces a new version. Files live under
-`PROPOSAL_DIR` and are purged with the rest of the session data by the retention job.
+**Landing page.** Every proposal is also a hosted, animated web page at
+`GET /p/{id}` — a React + Vite app in `proposal-page/` that fetches
+`GET /proposals/{id}.json` and renders a full landing page: hero, priorities,
+five scroll-revealed animated charts, a 3-day journey timeline, the ask, footer.
+`ProposalAgent` writes the page copy (`hero_headline`, `hero_subline`,
+`section_ctas`, `closing_cta_*`) under the same guardrails. Build it with
+`cd proposal-page && npm install && npm run build` — the output goes to
+`app/static/proposal/` (gitignored), which FastAPI serves; until it's built,
+`GET /p/{id}` returns `503`. `cd proposal-page && npm test` runs the Vitest
+component tests, `npm run test:e2e` the Playwright smoke.
 
-- WS frames: `proposal_pending` -> `attachment` (or `proposal_failed`)
+The chat hands the prospect a `proposal_link` card (title + the hero subline +
+"Open your proposal" + a secondary "Download PDF"). The PDF flow is unchanged:
+still generated, still stored under `PROPOSAL_DIR`, still purged by retention,
+still emailed if `EMAIL_ENABLED=true`. Asking again produces a new version.
+
+- WS frames: `proposal_pending` -> `attachment` (`kind: "proposal_link"`, or `proposal_failed`)
 - `POST /sessions/{id}/proposal` (body optional `{"email": "..."}`) -> `ProposalCard`
-- `GET /proposals/{id}.pdf` · `GET /proposals/{id}/preview.png`
+- `GET /proposals/{id}.json` · `GET /p/{id}` · `GET /proposals/{id}.pdf` · `GET /proposals/{id}/preview.png`
 - Config: `PROPOSAL_MODEL` (default = `LLM_MODEL_MAIN`), `PROPOSAL_HARD_TIMEOUT_S`,
   `PROPOSAL_DIR`, `EMAIL_ENABLED`, `SMTP_*`
 
@@ -131,3 +142,5 @@ python -m app.jobs.retention   # run from cron
 - Agentic KB explorer plan: `docs/superpowers/plans/2026-09-01-agentic-kb-explorer.md`
 - Salesperson conversation + charted proposal spec: `docs/superpowers/specs/2026-09-02-salesperson-conversation-and-charted-proposal-design.md`
 - Salesperson conversation + charted proposal plan: `docs/superpowers/plans/2026-09-02-salesperson-conversation-and-charted-proposal.md`
+- Proposal landing page spec: `docs/superpowers/specs/2026-09-02-proposal-landing-page-design.md`
+- Proposal landing page plan: `docs/superpowers/plans/2026-09-02-proposal-landing-page.md`
