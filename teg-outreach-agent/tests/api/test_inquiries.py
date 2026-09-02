@@ -47,7 +47,7 @@ def _fake_orchestrator() -> Orchestrator:
         persuasion=PersuasionAgent(FakeLLMClient(
             structured=[_PersonaChoice(persona="it_tech_service", reason="software services")],
             responses=[
-                "Welcome back. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking). Want details?"
+                "Welcome back to Tech Expo Gujarat! What's the main outcome you'd want from taking part this year?"
             ],
         )),
     )
@@ -66,7 +66,7 @@ async def test_post_inquiry_returns_session_and_opening(client):
     assert r.status_code == 202
     body = r.json()
     assert body["session_id"]
-    assert "1,17,000" in body["opening_message"]
+    assert "₹" not in body["opening_message"]
     assert body["persona"] in {"it_tech_service", "ai_startup"}
 
 

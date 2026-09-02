@@ -1,4 +1,36 @@
-from app.agents.guardrails import check_message, SAFE_TEMPLATES
+from app.agents.guardrails import SAFE_TEMPLATES, check_message, check_overpromise
+
+
+def test_unsolicited_price_flagged_when_not_price_ok():
+    v = check_message(
+        "A 3m x 3m stall is around ₹1,17,000 for you.",
+        allowed_peers=[], persona="it_tech_service", price_ok=False,
+    )
+    assert "unsolicited_price" in {x.code for x in v}
+
+
+def test_price_allowed_when_price_ok_but_gst_still_enforced():
+    ok = check_message(
+        "A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking).",
+        allowed_peers=[], persona="it_tech_service", price_ok=True,
+    )
+    assert "unsolicited_price" not in {x.code for x in ok}
+    assert ok == []
+    bad = check_message(
+        "A 3m x 3m stall is ₹1,17,000 for you.",
+        allowed_peers=[], persona="it_tech_service", price_ok=True,
+    )
+    assert "missing_gst" in {x.code for x in bad}
+    assert "unsolicited_price" not in {x.code for x in bad}
+
+
+def test_overpromise_patterns():
+    assert check_overpromise("You will close 5 deals at TEG.") is not None
+    assert check_overpromise("A guaranteed ROI of 300%.") is not None
+    assert check_overpromise("Expect a return of ₹50,00,000.") is not None
+    assert check_overpromise(
+        "If a single partnership covers the investment several times over, it pays for itself."
+    ) is None
 
 
 def test_flags_visitor_price():
@@ -9,10 +41,10 @@ def test_flags_visitor_price():
     assert any(x.code == "visitor_price" for x in v)
 
 
-def test_allows_stall_price_with_gst():
+def test_allows_stall_price_with_gst_when_asked():
     v = check_message(
         "A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking).",
-        allowed_peers=[], persona="it_tech_service",
+        allowed_peers=[], persona="it_tech_service", price_ok=True,
     )
     assert v == []
 

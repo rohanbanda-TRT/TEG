@@ -22,6 +22,15 @@ _CAP_ORG = re.compile(r"\b([A-Z][A-Za-z0-9&.]+(?:\s+[A-Z][A-Za-z0-9&.]+){0,3})\b
 _AWAITING = re.compile(
     r"(the ticket price is|tickets cost ₹|confirmed sponsors include|the 2026 sponsors are)", re.I
 )
+_STALL_PRICE_CTX = re.compile(
+    r"\b(stall|sponsor|sponsorship|booth|title sponsor|partner|catalyst zone)\b", re.I
+)
+_OVERPROMISE = re.compile(
+    r"\b(guarantee[sd]?|you will (?:close|win|get|see)|"
+    r"\d+\s*(?:deals|clients|leads|partnerships)\b|"
+    r"\bROI of\b|\breturn of\b)",
+    re.I,
+)
 
 # Names of other Gujarat / India tech expos and generic competitor phrasing.
 _COMPETITOR = re.compile(
@@ -50,7 +59,9 @@ def _kb_company_names() -> set[str]:
     return set(_load_facts().exhibitor_names)
 
 
-def check_message(text: str, *, allowed_peers: list[str], persona: Persona) -> list[GuardrailViolation]:
+def check_message(
+    text: str, *, allowed_peers: list[str], persona: Persona, price_ok: bool = False,
+) -> list[GuardrailViolation]:
     out: list[GuardrailViolation] = []
 
     # visitor price
@@ -69,6 +80,14 @@ def check_message(text: str, *, allowed_peers: list[str], persona: Persona) -> l
         if re.search(r"\b(stall|sponsor|sponsorship|booth|title sponsor|partner)\b", window, re.I):
             if "gst" not in window.lower():
                 out.append(GuardrailViolation("missing_gst", window.strip()))
+                break
+
+    # unsolicited price: a stall/sponsor ₹ figure the prospect did not ask for
+    if not price_ok:
+        for m in _RUPEE.finditer(text):
+            window = text[max(0, m.start() - 60): m.end() + 60]
+            if _STALL_PRICE_CTX.search(window):
+                out.append(GuardrailViolation("unsolicited_price", window.strip()))
                 break
 
     # uncleared testimonial
@@ -114,6 +133,17 @@ def check_message(text: str, *, allowed_peers: list[str], persona: Persona) -> l
         out.append(GuardrailViolation("commitment_language", lm.group(0)))
 
     return out
+
+
+def check_overpromise(text: str) -> GuardrailViolation | None:
+    """For proposal `roi_framing`: no guaranteed outcome, no deal-count, no invented ₹ figure."""
+    m = _OVERPROMISE.search(text)
+    if m:
+        return GuardrailViolation("overpromise", m.group(0))
+    rm = _RUPEE.search(text)
+    if rm:  # any rupee figure in an ROI/value paragraph is an invented number
+        return GuardrailViolation("overpromise", rm.group(0))
+    return None
 
 
 SAFE_TEMPLATES: dict[Persona, str] = {

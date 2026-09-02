@@ -65,22 +65,21 @@ def test_happy_path_kb_company_completes_cta():
             responses=[
                 (
                     "Welcome back, Codemech. Companies like Techalmas and TechEniac are "
-                    "exhibiting. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at "
-                    "booking). Want the stall options?"
+                    "exhibiting again this year. What would make TEG 2026 worth it for your team?"
                 )
             ],
             structured=[
                 _PersonaChoice(persona="it_tech_service", reason="software services company"),
                 _Analysis(
-                    reply="A 3m x 6m at ₹2,34,000 + GST (indicative) would fit a team of 4. "
-                          "Shall I lock a 3m x 6m stall for you?",
+                    reply="A larger stall would give a team of 4 room to run live demos. "
+                          "Shall I get a stall reserved for you?",
                     detected_cta="book_stall", cta_status="in_progress", cta_type="stall",
-                    cta_detail={"stall_size": "3x6"}, should_handoff=False, learned_facts={},
+                    cta_detail={"stall_size": "3x6"}, should_handoff=False,
                 ),
                 _Analysis(
-                    reply="Done -- I've noted a 3m x 6m stall booking. The team will confirm the invoice.",
+                    reply="Done -- I've noted a stall booking. The team will confirm the details.",
                     detected_cta="book_stall", cta_status="completed", cta_type="stall",
-                    cta_detail={"stall_size": "3x6"}, should_handoff=False, learned_facts={},
+                    cta_detail={"stall_size": "3x6"}, should_handoff=False,
                 ),
             ],
         )),
@@ -94,7 +93,7 @@ def test_happy_path_kb_company_completes_cta():
     ).json()
     assert posted["persona"] in {"it_tech_service", "ai_startup"}
     assert "Techalmas" in posted["opening_message"]
-    assert "₹1,17,000 + GST" in posted["opening_message"]
+    assert "₹" not in posted["opening_message"]
 
     sid = posted["session_id"]
     with client.websocket_connect(f"/chat/{sid}") as ws:

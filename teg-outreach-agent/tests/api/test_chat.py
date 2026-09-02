@@ -50,7 +50,7 @@ def _orch():
             designation=None, seniority=None, is_technical=None, person_company_match=None,
         )]), explorer=StubExplorer(), tools=[_DeadWeb()]),
         persuasion=PersuasionAgent(FakeLLMClient(
-            responses=["opening: a 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking)."],
+            responses=["Welcome back to Tech Expo Gujarat! What are you hoping to get out of taking part this year?"],
             structured=[
                 _PersonaChoice(persona="it_tech_service", reason="software services"),
                 _Analysis(
@@ -80,7 +80,7 @@ def test_ws_chat_roundtrip():
     with client.websocket_connect(f"/chat/{sid}") as ws:
         opening = ws.receive_json()
         assert opening["type"] == "opening"
-        assert "1,17,000" in opening["text"]
+        assert "₹" not in opening["text"]
         ws.send_json({"type": "message", "text": "tell me about stalls"})
         reply = ws.receive_json()
         assert reply["type"] == "reply"
