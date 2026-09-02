@@ -72,6 +72,7 @@ class PersuasionTurn(BaseModel):
     guardrail_flags: list[str] = Field(default_factory=list)
     persona: Persona
     wants_proposal: bool = False
+    asked_about_price: bool = False
 
 
 class HandoffPacket(BaseModel):
@@ -94,6 +95,11 @@ class ProposalPackage(BaseModel):
     payment_plan: str
 
 
+class SectorFitRow(BaseModel):
+    lever: str
+    weight: int  # 1-5, clamped by ProposalAgent
+
+
 class Proposal(BaseModel):
     company: str
     person: str
@@ -111,6 +117,10 @@ class Proposal(BaseModel):
     peer_companies: list[str] = Field(default_factory=list)
     next_steps: list[str] = Field(default_factory=list)
     contact: str
+    executive_summary: str = ""
+    how_a_teg_plays_out: list[str] = Field(default_factory=list)
+    roi_framing: str = ""
+    sector_fit: list[SectorFitRow] = Field(default_factory=list)
 
 
 class ProposalCard(BaseModel):

@@ -3,8 +3,15 @@ import pytest
 from pydantic import ValidationError
 
 from app.domain.schemas import (
-    IntakePayload, IntakeResult, ResearchDossier, SourceRef,
-    PersuasionInit, PersuasionTurn, HandoffPacket,
+    HandoffPacket,
+    IntakePayload,
+    IntakeResult,
+    PersuasionTurn,
+    Proposal,
+    ProposalPackage,
+    ResearchDossier,
+    SectorFitRow,
+    SourceRef,
 )
 
 
@@ -62,3 +69,29 @@ def test_handoff_packet_confidence_enum():
             summary="s", recommended_next_step="n", suggested_followup_message="m",
             prospect_confidence="maybe", key_facts={},
         )
+
+
+def _pkg():
+    return ProposalPackage(name="3m x 3m stall", price_line="", includes=["2 passes"], payment_plan="")
+
+
+def test_sector_fit_row():
+    r = SectorFitRow(lever="India-market buyer access", weight=4)
+    assert r.weight == 4
+
+
+def test_proposal_new_fields_default_empty():
+    p = Proposal(
+        company="X", person="Y", persona="it_tech_service", generated_on="d",
+        session_ref="r", version=1, what_you_told_us="w", lead_generation="l",
+        recommended_package=_pkg(), contact="c",
+    )
+    assert p.executive_summary == ""
+    assert p.how_a_teg_plays_out == []
+    assert p.roi_framing == ""
+    assert p.sector_fit == []
+
+
+def test_persuasion_turn_asked_about_price_defaults_false():
+    t = PersuasionTurn(reply_text="hi", persona="visitor")
+    assert t.asked_about_price is False
