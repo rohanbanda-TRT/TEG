@@ -1,4 +1,43 @@
-from app.agents.guardrails import SAFE_TEMPLATES, check_message, check_overpromise
+from app.agents.guardrails import (
+    SAFE_TEMPLATES,
+    _TestimonialCheck,
+    check_message,
+    check_overpromise,
+    check_testimonial,
+)
+from app.llm.fake import FakeLLMClient
+
+
+async def test_no_quote_means_no_llm_call():
+    fake = FakeLLMClient()
+    assert await check_testimonial("TEG has 250+ exhibitors and great matchmaking.", fake) is None
+    assert fake.calls == []
+
+
+async def test_cleared_quote_passes():
+    fake = FakeLLMClient(structured=[_TestimonialCheck(quotes_testimonial=True, all_cleared=True)])
+    v = await check_testimonial(
+        'As Sonu Sharma said, "I used to think tech talent was mostly in Bangalore, but not any more."',
+        fake,
+    )
+    assert v is None
+
+
+async def test_fabricated_quote_flagged():
+    fake = FakeLLMClient(structured=[
+        _TestimonialCheck(quotes_testimonial=True, all_cleared=False, problem="unknown name Jane Doe")
+    ])
+    v = await check_testimonial('As Jane Doe said, "TEG tripled our revenue in a week."', fake)
+    assert v is not None and v.code == "uncleared_testimonial"
+
+
+async def test_llm_error_fails_safe():
+    class _Boom:
+        async def generate_structured(self, **kw):
+            raise RuntimeError("down")
+
+    v = await check_testimonial('Someone said, "a long enough quote to trip the prefilter here."', _Boom())
+    assert v is not None and v.code == "uncleared_testimonial"
 
 
 def test_unsolicited_price_flagged_when_not_price_ok():
@@ -57,19 +96,12 @@ def test_flags_stall_price_missing_gst():
     assert any(x.code == "missing_gst" for x in v)
 
 
-def test_flags_uncleared_testimonial():
+# testimonial verification moved to check_testimonial() (async, LLM-backed) —
+# see the tests near the top of this file. check_message no longer inspects quotes.
+def test_check_message_ignores_quotes():
     v = check_message(
-        'As Jane Doe said, "This event completely transformed our pipeline and we closed ten deals in a week."',
+        'As Jane Doe said, "This event completely transformed our pipeline and we closed ten deals."',
         allowed_peers=[], persona="it_tech_service",
-    )
-    assert any(x.code == "uncleared_testimonial" for x in v)
-
-
-def test_allows_cleared_testimonial():
-    # Sonu Sharma is one of the 4 cleared names
-    v = check_message(
-        'Sonu Sharma noted that Gujarat "has an amazing force of tech people" after visiting.',
-        allowed_peers=[], persona="visitor",
     )
     assert not any(x.code == "uncleared_testimonial" for x in v)
 

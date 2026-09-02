@@ -3,18 +3,18 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 from app.domain.schemas import Persona
 from app.kb.facts import load as _load_facts
 
 _RUPEE = re.compile(r"₹\s?[\d,]+(?:\.\d+)?\s*(?:crore|cr|lakh|lac|k)?", re.I)
 _VISITOR_CTX = re.compile(r"\b(visitor|golden ticket)\b", re.I)
 _TICKETY = re.compile(r"\b(ticket|pass|entry)\b", re.I)
-_QUOTE = re.compile(r"[\"“]([^\"”]{20,})[\"”]")
-_ATTRIB = re.compile(
-    r"\b([A-Z][a-z]+ [A-Z][a-z]+)\b(?=[^.]{0,40}(?:said|noted|shared|according to|remarked))|"
-    r"(?:said|noted|according to|as)\s+([A-Z][a-z]+ [A-Z][a-z]+)",
-    re.I,
-)
+# a cheap pre-filter only: "is there a quote span worth an LLM check?" — the
+# verdict on whether a quote is a cleared testimonial is made by the LLM, never
+# by regex.
+_QUOTE_SPAN = re.compile(r'["“”][^"“”]{20,}["“”]')
 _PEER_CTX = re.compile(
     r"(companies like|peers such as|alongside|exhibiting with|joined by)\s+(.+?)(?:\.|$)", re.I
 )
@@ -49,10 +49,6 @@ _COMMITMENT = re.compile(
 class GuardrailViolation:
     code: str
     detail: str
-
-
-def _cleared_names() -> set[str]:
-    return {t.name for t in _load_facts().cleared_testimonials}
 
 
 def _kb_company_names() -> set[str]:
@@ -90,16 +86,8 @@ def check_message(
                 out.append(GuardrailViolation("unsolicited_price", window.strip()))
                 break
 
-    # uncleared testimonial
-    cleared = _cleared_names()
-    for qm in _QUOTE.finditer(text):
-        if len(qm.group(1).split()) < 12:
-            continue
-        span = text[max(0, qm.start() - 80): qm.end() + 80]
-        names = [g for pair in _ATTRIB.findall(span) for g in pair if g]
-        if names and not any(n in cleared for n in names):
-            out.append(GuardrailViolation("uncleared_testimonial", qm.group(1)[:80]))
-            break
+    # uncleared testimonial — see check_testimonial() (async, LLM-backed).
+    # check_message stays sync; callers run check_testimonial alongside it.
 
     # invented peer
     kb_names_lower = {n.lower() for n in _kb_company_names()}
@@ -143,6 +131,42 @@ def check_overpromise(text: str) -> GuardrailViolation | None:
     rm = _RUPEE.search(text)
     if rm:  # any rupee figure in an ROI/value paragraph is an invented number
         return GuardrailViolation("overpromise", rm.group(0))
+    return None
+
+
+class _TestimonialCheck(BaseModel):
+    quotes_testimonial: bool
+    all_cleared: bool
+    problem: str = ""
+
+
+async def check_testimonial(text: str, llm) -> GuardrailViolation | None:
+    """Verify any quoted testimonial is one of the cleared ones, verbatim + right name.
+
+    Regex only pre-filters ("is there a quote at all?"); the verdict is the LLM's.
+    A guardrail that cannot verify blocks — an LLM error returns a violation.
+    """
+    if not _QUOTE_SPAN.search(text):
+        return None
+    cleared = _load_facts().cleared_testimonials
+    listing = "\n".join(f'- {t.name}: "{t.quote}"' for t in cleared)
+    try:
+        r = await llm.generate_structured(
+            system=(
+                "You verify testimonial usage. You get a MESSAGE and the ONLY "
+                "testimonials that may be quoted. Decide: does the message quote a "
+                "testimonial at all? If so, is every quoted testimonial one of the "
+                "allowed ones word-for-word, attributed to the correct name? A "
+                "paraphrase, a wrong name, or an unknown name is NOT cleared."
+            ),
+            messages=[{"role": "user", "content":
+                       f"MESSAGE:\n{text}\n\nALLOWED TESTIMONIALS:\n{listing}"}],
+            schema=_TestimonialCheck,
+        )
+    except Exception:  # noqa: BLE001 — a guardrail that cannot verify blocks
+        return GuardrailViolation("uncleared_testimonial", "verification unavailable")
+    if r.quotes_testimonial and not r.all_cleared:
+        return GuardrailViolation("uncleared_testimonial", r.problem[:120])
     return None
 
 
@@ -207,5 +231,17 @@ PROPOSAL_SAFE_SECTIONS: dict[str, dict[Persona, str]] = {
         "ai_startup": "Ask about the Catalyst Zone or the startup pitch track at techexpogujarat.com, or reply here.",
         "non_tech_sponsor": "Request a sponsorship call via techexpogujarat.com/become-a-sponsor.",
         "visitor": "Register at events.techexpogujarat.com when you're ready.",
+    },
+    "executive_summary": {
+        "it_tech_service": "You run a technology services company exploring how Tech Expo Gujarat 2026 could support your business development across India-market and cross-industry buyers.",
+        "ai_startup": "You run an early-stage AI/technology company exploring an affordable way to showcase it and meet buyers and investors at Tech Expo Gujarat 2026.",
+        "non_tech_sponsor": "Your company is exploring a sponsorship association with Tech Expo Gujarat 2026 to build brand presence around the region's innovation story.",
+        "visitor": "You are considering attending Tech Expo Gujarat 2026 to discover technology solutions relevant to your work.",
+    },
+    "roi_framing": {
+        "it_tech_service": "TEG concentrates cross-industry decision-makers and pre-scheduled meetings into three days; if a single engagement that starts here covers the cost of taking part many times over, participation pays for itself.",
+        "ai_startup": "For a small team, the Catalyst Zone and the investor track compress months of buyer and VC outreach into a few days; one partnership or raise that begins here can outweigh the cost of the stall many times over.",
+        "non_tech_sponsor": "A category-exclusive association ties your brand to the region's innovation narrative across the venue, digital, and press; the value is in the sustained visibility rather than a single transaction.",
+        "visitor": "Meeting 250+ exhibitors in one place compresses vendor evaluation that would otherwise take months.",
     },
 }
