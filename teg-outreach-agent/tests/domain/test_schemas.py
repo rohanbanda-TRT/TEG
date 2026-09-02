@@ -95,3 +95,23 @@ def test_proposal_new_fields_default_empty():
 def test_persuasion_turn_asked_about_price_defaults_false():
     t = PersuasionTurn(reply_text="hi", persona="visitor")
     assert t.asked_about_price is False
+
+
+def test_proposal_landing_page_fields_default_empty():
+    p = Proposal(
+        company="X", person="Y", persona="it_tech_service", generated_on="d",
+        session_ref="r", version=1, what_you_told_us="w", lead_generation="l",
+        recommended_package=_pkg(), contact="c",
+    )
+    assert p.hero_headline == "" and p.hero_subline == ""
+    assert p.section_ctas == {}
+    assert p.closing_cta_headline == "" and p.closing_cta_body == ""
+
+
+def test_proposal_card_link_fields():
+    from app.domain.schemas import ProposalCard
+    c = ProposalCard(
+        proposal_id="p1", version=1, filename="f.pdf", bytes=1, pdf_url="/x.pdf", png_url="/x.png",
+    )
+    assert c.page_url == "" and c.title == "" and c.blurb == ""
+    assert c.kind == "proposal"

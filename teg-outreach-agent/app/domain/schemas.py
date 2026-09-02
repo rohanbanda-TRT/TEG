@@ -121,6 +121,11 @@ class Proposal(BaseModel):
     how_a_teg_plays_out: list[str] = Field(default_factory=list)
     roi_framing: str = ""
     sector_fit: list[SectorFitRow] = Field(default_factory=list)
+    hero_headline: str = ""
+    hero_subline: str = ""
+    section_ctas: dict[str, str] = Field(default_factory=dict)
+    closing_cta_headline: str = ""
+    closing_cta_body: str = ""
 
 
 class ProposalCard(BaseModel):
@@ -131,3 +136,6 @@ class ProposalCard(BaseModel):
     bytes: int
     pdf_url: str
     png_url: str
+    page_url: str = ""
+    title: str = ""
+    blurb: str = ""
