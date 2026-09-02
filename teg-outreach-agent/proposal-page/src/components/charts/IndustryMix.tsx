@@ -1,11 +1,8 @@
-import { motion } from "framer-motion";
 import { INDUSTRIES } from "../../lib/chartData";
-import { useReveal } from "../../hooks/useReveal";
 
 export function IndustryMix() {
-  const { ref, shown } = useReveal();
   return (
-    <div ref={ref}>
+    <div>
       <p className="chart-caption">
         Buyers attend across every sector — illustrative, not to scale
       </p>
@@ -16,13 +13,12 @@ export function IndustryMix() {
             <div className="chart-row" key={name}>
               <span className="chart-row__label">{name}</span>
               <span className="chart-row__track">
-                <motion.span
-                  className="chart-row__fill chart-row__fill--cyan"
-                  initial={{ width: 0 }}
-                  animate={shown ? { width: `${frac * 100}%` } : {}}
-                  transition={{ duration: 0.5, delay: i * 0.03 }}
+                <span
+                  className="chart-row__fill chart-row__fill--cyan reveal-bar"
+                  style={{ "--w": `${frac * 100}%`, "--d": `${i * 0.03}s` } as React.CSSProperties}
                 />
               </span>
+              <span className="chart-row__value" aria-hidden="true" />
             </div>
           );
         })}

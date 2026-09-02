@@ -7,21 +7,22 @@ export function Priorities({ p }: { p: Proposal }) {
   if (!p.pains.length) return null;
   return (
     <Section band="alt" id="priorities">
-      <Reveal>
+      <div className="sec-head">
+        <span className="eyebrow">Your priorities</span>
         <h2>Where TEG moves the needle for you</h2>
-      </Reveal>
-      <div style={{ display: "grid", gap: "1rem", marginTop: "1.5rem" }}>
+      </div>
+      <div style={{ display: "grid", gap: "1rem" }}>
         {p.pains.map((pain, i) => (
           <Reveal key={i} delay={i * 0.08}>
-            <div className="card">
+            <div className="priority">
               <strong>{pain.pain}</strong>
-              <p style={{ margin: ".4rem 0 0" }}>{pain.teg_answer}</p>
+              <p>{pain.teg_answer}</p>
             </div>
           </Reveal>
         ))}
       </div>
-      <div style={{ marginTop: "1.5rem" }}>
-        <a className="cta cta--ghost" href="#journey">
+      <div style={{ textAlign: "center", marginTop: "2.5rem" }}>
+        <a className="cta cta--ghost" href="#numbers">
           {sectionCta(p, "priorities")}
         </a>
       </div>

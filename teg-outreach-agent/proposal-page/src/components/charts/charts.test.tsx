@@ -7,12 +7,12 @@ import { PeerStat } from "./PeerStat";
 import { SectorFitBars } from "./SectorFitBars";
 
 describe("charts", () => {
-  it("GrowthBars renders both group labels and start-at-0 value spans", () => {
-    const { getByText, getAllByText } = render(<GrowthBars />);
+  it("GrowthBars renders both group labels and the real values", () => {
+    const { getByText } = render(<GrowthBars />);
     expect(getByText("Attendees")).toBeInTheDocument();
     expect(getByText("Exhibitors")).toBeInTheDocument();
-    // 4 value spans (2024 + 2026 per group), all at 0 before reveal
-    expect(getAllByText("0", { selector: ".growth-bar__value" }).length).toBe(4);
+    expect(getByText("15,000")).toBeInTheDocument();
+    expect(getByText("250")).toBeInTheDocument();
   });
 
   it("IndustryMix renders a row per industry", () => {

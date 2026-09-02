@@ -10,12 +10,14 @@ export function TheAsk({ p }: { p: Proposal }) {
   const mail = `mailto:${p.contact}?subject=${encodeURIComponent(`TEG 2026 — ${p.company}`)}`;
   return (
     <Section band="dark" id="the-ask">
-      <Reveal>
+      <div className="sec-head">
+        <span className="eyebrow">The recommendation</span>
         <h2>The ask</h2>
-      </Reveal>
+      </div>
+
       <Reveal>
-        <div className="card" style={{ color: "var(--teg-ink)", marginTop: "1rem" }}>
-          <strong>{pkg.name}</strong>
+        <div className="ask-card">
+          <h3>{pkg.name}</h3>
           <ul>
             {pkg.includes.map((x, i) => (
               <li key={i}>{x}</li>
@@ -23,26 +25,30 @@ export function TheAsk({ p }: { p: Proposal }) {
           </ul>
           {priced ? (
             <>
-              <div>
-                <b>{pkg.price_line}</b>
-              </div>
-              {pkg.payment_plan && <div>Payment: {pkg.payment_plan}</div>}
+              <div className="ask-card__price">{pkg.price_line}</div>
+              {pkg.payment_plan && <div className="ask-card__pay">Payment: {pkg.payment_plan}</div>}
             </>
           ) : (
-            <div>The team will share stall options and pricing tailored to your goals.</div>
+            <div className="ask-card__nostprice">
+              The team will share stall options and pricing tailored to your goals.
+            </div>
           )}
         </div>
       </Reveal>
+
       {p.roi_framing && (
         <Reveal>
-          <p style={{ marginTop: "1rem" }}>{p.roi_framing}</p>
+          <p className="ask-roi">{p.roi_framing}</p>
         </Reveal>
       )}
+
       <Reveal>
-        <h3 style={{ marginTop: "2rem" }}>{closingHeadline(p)}</h3>
-        <p>{closingBody(p)}</p>
-        <div style={{ marginTop: "1rem" }}>
-          <CtaButton href={mail}>{sectionCta(p, "investment")}</CtaButton>
+        <div className="ask-close">
+          <h3>{closingHeadline(p)}</h3>
+          <p>{closingBody(p)}</p>
+          <div style={{ marginTop: "1.5rem" }}>
+            <CtaButton href={mail}>{sectionCta(p, "investment")}</CtaButton>
+          </div>
         </div>
       </Reveal>
     </Section>

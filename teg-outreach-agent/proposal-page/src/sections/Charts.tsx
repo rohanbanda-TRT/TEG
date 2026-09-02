@@ -14,46 +14,82 @@ const FUNNEL: [string, string][] = [
   ["Partnerships & pipeline", "the follow-up that starts here"],
 ];
 
-export function Charts({ p }: { p: Proposal }) {
+export function SectorFit({ p }: { p: Proposal }) {
+  if (!p.sector_fit.length) return null;
   return (
     <Section band="light" id="numbers">
+      <div className="sec-head">
+        <span className="eyebrow">Fit for {p.sector ?? "your sector"}</span>
+        <h2>How your sector benefits</h2>
+        <p>Which of TEG's levers matter most for a company like {p.company}.</p>
+      </div>
       <Reveal>
-        <h2>The numbers behind TEG</h2>
-      </Reveal>
-
-      {p.sector_fit.length > 0 && (
-        <Reveal>
-          <h3 style={{ marginTop: "2rem" }}>How your sector benefits</h3>
+        <div className="chart-block">
           <SectorFitBars rows={p.sector_fit} />
-        </Reveal>
-      )}
-
-      <Reveal>
-        <h3 style={{ marginTop: "2rem" }}>The track record</h3>
-        <ul>
-          {p.proof.map((x, i) => (
-            <li key={i}>{x}</li>
-          ))}
-        </ul>
-        <GrowthBars />
+        </div>
       </Reveal>
+    </Section>
+  );
+}
 
-      <Reveal>
-        <h3 style={{ marginTop: "2rem" }}>Who's in the room</h3>
-        <IndustryMix />
-      </Reveal>
+export function TheRoom({ p }: { p: Proposal }) {
+  return (
+    <Section band="alt" id="room">
+      <div className="sec-head">
+        <span className="eyebrow">The audience</span>
+        <h2>Who's in the room</h2>
+        <p>A growing, cross-industry crowd of buyers — and companies like yours already committed.</p>
+      </div>
 
-      {p.peer_companies.length > 0 && (
+      {p.proof.length > 0 && (
         <Reveal>
-          <div style={{ marginTop: "1.5rem" }}>
-            <PeerStat names={p.peer_companies} />
+          <div className="chart-block">
+            <h3>The track record</h3>
+            <ul style={{ color: "var(--slate)", paddingLeft: "1.2rem", margin: "0.75rem 0 1.5rem" }}>
+              {p.proof.map((x, i) => (
+                <li key={i} style={{ margin: "0.4rem 0" }}>
+                  {x}
+                </li>
+              ))}
+            </ul>
+            <GrowthBars />
           </div>
         </Reveal>
       )}
 
       <Reveal>
-        <h3 style={{ marginTop: "2rem" }}>How it converts</h3>
-        <Funnel steps={FUNNEL} />
+        <div className="chart-block">
+          <h3>Every industry, under one roof</h3>
+          <IndustryMix />
+        </div>
+      </Reveal>
+
+      {p.peer_companies.length > 0 && (
+        <Reveal>
+          <div className="chart-block">
+            <h3>Peers already confirmed</h3>
+            <div style={{ marginTop: "1rem" }}>
+              <PeerStat names={p.peer_companies} />
+            </div>
+          </div>
+        </Reveal>
+      )}
+    </Section>
+  );
+}
+
+export function Mechanism() {
+  return (
+    <Section band="light" id="mechanism">
+      <div className="sec-head">
+        <span className="eyebrow">How it works</span>
+        <h2>From footfall to pipeline</h2>
+        <p>Illustrative of the TEG mechanism — pre-scheduled meetings do the heavy lifting.</p>
+      </div>
+      <Reveal>
+        <div className="chart-block">
+          <Funnel steps={FUNNEL} />
+        </div>
       </Reveal>
     </Section>
   );

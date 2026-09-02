@@ -19,7 +19,7 @@ describe("sections", () => {
 
   it("Priorities renders one card per pain; nothing when empty", () => {
     const { container, rerender } = render(<Priorities p={p} />);
-    expect(container.querySelectorAll(".card").length).toBe(p.pains.length);
+    expect(container.querySelectorAll(".priority").length).toBe(p.pains.length);
     rerender(<Priorities p={{ ...p, pains: [] }} />);
     expect(container.querySelector("section")).toBeNull();
   });
