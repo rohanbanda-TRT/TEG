@@ -54,15 +54,15 @@ describe("charts", () => {
       <PeerStat names={["X", "Y", "Z"]} sector="Digital Marketing & SEO" sectorTotal={4} />,
     );
     expect(getByText("X")).toBeTruthy();
-    expect(container.querySelector(".peer-stat__lead b")?.textContent).toBe("4");
-    expect(container.querySelector(".peer-stat__lead")?.textContent).toMatch(
+    expect(container.querySelector(".stat-ring b")?.textContent).toBe("4");
+    expect(container.querySelector(".peer-stat__lead p")?.textContent).toMatch(
       /Digital Marketing & SEO exhibited at TEG 2024/,
     );
   });
 
   it("PeerStat clamps the count up to the number of names when sectorTotal is smaller", () => {
     const { container } = render(<PeerStat names={["A", "B", "C", "D", "E"]} sectorTotal={2} />);
-    expect(container.querySelector(".peer-stat__lead b")?.textContent).toBe("5");
+    expect(container.querySelector(".stat-ring b")?.textContent).toBe("5");
   });
 
   it("PeerStat strips a leading count the model may have written in contextLine", () => {
@@ -73,7 +73,7 @@ describe("charts", () => {
         contextLine="9 companies in Fintech exhibited at TEG 2024 — including the names below."
       />,
     );
-    const text = container.querySelector(".peer-stat__lead")?.textContent ?? "";
+    const text = container.querySelector(".peer-stat__lead p")?.textContent ?? "";
     expect(text).toBe("9 companies in Fintech exhibited at TEG 2024 — including the names below.");
   });
 });

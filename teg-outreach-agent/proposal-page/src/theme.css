@@ -465,24 +465,52 @@ a {
 /* ============ chart: peer stat ============ */
 .peer-stat {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 .peer-stat__lead {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.stat-ring {
+  width: 132px;
+  height: 132px;
+  min-width: 132px;
+  border-radius: 50%;
+  border: 3px solid var(--cyan);
+  background: radial-gradient(circle at 50% 35%, var(--cyan-soft), transparent 72%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-ring b {
+  font-size: 2.9rem;
+  font-weight: 800;
+  color: var(--navy);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.peer-stat__lead p {
+  flex: 1;
+  min-width: 240px;
   color: var(--ink);
   font-size: 1.05rem;
   line-height: 1.6;
-  max-width: 52ch;
+  max-width: 42ch;
   margin: 0;
 }
-.peer-stat__lead b {
-  font-size: 1.35rem;
-  font-weight: 800;
+.peer-stat__lead p strong {
   color: var(--cyan);
+  font-weight: 800;
 }
-.section--dark .peer-stat__lead {
+.section--dark .stat-ring b {
+  color: #fff;
+}
+.section--dark .peer-stat__lead p {
   color: #dbe3f6;
 }
-.section--dark .peer-stat__lead b {
+.section--dark .peer-stat__lead p strong {
   color: var(--gold);
 }
 .peer-grid {
