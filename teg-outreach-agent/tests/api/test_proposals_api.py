@@ -10,8 +10,8 @@ from app.domain.schemas import Proposal, ProposalPackage, ProposalPain
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
+from tests.conftest import StubExplorer
 
 pytestmark = pytest.mark.usefixtures("db_schema")
 

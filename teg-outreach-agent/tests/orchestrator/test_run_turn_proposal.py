@@ -7,10 +7,10 @@ from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import IntakePayload
 from app.llm.fake import FakeLLMClient
 from app.orchestrator import Orchestrator
-from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, SessionLocal, engine
 from app.store.models import ProposalRow
+from tests.conftest import StubExplorer
 
 
 @pytest.fixture(autouse=True)

@@ -14,7 +14,6 @@ from app.domain.schemas import (
     PersuasionTurn,
     ResearchDossier,
 )
-from app.kb.loader import get_kb  # noqa: F401  (kept for downstream use / test patching)
 from app.obs import get_logger
 from config.outreach_rules import load_rules
 from config.settings import get_settings

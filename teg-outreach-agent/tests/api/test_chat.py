@@ -11,9 +11,9 @@ from app.api.inquiries import get_orchestrator
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, engine
+from tests.conftest import StubExplorer
 
 
 @pytest.fixture

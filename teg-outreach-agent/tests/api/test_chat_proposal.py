@@ -11,8 +11,8 @@ from app.domain.schemas import HandoffPacket, Proposal, ProposalPackage, Proposa
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
+from tests.conftest import StubExplorer
 
 pytestmark = pytest.mark.usefixtures("db_schema")
 

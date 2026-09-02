@@ -1,5 +1,11 @@
-from app.agents.proposal import ProposalAgent, _PRICING_BY_PERSONA
-from app.domain.schemas import IntakeResult, Proposal, ProposalPackage, ProposalPain, ResearchDossier
+from app.agents.proposal import _PRICING_BY_PERSONA, ProposalAgent
+from app.domain.schemas import (
+    IntakeResult,
+    Proposal,
+    ProposalPackage,
+    ProposalPain,
+    ResearchDossier,
+)
 from app.kb.explorer import ExploreResult, KBExplorer
 from app.llm.fake import FakeLLMClient
 

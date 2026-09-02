@@ -1,5 +1,6 @@
 # tests/orchestrator/test_run_pipeline.py
 import pytest
+from sqlalchemy import select
 
 from app.agents.analysis import AnalysisAgent, _CanonResult
 from app.agents.persuasion import PersuasionAgent
@@ -7,11 +8,10 @@ from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import IntakePayload
 from app.llm.fake import FakeLLMClient
 from app.orchestrator import Orchestrator
-from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, SessionLocal, engine
 from app.store.models import ChatMessage, ChatSession, Inquiry
-from sqlalchemy import select
+from tests.conftest import StubExplorer
 
 
 @pytest.fixture(autouse=True)

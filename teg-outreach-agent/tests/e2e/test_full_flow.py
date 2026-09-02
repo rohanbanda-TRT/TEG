@@ -27,10 +27,10 @@ from app.domain.schemas import HandoffPacket
 from app.llm.fake import FakeLLMClient
 from app.main import create_app
 from app.orchestrator import Orchestrator
-from tests.conftest import StubExplorer
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import SessionLocal
 from app.store.models import ChatSession, HandoffPacketRow
+from tests.conftest import StubExplorer
 
 pytestmark = pytest.mark.usefixtures("db_schema")
 
