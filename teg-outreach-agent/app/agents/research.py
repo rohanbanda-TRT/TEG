@@ -32,8 +32,9 @@ _TEG_SECTORS = (
 
 _COMPANY_GOAL = (
     "Profile the company {company} for a Tech Expo Gujarat 2026 outreach dossier.\n"
-    "Read its profile in exhibitors/companies/ (compute the slug), then "
-    "sector_wise_participation.md for the sector and its peer table.\n"
+    "Look for its profile: list_dir exhibitors/companies/ and scan for a matching "
+    "filename, or grep '{company}' across the KB; read_file what you find. Then "
+    "read sector_wise_participation.md for the sector and its peer table.\n"
     "Return facts:\n"
     "- sector: the ONE best-fitting TEG sector. TEG is NOT IT-only; choose from: "
     + _TEG_SECTORS
@@ -41,18 +42,18 @@ _COMPANY_GOAL = (
     "- teg_history: which past editions / sponsor tier, or omit if none\n"
     "- sector_peers: up to 5 OTHER TEG exhibitors in that same sector from "
     "sector_wise_participation.md, excluding {company} itself (comma-separated)\n"
-    "If the KB has no profile for {company}, set found=false — but still return a "
+    "If no file mentions {company}, set found=false — but still return a "
     "best-guess 'sector' and its 'sector_peers' if the KB makes one obvious."
 )
 
 _PERSON_GOAL = (
-    "Profile {person}, associated with {company}. Compute the slug and try "
-    "organizers_team/<slug>.md, then speakers/individuals/<slug>.md. If neither "
-    "exists, check the company's file exhibitors/companies/<company-slug>.md for a "
-    "founder/leadership mention.\n"
+    "Profile {person}, associated with {company}. Look for a profile file: "
+    "list_dir organizers_team/ and speakers/individuals/ and scan for a matching "
+    "name, or grep '{person}'. If no file is theirs, check the company's file "
+    "under exhibitors/companies/ for a founder/leadership mention.\n"
     "Return facts: designation, seniority, is_technical (true/false), teg_role "
     "(organizer / speaker / founder / none), background.\n"
-    "If this person has no node in the KB, set found=false."
+    "If no file mentions this person, set found=false."
 )
 
 _PEERS_GOAL = (
