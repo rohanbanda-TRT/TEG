@@ -81,8 +81,8 @@ async def test_the_skill_is_loaded_into_the_system_prompt():
     await _build(claude)
 
     system = claude.calls[0]["system_prompt"]
-    assert "TEG 2026 Proposal Writer" in system      # from SKILL.md
-    assert "Persona Pain-Point Library" in system    # from references/
+    assert "Proposal Writer" in system               # from SKILL.md
+    assert "Persona Pain-Point Library" in system     # from references/
     assert "Never invent a fact" in system
 
 

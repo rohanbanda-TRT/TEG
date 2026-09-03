@@ -14,7 +14,10 @@ from app.agents.guardrails import (
     check_testimonial,
 )
 from app.domain.schemas import (
+    GROWTH_STAGES,
+    MAX_JOURNEY_POINTS,
     IntakeResult,
+    JourneyStage,
     Persona,
     Proposal,
     ProposalPackage,
@@ -197,15 +200,20 @@ class ProposalAgent(Agent):
             )
 
         system = (
-            "You write a detailed personalized proposal for a Tech Expo Gujarat 2026 inquiry. "
-            "Ground every claim in the facts provided. RULES: no invented statistics. "
-            "For testimonials: prefer NOT to quote any; if you do, use ONLY the exact wording and "
-            "exact attributed name from the cleared list below, at most 2, and never paraphrase or "
-            "re-attribute. Only name peer companies from the provided list. Never state a visitor "
-            "ticket price; every price is '+ GST' and 'indicative, confirmed at booking'. Never name "
-            "another event or expo. No signature blocks, no 'you agree', no binding-offer language — "
-            "this is an information document, not a contract. Personalize 'what_you_told_us' and the "
-            "pain points from the actual conversation; keep 2-4 pains."
+            "You write a business-focused proposal answering: 'Could Tech Expo Gujarat become a "
+            "growth channel for this prospect?' Ground every claim in the facts provided. "
+            "RULES: no invented statistics, revenue, growth rates, lead counts, conversion rates, ROI, "
+            "deal sizes, or sales cycles. For testimonials: prefer NOT to quote any; if you do, use "
+            "ONLY the exact wording and exact attributed name from the cleared list below, at most 2, "
+            "and never paraphrase or re-attribute. Only name peer companies from the provided list. "
+            "Never state a visitor ticket price; every price is '+ GST' and 'indicative, confirmed at "
+            "booking'. Never name another event or expo. No signature blocks, no 'you agree', no "
+            "binding-offer language — this is an information document, not a contract. "
+            "LANGUAGE RULES: Use tentative language ('could', 'may', 'potential', 'opportunity to "
+            "explore') for anything not verified. Never state internal company problems unless "
+            "explicitly supported. Never say '15,000+ decision-makers' — correct to '15,000+ visitors' "
+            "with SME/MSME decision-makers as target audience. Personalize 'what_you_told_us' and "
+            "the pain points from the actual conversation; keep 2-4 pains."
         )
         if self._claude is not None:
             # Skills-as-prompt-assets: the durable voice/rules live in
@@ -282,6 +290,25 @@ class ProposalAgent(Agent):
                 for r in p.sector_fit[:6]
             ]
 
+        def _clamp_growth_journey(p: Proposal) -> None:
+            """The six stages, in order, once each, 3-5 points apiece.
+
+            The argument only reads if the whole chain is present in sequence,
+            so a partial journey is dropped entirely rather than shown broken.
+            """
+            by_stage: dict[str, JourneyStage] = {}
+            for s in p.growth_journey:
+                if s.stage in GROWTH_STAGES and s.stage not in by_stage:
+                    by_stage[s.stage] = JourneyStage(
+                        stage=s.stage,
+                        title=str(s.title)[:120],
+                        points=[str(pt)[:200] for pt in s.points][:MAX_JOURNEY_POINTS],
+                    )
+            if set(by_stage) == set(GROWTH_STAGES):
+                p.growth_journey = [by_stage[k] for k in GROWTH_STAGES]
+            else:
+                p.growth_journey = []
+
         def _force_no_price(p: Proposal) -> None:
             p.recommended_package.price_line = ""
             p.recommended_package.payment_plan = ""
@@ -307,6 +334,10 @@ class ProposalAgent(Agent):
                 texts.append((f"next_step::{i}", ns))
             for i, st in enumerate(p.how_a_teg_plays_out):
                 texts.append((f"walkthrough::{i}", st))
+            for si, stg in enumerate(p.growth_journey):
+                texts.append((f"journey::{si}::title", stg.title))
+                for pi, pt in enumerate(stg.points):
+                    texts.append((f"journey::{si}::{pi}", pt))
             found = []
             for label, txt in texts:
                 for v in check_message(txt, allowed_peers=peers, persona=persona,
@@ -316,6 +347,12 @@ class ProposalAgent(Agent):
                 op = check_overpromise(getattr(p, label))
                 if op:
                     found.append((label, op))
+            # the growth journey argues outcomes — hold it to the same line
+            for si, stg in enumerate(p.growth_journey):
+                for pi, pt in enumerate([stg.title, *stg.points]):
+                    op = check_overpromise(pt)
+                    if op:
+                        found.append((f"journey::{si}::{pi}", op))
             return found
 
         def _clamp_target_industries(p: Proposal) -> None:
@@ -350,6 +387,7 @@ class ProposalAgent(Agent):
         if not price_requested:
             _force_no_price(proposal)
         _clamp_sector_fit(proposal)
+        _clamp_growth_journey(proposal)
         _clamp_target_industries(proposal)
         _clamp_section_ctas(proposal)
         violations = all_violations(proposal)
@@ -369,6 +407,7 @@ class ProposalAgent(Agent):
                 if not price_requested:
                     _force_no_price(proposal)
                 _clamp_sector_fit(proposal)
+                _clamp_growth_journey(proposal)
                 _clamp_target_industries(proposal)
                 _clamp_section_ctas(proposal)
                 violations = all_violations(proposal)
@@ -387,6 +426,11 @@ class ProposalAgent(Agent):
         if violations:
             flags = sorted({v.code for _, v in violations})
             bad = {label for label, _ in violations}
+            # No safe stand-in for a per-prospect journey stage — if any part
+            # of it still breaks a rule, drop the whole journey (the page just
+            # omits that section).
+            if any(label.startswith("journey::") for label in bad):
+                proposal.growth_journey = []
             if "what_you_told_us" in bad:
                 proposal.what_you_told_us = PROPOSAL_SAFE_SECTIONS["what_you_told_us"][persona]
             if "lead_generation" in bad:

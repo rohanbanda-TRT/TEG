@@ -236,3 +236,118 @@ async def test_build_drops_the_industry_note_when_no_industries_survive():
     )
     assert p.target_industries == []
     assert p.target_industries_note == ""
+
+
+async def test_itorix_infotech_business_focused_proposal():
+    """Test proposal generation for Itorix Infotech LLP following the new business-focused framework."""
+    # Itorix-specific intake and dossier based on research
+    intake = IntakeResult(
+        person_name="Rohan Banda",
+        company_name_raw="Itorix Infotech LLP",
+        company_name_canonical="Itorix Infotech LLP",
+        provided_fields=[],
+        intent_hint="exhibitor",
+        consent_status="unknown",
+    )
+    
+    dossier = ResearchDossier(
+        sector="Digital Marketing",
+        relationship="cold",
+        company_profile={
+            "company_size": "10-50",
+            "hq": "Pune",
+            "services": "SEO, PPC, SMM, Web Development, Web Design, Custom Software, Email Marketing, Creative Design, Influencer Marketing, Local SEO",
+            "industries_served": "Real Estate, Healthcare, Education, Manufacturing, B2B, Small Business, Startups, Jewellery, Visa/Immigration, Hotels, HR Consultancy, Interior Designers, Cleaning Services",
+            "experience": "10+ years",
+            "clients": "500+ brands claimed",
+        },
+        person_profile={"designation": "Founder/Director"},
+        peer_companies=["Eternal Soft Solutions", "TechnoBrains", "Advait Energy Transitions"],
+    )
+    
+    # Itorix-specific KB facts
+    explorer = _explorer(
+        pains='[["Access to SME/MSME decision-makers at scale", "TEG expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers"], '
+              '["Building relationships in new geography", "Concentrated 3-day environment for business conversations"]]',
+        sector_peers="Eternal Soft Solutions, TechnoBrains",
+        sector_peer_count="8",
+    )
+    
+    # Expected proposal structure for Itorix
+    expected = _good_proposal(
+        company="Itorix Infotech LLP",
+        person="Rohan Banda",
+        person_role="Founder/Director",
+        sector="Digital Marketing",
+        what_you_told_us="You run a Pune-based digital marketing agency with 10+ years of experience serving 500+ brands across multiple industries.",
+        pains=[
+            ProposalPain(
+                pain="Access to SME/MSME decision-makers at scale may be challenging from a remote location",
+                teg_answer="TEG expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers, entrepreneurs and business leaders across multiple industries"
+            ),
+        ],
+        lead_generation="Tech Expo Gujarat expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers across manufacturing, healthcare, education and other industries. The event offers pre-scheduled 1:1 B2B meetings and a networking app, which could help you engage qualified decision-makers.",
+        proof=["TEG 2024 had 125+ exhibitors and 8,000+ visitors; TEG 2026 targets 250+ exhibitors and 15,000+ visitors."],
+        executive_summary="Itorix Infotech LLP is a Pune-based digital marketing agency with 10+ years of experience exploring whether Tech Expo Gujarat 2026 could become a growth channel by providing access to SME/MSME decision-makers in Gujarat.",
+        roi_framing="Tech Expo Gujarat expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers across multiple industries. If a single engagement that starts here covers the cost of taking part many times over, participation could pay for itself.",
+        hero_headline="Could Tech Expo Gujarat become your next growth channel?",
+        hero_subline="The event expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers across manufacturing, healthcare, education and other industries.",
+        closing_cta_headline="Should we explore this opportunity further?",
+        closing_cta_body="Reply in the chat to discuss whether this aligns with your growth goals, or reach the team directly.",
+        target_industries=["Manufacturing", "Healthcare", "Educational Institute", "Real Estate"],
+        target_industries_note="Your digital marketing services are relevant to these industries based on your stated experience.",
+        peer_context_line="8 companies in Digital Marketing exhibited at TEG 2024 — including the names below.",
+        peers_in_sector_total=8,
+    )
+    
+    llm = FakeLLMClient(structured=[expected, expected])  # Provide two responses for potential regeneration
+    p, flags = await ProposalAgent(llm, explorer=explorer).build(
+        intake=intake,
+        dossier=dossier,
+        persona="it_tech_service",
+        transcript=[{"role": "prospect", "content": "we're exploring geographic expansion opportunities"}],
+        learned_facts={"growth_interest": "geographic expansion"},
+        session_ref="itorix-test-001",
+        version=1,
+        price_requested=False,  # Test without pricing first
+    )
+    
+    # Verify proposal structure
+    assert flags == []
+    assert p.company == "Itorix Infotech LLP"
+    assert p.person == "Rohan Banda"
+    assert p.sector == "Digital Marketing"
+    assert p.persona == "it_tech_service"
+    
+    # Verify business-focused language (no definitive claims)
+    assert "could" in p.hero_headline.lower() or "could" in p.hero_subline.lower()
+    assert "will" not in p.hero_headline.lower()
+    assert "guaranteed" not in p.roi_framing.lower()
+    
+    # Verify no pricing when not requested
+    assert p.recommended_package.price_line == ""
+    assert p.recommended_package.payment_plan == ""
+    
+    # Verify target industries are relevant to Itorix
+    assert len(p.target_industries) >= 3
+    assert "Manufacturing" in p.target_industries or "manufacturing" in p.target_industries
+    assert "Healthcare" in p.target_industries or "healthcare" in p.target_industries
+    
+    # Verify evidence-based claims (no invented metrics)
+    assert "15,000+" in p.lead_generation or "15000+" in p.lead_generation
+    assert "decision-makers" not in p.lead_generation.lower() or "visitors" in p.lead_generation.lower()
+    
+    print("\n=== ITORIX PROPOSAL TEST RESULTS ===")
+    print(f"Company: {p.company}")
+    print(f"Hero Headline: {p.hero_headline}")
+    print(f"Hero Subline: {p.hero_subline}")
+    print(f"Executive Summary: {p.executive_summary}")
+    print(f"What You Told Us: {p.what_you_told_us}")
+    print(f"Lead Generation: {p.lead_generation}")
+    print(f"ROI Framing: {p.roi_framing}")
+    print(f"Target Industries: {p.target_industries}")
+    print(f"Target Industries Note: {p.target_industries_note}")
+    print(f"Closing CTA Headline: {p.closing_cta_headline}")
+    print(f"Closing CTA Body: {p.closing_cta_body}")
+    print(f"Flags: {flags}")
+    print("=== END TEST RESULTS ===\n")

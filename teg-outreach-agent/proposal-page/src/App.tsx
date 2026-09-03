@@ -3,6 +3,7 @@ import type { Payload } from "./lib/types";
 import { Hero } from "./sections/Hero";
 import { Priorities } from "./sections/Priorities";
 import { SectorFit, TheRoom, Mechanism } from "./sections/Charts";
+import { GrowthJourney } from "./sections/GrowthJourney";
 import { Journey } from "./sections/Journey";
 import { TheAsk } from "./sections/TheAsk";
 import { Section } from "./components/Section";
@@ -39,6 +40,7 @@ export function App({ payload }: { payload: Payload }) {
         </Section>
       )}
 
+      <GrowthJourney stages={p.growth_journey} company={p.company} />
       <Priorities p={p} />
       <SectorFit p={p} />
       <TheRoom p={p} />

@@ -22,6 +22,20 @@
       { "lever": "Pre-scheduled meetings", "weight": 5 },
       { "lever": "Brand visibility", "weight": 3 }
     ],
+    "growth_journey": [
+      { "stage": "today", "title": "A Pune agency with a proven multi-industry portfolio",
+        "points": ["10+ years of digital and web delivery", "Clients across several verticals", "Little presence in the Gujarat market"] },
+      { "stage": "growth_move", "title": "An opportunity to open a Gujarat client base",
+        "points": ["Reach mid-market manufacturers and textile firms directly", "Build a regional reference list", "Enter Gujarat's business networks in person"] },
+      { "stage": "barrier", "title": "What makes that hard from outside the state",
+        "points": ["No local relationships to open doors", "Hard to stand out against Ahmedabad-based agencies", "No qualified pipeline to justify the travel"] },
+      { "stage": "teg_opportunity", "title": "Three concentrated days in front of the right buyers",
+        "points": ["SME and MSME decision-makers across the 18 target industries", "Pre-scheduled 1:1 meetings tuned to your sectors", "A demo space to show delivered work, not slides"] },
+      { "stage": "action", "title": "How your team would work the floor",
+        "points": ["Prepare a target-account list before the event", "Run diagnostic conversations at the stall", "Demonstrate relevant past work", "Qualify and book follow-ups for after the show"] },
+      { "stage": "potential", "title": "Where a strong TEG could lead",
+        "points": ["A first set of Gujarat relationships", "A pipeline that could justify a local presence", "A reference base for the wider India market"] }
+    ],
     "proof": [
       "TEG 2024 drew 8,000+ attendees and 125+ exhibitors; TEG 2026 targets 15,000+ and 250+.",
       "The TEG Business Retreat 2025 helped facilitate 1.5 crore raised in one day."

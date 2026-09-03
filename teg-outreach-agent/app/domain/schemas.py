@@ -100,6 +100,31 @@ class SectorFitRow(BaseModel):
     weight: int  # 1-5, clamped by ProposalAgent
 
 
+# The growth argument, in order. Fixed because the sequence IS the pitch:
+# where they are -> where they could go -> what stops them -> what TEG opens ->
+# what they'd do -> where it could lead. Only the content inside varies.
+GROWTH_STAGES: tuple[str, ...] = (
+    "today",
+    "growth_move",
+    "barrier",
+    "teg_opportunity",
+    "action",
+    "potential",
+)
+
+MAX_JOURNEY_POINTS = 5
+
+
+class JourneyStage(BaseModel):
+    # A plain str, not a Literal: the model is told the six valid keys in the
+    # prompt, and ProposalAgent._clamp_growth_journey is the gate — anything
+    # off-list is dropped there, the same way target_industries is handled. A
+    # strict Literal here would fail the whole proposal on one stray key.
+    stage: str                     # one of GROWTH_STAGES
+    title: str                     # the prospect-facing heading, written per company
+    points: list[str] = Field(default_factory=list)  # 3-5 short, concrete points
+
+
 class Proposal(BaseModel):
     company: str
     person: str
@@ -121,6 +146,7 @@ class Proposal(BaseModel):
     how_a_teg_plays_out: list[str] = Field(default_factory=list)
     roi_framing: str = ""
     sector_fit: list[SectorFitRow] = Field(default_factory=list)
+    growth_journey: list[JourneyStage] = Field(default_factory=list)
     peers_in_sector_total: int = 0
     peer_context_line: str = ""
     scale_note: str = ""

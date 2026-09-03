@@ -116,6 +116,29 @@ Companies in the '{sector}' sector at TEG 2024 (total): {sector_peer_count}
   phrase it "if a single engagement covers the investment many times over".
 - sector_fit: 4-6 {{lever, weight}} rows; weight 1-5 = how much each TEG lever
   matters for the '{sector}' sector.
+- growth_journey: the six-stage business argument, ALL SIX, in this order,
+  each with a per-company `title` and 3-5 short concrete `points`:
+    1. stage="today"           — where {company} is now (from research +
+                                 the conversation): what they sell, their
+                                 reach, their proof, their positioning
+    2. stage="growth_move"     — a credible next growth move for them
+                                 (new geography / new accounts / new
+                                 networks). "could explore", never "will"
+    3. stage="barrier"         — what stands between them and that move
+                                 (access, local relationships, standing out,
+                                 a qualified pipeline). Market barriers,
+                                 NOT invented internal problems
+    4. stage="teg_opportunity" — what TEG specifically opens for that move
+                                 (the relevant industries, the SME/MSME
+                                 audience, three days of direct interaction)
+    5. stage="action"          — how {company} would work the floor:
+                                 target, engage, diagnose, demonstrate,
+                                 qualify, follow up
+    6. stage="potential"       — where this could lead (new relationships,
+                                 a Gujarat pipeline, geographic growth).
+                                 "could lead to", never a promise or a count
+  If you cannot ground all six for this prospect, return an empty list —
+  a half-built journey is worse than none.
 - peers_in_sector_total: echo the integer {sector_peer_count} exactly.
 - peer_context_line: ONE sentence giving the named peers context, e.g.
   "{sector_peer_count} companies in {sector} exhibited at TEG 2024 — including

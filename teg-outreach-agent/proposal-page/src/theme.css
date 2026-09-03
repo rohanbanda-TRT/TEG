@@ -575,6 +575,126 @@ a {
   color: #fff;
 }
 
+/* ============ growth journey (the six-stage argument) ============ */
+.gj {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  counter-reset: gj;
+}
+.gj-stage {
+  position: relative;
+  padding-left: 3.25rem;
+  padding-bottom: 2.5rem;
+}
+.gj-stage:last-child {
+  padding-bottom: 0;
+}
+/* the connector line down the left */
+.gj-stage::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 2.2rem;
+  bottom: -0.3rem;
+  width: 2px;
+  background: var(--line);
+}
+.gj-stage:last-child::before {
+  display: none;
+}
+/* the numbered node */
+.gj-stage::after {
+  counter-increment: gj;
+  content: counter(gj);
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--slate);
+}
+.gj-stage--now::after {
+  background: var(--slate);
+}
+.gj-stage--move::after,
+.gj-stage--barrier::after {
+  background: var(--navy);
+}
+.gj-stage--teg::after {
+  background: var(--cyan);
+}
+.gj-stage--action::after {
+  background: var(--navy-2);
+}
+.gj-stage--potential::after {
+  background: var(--gold);
+  color: var(--navy);
+}
+.gj-stage__inner {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--slate);
+  border-radius: 12px;
+  padding: 1.3rem 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+.gj-stage--teg .gj-stage__inner {
+  border-left-color: var(--cyan);
+  background: linear-gradient(180deg, var(--cyan-soft) 0%, #fff 60%);
+}
+.gj-stage--potential .gj-stage__inner {
+  border-left-color: var(--gold);
+  background: linear-gradient(180deg, #fff8ee 0%, #fff 60%);
+}
+.gj-stage--move .gj-stage__inner,
+.gj-stage--barrier .gj-stage__inner,
+.gj-stage--action .gj-stage__inner {
+  border-left-color: var(--navy);
+}
+.gj-stage__label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: 0.35rem;
+}
+.gj-stage--teg .gj-stage__label {
+  color: #0e7c8c;
+}
+.gj-stage--potential .gj-stage__label {
+  color: #9a6a12;
+}
+.gj-stage__title {
+  font-size: 1.15rem;
+  line-height: 1.35;
+  margin: 0 0 0.6rem;
+  color: var(--navy);
+}
+.gj-stage__points {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.3rem;
+}
+.gj-stage__points li {
+  color: var(--ink);
+  font-size: 0.97rem;
+  line-height: 1.5;
+}
+
 /* ============ journey ============ */
 .journey {
   list-style: none;

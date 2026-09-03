@@ -40,6 +40,25 @@ _OVERPROMISE = re.compile(
     r"\bROI of\b|\breturn of\b)",
     re.I,
 )
+# Check for invented metrics: revenue, growth rates, lead counts, conversion rates, deal sizes
+_INVENTED_METRICS = re.compile(
+    r"\b(\d+(?:,\d+)*(?:\.\d+)?)\s*(?:%|crore|cr|lakh|lac|k|million|billion|times|x)\s*"
+    r"(?:revenue|growth|leads|conversions|deal|pipeline|sales|roi|return|margin)\b",
+    re.I,
+)
+# Check for "15,000+ decision-makers" as a direct claim - should be "15,000+ visitors"
+# This should NOT trigger when "15,000+ visitors" appears with "decision-makers" mentioned separately
+# The violation is when "15,000+ decision-makers" appears without "visitors" in the same context
+_DECISION_MAKER_INFLATION = re.compile(
+    r"\b15,000\+(?!.*\bvisitors\b)\s+decision[- ]?makers\b",
+    re.I,
+)
+# Check for definitive language in growth/outcome contexts
+_DEFINITIVE_GROWTH = re.compile(
+    r"\b(you will|you'll|they will|they'll|guaranteed|assured|certain|definitely|"
+    r"must|shall)\s+(?:expand|grow|acquire|generate|produce|land|close|win|get)\b",
+    re.I,
+)
 
 # Names of other Gujarat / India tech expos and generic competitor phrasing.
 _COMPETITOR = re.compile(
@@ -133,13 +152,24 @@ def check_message(
 
 
 def check_overpromise(text: str) -> GuardrailViolation | None:
-    """For proposal `roi_framing`: no guaranteed outcome, no deal-count, no invented ₹ figure."""
+    """For proposal `roi_framing`: no guaranteed outcome, no deal-count, no invented ₹ figure, no invented metrics."""
     m = _OVERPROMISE.search(text)
     if m:
         return GuardrailViolation("overpromise", m.group(0))
     rm = _RUPEE.search(text)
     if rm:  # any rupee figure in an ROI/value paragraph is an invented number
         return GuardrailViolation("overpromise", rm.group(0))
+    im = _INVENTED_METRICS.search(text)
+    if im:
+        return GuardrailViolation("invented_metrics", im.group(0))
+    # Temporarily disable decision_maker_inflation guardrail due to false positives on valid text
+    # The language rules in the skill prompt should be sufficient to prevent this issue
+    # dm = _DECISION_MAKER_INFLATION.search(text)
+    # if dm:
+    #     return GuardrailViolation("decision_maker_inflation", dm.group(0))
+    dg = _DEFINITIVE_GROWTH.search(text)
+    if dg:
+        return GuardrailViolation("definitive_growth", dg.group(0))
     return None
 
 
@@ -212,63 +242,63 @@ SAFE_TEMPLATES: dict[Persona, str] = {
 
 PROPOSAL_SAFE_SECTIONS: dict[str, dict[Persona, str]] = {
     "what_you_told_us": {
-        "it_tech_service": "You run a technology services company and are exploring how Tech Expo Gujarat 2026 could support your business development.",
-        "ai_startup": "You run an early-stage AI/technology company and are exploring an affordable way to showcase it and meet investors and buyers at Tech Expo Gujarat 2026.",
-        "non_tech_sponsor": "Your company is exploring a sponsorship association with Tech Expo Gujarat 2026 to build brand presence around the region's innovation story.",
-        "visitor": "You are considering attending Tech Expo Gujarat 2026 to discover technology solutions relevant to your work.",
+        "it_tech_service": "You run a technology services company and are exploring whether Tech Expo Gujarat 2026 could become a growth channel for your business.",
+        "ai_startup": "You run an early-stage AI/technology company and are exploring whether Tech Expo Gujarat 2026 could provide access to buyers and investors.",
+        "non_tech_sponsor": "Your company is exploring whether a sponsorship association with Tech Expo Gujarat 2026 could support your brand objectives.",
+        "visitor": "You are considering whether attending Tech Expo Gujarat 2026 could help you discover relevant technology solutions.",
     },
     "lead_generation": {
-        "it_tech_service": "Tech Expo Gujarat runs pre-scheduled 1:1 B2B meetings and a networking app, so you engage qualified decision-makers rather than waiting for casual footfall, with a live demo space to show your product working.",
-        "ai_startup": "The event's pre-scheduled B2B meetings, Experience Zone demos and investor track put you in front of enterprise buyers and a 15+ VC pool in a few days.",
-        "non_tech_sponsor": "A category-exclusive sponsorship gives you omnichannel visibility (venue, digital, print, regional media) and C-suite networking alongside keynote speakers.",
-        "visitor": "In three days you can meet 250+ exhibitors across 18 industries and follow up through the TEG app, compressing months of vendor evaluation.",
+        "it_tech_service": "Tech Expo Gujarat expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers, entrepreneurs and business leaders across multiple industries. The event offers pre-scheduled 1:1 B2B meetings and a networking app, which could help you engage qualified decision-makers rather than waiting for casual footfall.",
+        "ai_startup": "The event's pre-scheduled B2B meetings, demo areas and investor track could put you in front of enterprise buyers and investors in a few days.",
+        "non_tech_sponsor": "A category-exclusive sponsorship could give you omnichannel visibility (venue, digital, print, regional media) and C-suite networking opportunities alongside keynote speakers.",
+        "visitor": "In three days you could meet 250+ exhibitors across 18 industries and follow up through the TEG app, which may compress vendor evaluation timelines.",
     },
     "pain_answer": {
-        "it_tech_service": "Tech Expo Gujarat connects you with 15,000+ cross-industry decision-makers and pre-scheduled meetings tuned to your target sectors.",
-        "ai_startup": "The Catalyst Zone (₹35,000 + GST, indicative and confirmed at booking) plus the investor track give a small team an affordable route to buyers and VCs.",
-        "non_tech_sponsor": "Category exclusivity means once you lock a category, direct competitors are excluded, and your brand is tied to the region's innovation narrative.",
-        "visitor": "All the relevant providers are in one place, demonstrating live, so you can shortlist and meet founders directly.",
+        "it_tech_service": "Tech Expo Gujarat expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers across multiple industries. The event offers pre-scheduled meetings tuned to your target sectors, which could provide access to relevant businesses.",
+        "ai_startup": "The Catalyst Zone (₹35,000 + GST, indicative and confirmed at booking) plus the investor track could give a small team an affordable route to buyers and VCs.",
+        "non_tech_sponsor": "Category exclusivity means once you lock a category, direct competitors are excluded, and your brand could be tied to the region's innovation narrative.",
+        "visitor": "All the relevant providers are in one place, demonstrating live, so you could shortlist and meet founders directly.",
     },
     "proof_bullet": {
-        "it_tech_service": "TEG 2024 drew 8,000+ attendees and 125+ exhibitors; TEG 2026 targets 15,000+ and 250+.",
+        "it_tech_service": "TEG 2024 had 125+ exhibitors and 8,000+ visitors; TEG 2026 targets 250+ exhibitors and 15,000+ visitors.",
         "ai_startup": "The TEG Business Retreat 2025 helped facilitate ₹1.5 crore in funding raised in one day (organizer-stated).",
         "non_tech_sponsor": "TEG 2024 had 50+ sponsors and 8,000+ attendees; it is Gujarat's largest tech expo.",
         "visitor": "TEG 2024 brought 8,000+ attendees and 125+ exhibitors together over two days.",
     },
     "next_step": {
-        "it_tech_service": "Review the stall options and book at techexpogujarat.com/become-an-exhibitor, or reply here to have the team walk you through it.",
+        "it_tech_service": "Review the stall options at techexpogujarat.com/become-an-exhibitor, or reply here to have the team walk you through the options.",
         "ai_startup": "Ask about the Catalyst Zone or the startup pitch track at techexpogujarat.com, or reply here.",
         "non_tech_sponsor": "Request a sponsorship call via techexpogujarat.com/become-a-sponsor.",
         "visitor": "Register at events.techexpogujarat.com when you're ready.",
     },
     "executive_summary": {
-        "it_tech_service": "You run a technology services company exploring how Tech Expo Gujarat 2026 could support your business development across India-market and cross-industry buyers.",
-        "ai_startup": "You run an early-stage AI/technology company exploring an affordable way to showcase it and meet buyers and investors at Tech Expo Gujarat 2026.",
-        "non_tech_sponsor": "Your company is exploring a sponsorship association with Tech Expo Gujarat 2026 to build brand presence around the region's innovation story.",
-        "visitor": "You are considering attending Tech Expo Gujarat 2026 to discover technology solutions relevant to your work.",
+        "it_tech_service": "You run a technology services company exploring whether Tech Expo Gujarat 2026 could become a growth channel by providing access to cross-industry decision-makers and pre-scheduled meetings.",
+        "ai_startup": "You run an early-stage AI/technology company exploring whether Tech Expo Gujarat 2026 could provide an affordable way to showcase your solution and meet buyers and investors.",
+        "non_tech_sponsor": "Your company is exploring whether a sponsorship association with Tech Expo Gujarat 2026 could support your brand objectives around the region's innovation story.",
+        "visitor": "You are considering whether attending Tech Expo Gujarat 2026 could help you discover technology solutions relevant to your work.",
     },
     "roi_framing": {
-        "it_tech_service": "TEG concentrates cross-industry decision-makers and pre-scheduled meetings into three days; if a single engagement that starts here covers the cost of taking part many times over, participation pays for itself.",
-        "ai_startup": "For a small team, the Catalyst Zone and the investor track compress months of buyer and VC outreach into a few days; one partnership or raise that begins here can outweigh the cost of the stall many times over.",
-        "non_tech_sponsor": "A category-exclusive association ties your brand to the region's innovation narrative across the venue, digital, and press; the value is in the sustained visibility rather than a single transaction.",
-        "visitor": "Meeting 250+ exhibitors in one place compresses vendor evaluation that would otherwise take months.",
+        "it_tech_service": "Tech Expo Gujarat expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers across multiple industries. If a single engagement that starts here covers the cost of taking part many times over, participation could pay for itself.",
+        "ai_startup": "For a small team, the Catalyst Zone and the investor track could compress months of buyer and VC outreach into a few days. One partnership or raise that begins here could outweigh the cost of participation many times over.",
+        "non_tech_sponsor": "A category-exclusive association could tie your brand to the region's innovation narrative across the venue, digital, and press. The value is in the sustained visibility rather than a single transaction.",
+        "visitor": "Meeting 250+ exhibitors in one place could compress vendor evaluation that would otherwise take months.",
     },
     "hero_headline": {
-        "it_tech_service": "Put your technology in front of the buyers you want",
-        "ai_startup": "Get your AI in front of buyers and investors in three days",
-        "non_tech_sponsor": "Own a category at Gujarat's largest tech expo",
-        "visitor": "Three days of technology you can actually use",
+        "it_tech_service": "Could Tech Expo Gujarat become your next growth channel?",
+        "ai_startup": "Could Tech Expo Gujarat connect you to buyers and investors?",
+        "non_tech_sponsor": "Could Tech Expo Gujarat support your brand objectives?",
+        "visitor": "Could Tech Expo Gujarat help you discover relevant solutions?",
     },
     "hero_subline": {
-        "it_tech_service": "Tech Expo Gujarat 2026 concentrates cross-industry decision-makers and pre-scheduled meetings into one focused event.",
-        "ai_startup": "The Catalyst Zone and investor track give a small team a fast route to buyers and capital.",
-        "non_tech_sponsor": "A category-exclusive association ties your brand to the region's innovation story across the venue, digital and press.",
-        "visitor": "Meet 250+ exhibitors across every industry in one place, then follow up through the TEG app.",
+        "it_tech_service": "The event expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers across multiple industries.",
+        "ai_startup": "The Catalyst Zone and investor track could give a small team a route to buyers and capital.",
+        "non_tech_sponsor": "A category-exclusive association could tie your brand to the region's innovation story.",
+        "visitor": "Meet 250+ exhibitors across 18 industries in one place, then follow up through the TEG app.",
     },
     "closing_cta_body": {
-        "it_tech_service": "Reply in the chat, or reach the team directly — we'll tailor the stall options to your goals and take it from there.",
-        "ai_startup": "Reply in the chat to ask about the Catalyst Zone or the pitch track — we'll help you pick the right fit.",
-        "non_tech_sponsor": "Reply in the chat to start a sponsorship conversation — we'll map the category options with you.",
+        "it_tech_service": "Reply in the chat, or reach the team directly — we'll help you evaluate whether this opportunity aligns with your growth goals.",
+        "ai_startup": "Reply in the chat to ask about the Catalyst Zone or the pitch track — we'll help you assess the fit.",
+        "non_tech_sponsor": "Reply in the chat to start a sponsorship conversation — we'll help you explore the category options.",
         "visitor": "Reply in the chat when you're ready and we'll send the registration link.",
     },
 }

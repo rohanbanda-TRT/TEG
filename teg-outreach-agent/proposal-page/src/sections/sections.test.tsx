@@ -14,7 +14,9 @@ describe("sections", () => {
     expect(screen.getByText(p.hero_headline!)).toBeInTheDocument();
     a.unmount();
     render(<Hero p={{ ...p, hero_headline: "" }} />);
-    expect(screen.getByText(`A proposal for ${p.company}`)).toBeInTheDocument();
+    expect(
+      screen.getByText(`Could Tech Expo Gujarat become a growth channel for ${p.company}?`),
+    ).toBeInTheDocument();
   });
 
   it("Priorities renders one card per pain; nothing when empty", () => {

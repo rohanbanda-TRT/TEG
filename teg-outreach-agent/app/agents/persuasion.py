@@ -195,7 +195,10 @@ class PersuasionAgent(Agent):
         """One plain-text message, from whichever backend is configured.
 
         The CLI has no plain-text mode that we can guardrail reliably, so on
-        that path we ask for a one-field schema and unwrap it.
+        that path we ask for a one-field schema and unwrap it. Note: we do NOT
+        use the skill here because it's designed for structured conversation
+        generation (discovery, CTA tracking, etc.) which conflicts with simple
+        text-only schemas.
         """
         if self._claude is None:
             return await self.llm.generate(
@@ -352,16 +355,19 @@ class PersuasionAgent(Agent):
             persona = "visitor"
             cta = target_cta_for(persona)
             _log.info("init path=ask-company  (company unresolved after KB + web)")
+            # Use inline prompt directly for simple text generation - the skill is
+            # designed for structured conversation generation and conflicts with
+            # the minimal text-only schema.
+            system = (
+                "You are a TEG 2026 assistant. The prospect just submitted an inquiry but we "
+                "could not identify their company or role. Ask ONE friendly question to learn "
+                "what their company does and their role, so you can tailor the conversation.\n\n"
+                "## This turn\nWe could not identify their company or role from the "
+                "inquiry. Ask ONE friendly question to learn what their company does and "
+                "what they do there. Do not pitch yet."
+            )
             q = await self._generate_text(
-                self._claude_system(
-                    "You are a TEG 2026 assistant. The prospect just submitted an inquiry but we "
-                    "could not identify their company or role. Ask ONE friendly question to learn "
-                    "what their company does and their role, so you can tailor the conversation."
-                ) + (
-                    "\n\n## This turn\nWe could not identify their company or role from the "
-                    "inquiry. Ask ONE friendly question to learn what their company does and "
-                    "what they do there. Do not pitch yet."
-                ),
+                system,
                 f"Name: {intake.person_name}\nCompany as entered: {intake.company_name_raw}",
                 max_tokens=512,
             )
