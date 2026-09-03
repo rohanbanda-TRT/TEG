@@ -54,6 +54,7 @@ async def classify_persona(
     *,
     extra_context: str = "",
     model: str | None = None,
+    claude_cli: "ClaudeCli | None" = None,
 ) -> Persona:
     """Ask the LLM to pick the best persona from the full picture.
 
@@ -78,13 +79,24 @@ async def classify_persona(
         "technology, prefer it_tech_service (or ai_startup when it's a small AI/deep-tech "
         "firm) over visitor, even if their customers are in another industry."
     )
+    system = "You are a precise B2B event lead classifier. Return exactly one persona."
     try:
-        choice = await llm.generate_structured(
-            system="You are a precise B2B event lead classifier. Return exactly one persona.",
-            messages=[{"role": "user", "content": user}],
-            schema=_PersonaChoice,
-            model=model,
-        )
+        if claude_cli is not None:
+            s = get_settings()
+            result = await claude_cli.generate(
+                model=s.claude_cli_model, system_prompt=system, user_prompt=user,
+                json_schema=_PersonaChoice.model_json_schema(),
+                cwd=str(Path(s.skills_path).resolve().parent),
+                timeout_s=s.claude_cli_timeout_s,
+            )
+            choice = _PersonaChoice.model_validate(result.data)
+        else:
+            choice = await llm.generate_structured(
+                system=system,
+                messages=[{"role": "user", "content": user}],
+                schema=_PersonaChoice,
+                model=model,
+            )
     except Exception as exc:  # noqa: BLE001 — classification must never break the pipeline
         _log.warning("persona classification failed (%s) -> visitor", exc)
         return "visitor"
@@ -175,6 +187,34 @@ class PersuasionAgent(Agent):
             # Prospect text is in this prompt — no tools, ever.
         )
         return _Analysis.model_validate(result.data)
+
+    class _Text(BaseModel):
+        message: str
+
+    async def _generate_text(self, system: str, user: str, *, max_tokens: int = 2048) -> str:
+        """One plain-text message, from whichever backend is configured.
+
+        The CLI has no plain-text mode that we can guardrail reliably, so on
+        that path we ask for a one-field schema and unwrap it.
+        """
+        if self._claude is None:
+            return await self.llm.generate(
+                system=system, messages=[{"role": "user", "content": user}],
+                max_tokens=max_tokens,
+            )
+        if not self._claude.api_key:
+            from app.api.claude_conn import get_api_key
+
+            self._claude.api_key = get_api_key() or ""
+        result = await self._claude.generate(
+            model=self._claude_model,
+            system_prompt=system,
+            user_prompt=user + "\n\nReturn the message in the `message` field.",
+            json_schema=self._Text.model_json_schema(),
+            cwd=str(Path(self._skills_path).resolve().parent),
+            timeout_s=self._claude_timeout_s,
+        )
+        return self._Text.model_validate(result.data).message
 
     def _claude_system(self, fallback: str) -> str:
         """Skill-authored system prompt when the CLI backend is active."""
@@ -312,20 +352,24 @@ class PersuasionAgent(Agent):
             persona = "visitor"
             cta = target_cta_for(persona)
             _log.info("init path=ask-company  (company unresolved after KB + web)")
-            q = await self.llm.generate(
-                system=(
+            q = await self._generate_text(
+                self._claude_system(
                     "You are a TEG 2026 assistant. The prospect just submitted an inquiry but we "
                     "could not identify their company or role. Ask ONE friendly question to learn "
                     "what their company does and their role, so you can tailor the conversation."
+                ) + (
+                    "\n\n## This turn\nWe could not identify their company or role from the "
+                    "inquiry. Ask ONE friendly question to learn what their company does and "
+                    "what they do there. Do not pitch yet."
                 ),
-                messages=[{"role": "user", "content": (
-                    f"Name: {intake.person_name}\nCompany as entered: {intake.company_name_raw}"
-                )}],
+                f"Name: {intake.person_name}\nCompany as entered: {intake.company_name_raw}",
                 max_tokens=512,
             )
             return PersuasionInit(persona=persona, target_cta=cta, opening_message=q.strip())
 
-        persona = await classify_persona(self.llm, intake, dossier, model=self._fast_model)
+        persona = await classify_persona(
+            self.llm, intake, dossier, model=self._fast_model, claude_cli=self._claude,
+        )
         cta = target_cta_for(persona)
         _log.info("init path=personalised  persona=%s  cta=%s  role_known=%s",
                   persona, cta, "role" not in ask)
@@ -348,8 +392,12 @@ class PersuasionAgent(Agent):
             f"{role_line}\n"
             "Write the opening message."
         )
-        system = self._system(persona, dossier, learned_facts={}, price_requested=False)
-        text = await self.llm.generate(system=system, messages=[{"role": "user", "content": user}], max_tokens=2048)
+        system = self._claude_system(
+            self._system(persona, dossier, learned_facts={}, price_requested=False)
+        )
+        if self._claude is not None:
+            system += self._turn_context(persona, dossier, learned_facts={})
+        text = await self._generate_text(system, user)
 
         async def _violations(t: str) -> list:
             vs = check_message(t, allowed_peers=peers, persona=persona, price_ok=False)
@@ -358,9 +406,8 @@ class PersuasionAgent(Agent):
 
         v = await _violations(text)
         if v:
-            text = await self.llm.generate(
-                system=system + f"\nYour previous draft violated: {[x.code for x in v]}. Fix it.",
-                messages=[{"role": "user", "content": user}], max_tokens=2048,
+            text = await self._generate_text(
+                system + f"\nYour previous draft violated: {[x.code for x in v]}. Fix it.", user
             )
             v = await _violations(text)
         if v:
@@ -387,6 +434,7 @@ class PersuasionAgent(Agent):
             persona = await classify_persona(
                 self.llm, intake, dossier,
                 extra_context=prospect_message, model=self._fast_model,
+                claude_cli=self._claude,
             )
             state["persona"] = persona
             state["target_cta"] = target_cta_for(persona)

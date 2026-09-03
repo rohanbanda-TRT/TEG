@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.agents.base import Agent
 from app.domain.schemas import IntakeResult, ResearchDossier, SourceRef
 from app.kb._names import _norm
-from app.kb.explorer import ExploreResult, KBExplorer
+from app.kb.explorer import ExploreResult, KBExplorer, default_explorer
 from app.obs import get_logger
 from app.research.linkedin import LinkedInStub
 from app.research.page_scraper import PageScraper
@@ -32,9 +32,9 @@ _TEG_SECTORS = (
 
 _COMPANY_GOAL = (
     "Profile the company {company} for a Tech Expo Gujarat 2026 outreach dossier.\n"
-    "Look for its profile: list_dir exhibitors/companies/ and scan for a matching "
-    "filename, or grep '{company}' across the KB; read_file what you find. Then "
-    "read sector_wise_participation.md for the sector and its peer table.\n"
+    "Find its profile under exhibitors/companies/, or search the KB for "
+    "'{company}'; read whatever you find. Then read sector_wise_participation.md "
+    "for the sector and its peer table.\n"
     "Return facts:\n"
     "- sector: the ONE best-fitting TEG sector. TEG is NOT IT-only; choose from: "
     + _TEG_SECTORS
@@ -47,10 +47,10 @@ _COMPANY_GOAL = (
 )
 
 _PERSON_GOAL = (
-    "Profile {person}, associated with {company}. Look for a profile file: "
-    "list_dir organizers_team/ and speakers/individuals/ and scan for a matching "
-    "name, or grep '{person}'. If no file is theirs, check the company's file "
-    "under exhibitors/companies/ for a founder/leadership mention.\n"
+    "Profile {person}, associated with {company}. Find a profile under "
+    "organizers_team/ or speakers/individuals/, or search the KB for '{person}'. "
+    "If no file is theirs, check the company's file under exhibitors/companies/ "
+    "for a founder/leadership mention.\n"
     "Return facts: designation, seniority, is_technical (true/false), teg_role "
     "(organizer / speaker / founder / none), background.\n"
     "If no file mentions this person, set found=false."
@@ -106,7 +106,7 @@ class ResearchAgent(Agent):
         tools: list[ResearchTool] | None = None,
     ) -> None:
         super().__init__(llm)
-        self._explorer = explorer or KBExplorer(llm)
+        self._explorer = explorer or default_explorer(llm)
         if tools is None:
             if get_settings().claude_cli_enabled:
                 # Claude runs its own search-and-fetch loop, so the separate
@@ -325,9 +325,16 @@ class ResearchAgent(Agent):
         for f in res.fields:
             sources.append(SourceRef(field=f, url=res.source_url, tool="web",
                                      confidence=res.confidence.get(f, 0.0)))
-        # a web hit that returned context is a real "found something" signal
-        if res.fields.get("web_context"):
-            id_conf = max(id_conf, 0.6)
+        # A web hit that came back with substance is a real "we found them"
+        # signal. Keyed on identifying fields rather than one provider's field
+        # name: Tavily returns a `web_context` blob, while ClaudeWebSearch
+        # returns structured fields, and both mean "identified".
+        _IDENTIFYING = ("web_context", "sector", "hq", "founder", "designation")
+        if any(res.fields.get(f) for f in _IDENTIFYING):
+            # The tool's own confidence caps ours — it knows how thin the
+            # evidence was, and reports low when it had to infer.
+            tool_conf = max(res.confidence.values(), default=0.6)
+            id_conf = max(id_conf, min(0.6, tool_conf))
 
         if self._scraper is not None and res.source_url and budget.scrapes_left > 0:
             _log.info("[%s] scrape  url=%s", track, res.source_url)

@@ -97,6 +97,44 @@ async def test_web_context_synthesised_when_kb_misses_company():
     assert d.research_cost["web_calls"] >= 1
 
 
+async def test_structured_web_fields_count_as_identifying_the_company():
+    """Regression: id_conf was raised only by a `web_context` field, which is
+    Tavily's shape. ClaudeWebSearch returns structured fields instead, so a
+    fully-researched company still came back as 'could not identify' and the
+    agent opened by asking what the company does."""
+    explorer = _FixedExplorer({})
+    web = StubTool("web", ResearchResult(
+        available=True, tool_name="web",
+        fields={"sector": "Business Software / SaaS", "hq": "Chennai, India",
+                "founder": "Sridhar Vembu", "company_size": "~17,000"},
+        confidence={"sector": 0.7, "hq": 0.7, "founder": 0.7, "company_size": 0.7},
+        source_url="https://en.wikipedia.org/wiki/Zoho_Corporation"))
+    llm = FakeLLMClient(structured=[_Synthesis(sector="Business Software / SaaS")])
+    agent = ResearchAgent(llm, explorer=explorer, tools=[web])
+
+    d = await agent.run(_intake(company="Zoho Corporation", person="Priya Mehta"))
+
+    assert "company_description" not in d.ask_prospect, (
+        "structured web fields must count as identifying the company"
+    )
+
+
+async def test_a_low_confidence_web_hit_still_asks_the_prospect():
+    """The tool's own confidence caps ours — a 0.3 guess must not read as
+    'identified', or we'd open a pitch on a company we only inferred."""
+    explorer = _FixedExplorer({})
+    web = StubTool("web", ResearchResult(
+        available=True, tool_name="web",
+        fields={"sector": "Something plausible"},
+        confidence={"sector": 0.3}, source_url=None))
+    llm = FakeLLMClient(structured=[_Synthesis()])
+    agent = ResearchAgent(llm, explorer=explorer, tools=[web])
+
+    d = await agent.run(_intake(company="Ambiguous Ltd", person="Someone"))
+
+    assert "company_description" in d.ask_prospect
+
+
 async def test_sector_from_synthesis_when_kb_has_no_profile():
     """The Itorix case: company not in the KB, but the web text implies a sector."""
     explorer = _FixedExplorer({

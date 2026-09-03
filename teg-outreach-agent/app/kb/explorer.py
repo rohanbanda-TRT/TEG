@@ -84,6 +84,20 @@ class ExploreResult(BaseModel):
     confidence: float = 0.0
 
 
+def default_explorer(llm: "LLMClient"):
+    """The KB explorer the pipeline should use, per config.
+
+    Returns a ClaudeKBExplorer (real Read/Grep/Glob over the KB) when the CLI
+    backend is on, else the LLM-tool-loop KBExplorer. Both expose
+    ``explore(goal) -> ExploreResult``.
+    """
+    if get_settings().claude_cli_enabled:
+        from app.claude.kb_explorer import ClaudeKBExplorer
+
+        return ClaudeKBExplorer()
+    return KBExplorer(llm)
+
+
 class KBExplorer:
     def __init__(self, llm: LLMClient, *, model: str | None = None) -> None:
         self._llm = llm

@@ -22,7 +22,7 @@ from app.domain.schemas import (
     ResearchDossier,
     SectorFitRow,
 )
-from app.kb.explorer import KBExplorer
+from app.kb.explorer import KBExplorer, default_explorer
 from app.kb.facts import load as _load_facts
 from app.obs import get_logger
 from config.settings import get_settings
@@ -92,7 +92,7 @@ class ProposalAgent(Agent):
         super().__init__(llm)
         s = get_settings()
         self._model = model or s.proposal_model or s.llm_model_main
-        self._explorer = explorer or KBExplorer(llm)
+        self._explorer = explorer or default_explorer(llm)
         # Claude-CLI backend: opt-in, so the LLM-client path stays the default
         # until the CLI path is proven. Guardrails are identical either way.
         self._claude = claude_cli

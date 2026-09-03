@@ -10,6 +10,12 @@ os.environ.setdefault(
     "postgresql+psycopg://teg@127.0.0.1:5433/teg_outreach_test",
 )
 
+# The suite must never spawn a real `claude` process, whatever the developer's
+# .env says. Tests that exercise the CLI backend inject a fake ClaudeCli
+# explicitly; this only stops agents self-constructing a real one. Set before
+# any app import, so get_settings() caches the overridden value.
+os.environ["CLAUDE_CLI_ENABLED"] = "false"
+
 from typing import ClassVar
 
 import pytest
