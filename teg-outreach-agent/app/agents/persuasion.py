@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.agents.base import Agent
 from app.agents.guardrails import SAFE_TEMPLATES, check_message, check_testimonial
 from app.claude.cli import ClaudeCli
+from app.domain.discovery import DiscoveryState, TurnSignals
 from app.claude.prompt_builder import render_skill
 from app.claude.skill_loader import load_skill
 from app.domain.schemas import (
@@ -142,7 +143,8 @@ class _Analysis(BaseModel):
     cta_type: str | None = None
     cta_detail: dict = {}
     should_handoff: bool = False
-    discovery: dict = {}          # {goal?, target_market?, scale?, timeline?, concern?} learned this turn
+    discovery: dict = {}          # v1: {goal?, target_market?, scale?, ...} learned this turn
+    turn_signals: TurnSignals | None = None   # v2: evidence-tagged per-turn signals
     asked_about_price: bool = False   # the prospect asked about cost / raised budget this turn
     wants_proposal: bool = False
 
@@ -235,12 +237,17 @@ class PersuasionAgent(Agent):
     _REQUIRED_DISCOVERY = ("goal", "target_market", "scale")
 
     def _turn_context(
-        self, persona: Persona, dossier: ResearchDossier, *, learned_facts: dict
+        self, persona: Persona, dossier: ResearchDossier, *, learned_facts: dict,
+        discovery: "DiscoveryState | None" = None, completeness=None,
     ) -> str:
         """Per-turn state the skill can't know: tone, peers, discovery, pricing.
 
         This is data, not voice, so it is appended on BOTH backends — the skill
         replaces the durable instructions only.
+
+        When ``completeness`` is passed (discovery v2), the "how many questions
+        left" heuristic is replaced by a stage + policy brief computed by the
+        deterministic layer; the model owns only which question to ask.
         """
         tone = {
             "insider": (
@@ -261,9 +268,15 @@ class PersuasionAgent(Agent):
             if peers and dossier.relationship != "insider"
             else "Do not name other companies — you have no peer list for this prospect."
         )
+        props = self._rules.persona_triggers.get(persona, {}).get("value_props", [])
+
+        if completeness is not None:
+            return self._turn_context_v2(
+                tone, peer_line, props, persona, discovery, completeness
+            )
+
         known = sorted(k for k in self._REQUIRED_DISCOVERY if learned_facts.get(k))
         missing = [k for k in self._REQUIRED_DISCOVERY if not learned_facts.get(k)]
-        props = self._rules.persona_triggers.get(persona, {}).get("value_props", [])
         return (
             f"\n\n## This turn\n"
             f"Tone: {tone}\n"
@@ -274,6 +287,45 @@ class PersuasionAgent(Agent):
             f"If they ask about cost, the one indicative line you may give is: "
             f"\"{_PRICING_LINE[persona]}\"\n"
             f"Benefits you may draw on (paraphrase, never list): {'; '.join(props)}."
+        )
+
+    _HOW_KNOWN = {
+        "prospect_stated": "they told us", "verified_company": "from research",
+        "verified_teg": "from TEG data", "inference": "inferred", "hypothesis": "a guess",
+    }
+
+    def _turn_context_v2(self, tone, peer_line, props, persona, discovery, completeness) -> str:
+        confirmed: list[str] = []
+        for key in completeness.have:
+            f = discovery.get(key) if discovery else None
+            cur = f.current() if f else None
+            if cur:
+                confirmed.append(f"{key}={cur.value!r} ({self._HOW_KNOWN.get(cur.evidence, cur.evidence)})")
+        brief = (discovery.pending_brief if discovery else "") or (
+            "You are at the start of discovery. Before anything else, understand why "
+            "they're really considering TEG and what a good outcome would look like — "
+            "do not assume their objective."
+        )
+        open_qs = "; ".join(discovery.open_questions[-3:]) if discovery and discovery.open_questions else ""
+        return (
+            "\n\n## Discovery\n"
+            f"Current stage (set by the system — not yours to change): {completeness.stage}\n"
+            + (f"Confirmed so far: {'; '.join(confirmed)}\n" if confirmed else "Nothing confirmed yet.\n")
+            + (f"Unanswered questions the prospect asked us: {open_qs}\n" if open_qs else "")
+            + f"\n**This turn:** {brief}\n\n"
+            f"Tone: {tone}\n{peer_line}\n"
+            f"If they ask about cost, the one indicative line you may give is: "
+            f"\"{_PRICING_LINE[persona]}\" — always '+ GST', 'indicative, confirmed at booking'.\n"
+            f"Benefits you may draw on (paraphrase, never list): {'; '.join(props)}.\n\n"
+            "Also emit `turn_signals`: for every fact the prospect gives you this turn, a "
+            "`fields` entry with `value` (normalized), `verbatim` (their exact phrase), "
+            "`evidence='prospect_stated'`, and `confidence`. For something you are deducing, "
+            "use `evidence='inference'` with lower confidence — NEVER mark a fact "
+            "`prospect_stated` that they did not actually say. If one message answers "
+            "several discovery areas, emit a field for each. Set `intents` "
+            "(`requested_proposal` / `insists_proposal` / `confirmed_understanding` / "
+            "`just_researching`), `asked_about_price`, `open_questions` (what they asked "
+            "you), and `objection` / `concern` when present."
         )
 
     def _system(
@@ -450,13 +502,26 @@ class PersuasionAgent(Agent):
         peers = dossier.peer_companies[:3]
         price_requested = state.get("price_requested", False)
         learned = state.get("learned_facts", {})
+
+        v2 = get_settings().discovery_v2_enabled
+        discovery: DiscoveryState | None = None
+        completeness = None
+        if v2:
+            from app.agents.discovery_completeness import assess
+
+            discovery = DiscoveryState.model_validate(state.get("discovery_state") or {})
+            completeness = assess(discovery)
+
         base = self._claude_system(self._system(
             persona, dossier, learned_facts=learned, price_requested=price_requested,
         ))
         # The skill carries the durable voice/rules; per-turn state is appended
         # on both backends (the inline prompt already embeds its own copy).
         if self._claude is not None:
-            base += self._turn_context(persona, dossier, learned_facts=learned)
+            base += self._turn_context(
+                persona, dossier, learned_facts=learned,
+                discovery=discovery, completeness=completeness,
+            )
         system = base + (
             f"\nTarget CTA: {state.get('target_cta')}. Current cta_status: {state.get('cta_status')}. "
             "Advance it naturally; set cta_status to 'completed' only if the prospect clearly commits. "
@@ -465,7 +530,8 @@ class PersuasionAgent(Agent):
             "Set wants_proposal true if they ask for a proposal / PDF / 'something in writing', or "
             "accept an offer of one."
         )
-        convo = "\n".join(f"{m['role']}: {m['content']}" for m in history[-8:])
+        convo_window = -16 if v2 else -8
+        convo = "\n".join(f"{m['role']}: {m['content']}" for m in history[convo_window:])
         user = (
             f"Person: {intake.person_name}\nCompany: {intake.company_name_canonical}\n"
             f"Peer companies you may name (only these): {peers}\n\n"
@@ -506,9 +572,16 @@ class PersuasionAgent(Agent):
             analysis.wants_proposal, analysis.asked_about_price, list(analysis.discovery) or "-",
         )
         turn_count = sum(1 for m in history if m.get("role") == "agent")
-        should_handoff = analysis.should_handoff or (
-            turn_count >= 6 and analysis.cta_status in ("none", "offered")
-        )
+        if v2:
+            # no "wrap up by turn 6" pressure — hand off only a long conversation
+            # that is clearly not converging (thin discovery after many turns)
+            should_handoff = analysis.should_handoff or (
+                turn_count >= 10 and completeness is not None and completeness.score < 0.4
+            )
+        else:
+            should_handoff = analysis.should_handoff or (
+                turn_count >= 6 and analysis.cta_status in ("none", "offered")
+            )
 
         merged_facts = {**state.get("learned_facts", {}), **analysis.discovery}
         state["learned_facts"] = merged_facts
@@ -527,6 +600,8 @@ class PersuasionAgent(Agent):
             updated_state=state,
             guardrail_flags=flags,
             persona=persona,
+            # v2: the orchestrator overrides this with the policy-gated value
             wants_proposal=analysis.wants_proposal,
             asked_about_price=analysis.asked_about_price,
+            turn_signals=(analysis.turn_signals.model_dump() if analysis.turn_signals else None),
         )

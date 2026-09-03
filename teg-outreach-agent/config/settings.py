@@ -44,6 +44,13 @@ class Settings(BaseSettings):
     claude_cli_timeout_s: float = 180.0
     skills_path: str = "./skills"
 
+    # --- discovery v2 ---
+    # When true, the conversation runs the evidence-aware DiscoveryState +
+    # completeness + policy layer, and the proposal trigger is gated on
+    # discovery being sufficient (+ a validation playback). Off -> the legacy
+    # _Analysis.discovery dict + shallow merge, unchanged.
+    discovery_v2_enabled: bool = False
+
     # --- proposal / PDF ---
     proposal_model: str = ""  # empty -> use llm_model_main
     proposal_soft_timeout_s: int = 240

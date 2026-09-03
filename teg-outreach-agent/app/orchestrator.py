@@ -41,6 +41,20 @@ def _slug(s: str) -> str:
     return re.sub(r"-+", "-", re.sub(r"[^A-Za-z0-9]+", "-", s)).strip("-") or "company"
 
 
+def _derive_learned_facts(ds) -> dict:
+    """Flatten the DiscoveryState's current signals into the dict ProposalAgent
+    already consumes. Keeps the proposal pipeline unchanged while the extraction
+    underneath it gets richer and evidence-safe."""
+    out: dict[str, str] = {}
+    for key, field in ds.fields.items():
+        if key.startswith("_"):
+            continue
+        cur = field.current()
+        if cur is not None and field.status in ("known", "inferred"):
+            out[key] = cur.value
+    return out
+
+
 @dataclass
 class PipelineResult:
     inquiry_id: uuid.UUID
@@ -88,6 +102,10 @@ class Orchestrator:
             await s.flush()
             cs = await SessionRepo(s).create(inq.id, drow.id, init)
             await s.flush()
+            if get_settings().discovery_v2_enabled:
+                from app.agents.discovery_seed import seed_from_dossier
+
+                cs.discovery_state = seed_from_dossier(dossier, intake).model_dump()
             mr = MessageRepo(s)
             await mr.append(cs.id, "agent", init.opening_message, turn_index=0)
             await s.commit()
@@ -106,7 +124,49 @@ class Orchestrator:
             "persona_remapped": cs.persona_remapped,
             "needs_review": cs.needs_review,
             "price_requested": cs.price_requested,
+            "discovery_state": cs.discovery_state or {},
         }
+
+    def _apply_discovery_v2(self, cs, turn, history, prospect_turn_index):
+        """Merge this turn's signals, re-assess completeness, run the policy.
+
+        Returns (learned_facts, discovery_state_dump, turn) — `turn` is copied
+        with its `wants_proposal` replaced by the policy-gated value.
+        """
+        from app.agents.discovery_completeness import assess
+        from app.agents.discovery_merge import merge_turn
+        from app.agents.discovery_policy import decide
+        from app.domain.discovery import DiscoveryState, TurnSignals
+
+        ds = DiscoveryState.model_validate(cs.discovery_state or {})
+        ts = TurnSignals.model_validate(turn.turn_signals) if turn.turn_signals else None
+
+        ds = merge_turn(ds, ts, prospect_turn_index)
+        comp = assess(ds)
+        agent_turns = sum(1 for m in history if m.get("role") == "agent") + 1
+        decision = decide(
+            comp, ts, ds, agent_turns, model_wants_proposal=turn.wants_proposal,
+        )
+        if decision.bump_soft_defer:
+            ds.soft_defer_count += 1
+        ds.pending_brief = decision.brief
+        ds.stage = comp.stage
+        ds.last_completeness = comp.model_dump()
+
+        learned_facts = _derive_learned_facts(ds)
+        if decision.mark_missing:
+            learned_facts["_missing_context"] = decision.mark_missing
+
+        _log.info(
+            "discovery-v2  stage=%s  ready=%s  score=%.2f  action=%s  wants_proposal=%s->%s  "
+            "missing=%s",
+            comp.stage, comp.ready, comp.score, decision.action,
+            turn.wants_proposal, decision.effective_wants_proposal,
+            comp.missing_required or "-",
+        )
+
+        turn = turn.model_copy(update={"wants_proposal": decision.effective_wants_proposal})
+        return learned_facts, ds.model_dump(), turn
 
     async def run_turn(self, session_id: uuid.UUID, prospect_message: str) -> PersuasionTurn:
         async with SessionLocal() as s:
@@ -131,22 +191,32 @@ class Orchestrator:
             )
 
             mr = MessageRepo(s)
+            prospect_turn_index = await mr.next_turn_index(session_id)
             await mr.append(session_id, "prospect", prospect_message,
-                            turn_index=await mr.next_turn_index(session_id))
+                            turn_index=prospect_turn_index)
             await s.flush()
             await mr.append(session_id, "agent", turn.reply_text,
                             turn_index=await mr.next_turn_index(session_id),
                             guardrail_flags=turn.guardrail_flags,
                             detected_intent={"detected_cta": turn.detected_cta})
+
+            learned_facts = turn.updated_state.get("learned_facts", {})
+            discovery_state_dump: dict | None = None
+            if get_settings().discovery_v2_enabled:
+                learned_facts, discovery_state_dump, turn = self._apply_discovery_v2(
+                    cs, turn, history, prospect_turn_index,
+                )
+
             await SessionRepo(s).update_state(
                 session_id,
                 cta_status=turn.cta_status, cta_type=turn.cta_type,
                 cta_detail=turn.cta_detail,
-                learned_facts=turn.updated_state.get("learned_facts", {}),
+                learned_facts=learned_facts,
                 persona=turn.persona,
                 persona_remapped=turn.updated_state.get("persona_remapped", False),
                 needs_review=turn.updated_state.get("needs_review", False),
                 price_requested=turn.updated_state.get("price_requested", False),
+                discovery_state=discovery_state_dump,
             )
             await s.commit()
             return turn

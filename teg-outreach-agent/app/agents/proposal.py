@@ -229,11 +229,27 @@ class ProposalAgent(Agent):
         convo = "\n".join(f"{m['role']}: {m['content']}" for m in transcript) or "(no messages yet)"
         pain_lines = "\n".join(f"- {p} -> {a}" for p, a in base_pain_pairs)
         testi = "\n".join(f'- {t["name"]} ({t["role"]}): "{t["quote"]}"' for t in testimonials)
+
+        # discovery-v2 escape hatch: the prospect insisted on a proposal before
+        # discovery was complete. Surface the gaps as an explicit instruction so
+        # the model states its assumptions instead of fabricating.
+        _missing_ctx = None
+        if isinstance(learned_facts, dict) and learned_facts.get("_missing_context"):
+            _missing_ctx = list(learned_facts["_missing_context"])
+            learned_facts = {k: v for k, v in learned_facts.items() if k != "_missing_context"}
+        missing_line = (
+            f"NOT established in the conversation — do NOT invent these; where the "
+            f"proposal needs them, say plainly it is working from an assumption: "
+            f"{', '.join(_missing_ctx)}\n\n"
+            if _missing_ctx else ""
+        )
+
         user = (
             f"Persona: {persona}\n"
             f"Person: {intake.person_name}  Company: {intake.company_name_canonical}  Sector: {dossier.sector}\n"
             f"Company facts: {dossier.company_profile}\nPerson facts: {dossier.person_profile}\n"
             f"Learned in chat: {learned_facts}\n\n"
+            f"{missing_line}"
             f"Conversation:\n{convo}\n\n"
             f"TEG goals: {gp_goals}\n\nTEG mechanism: {gp_mechanism}\n\nEvidence: {gp_evidence}\n\n"
             f"Base pain points for this persona (personalize, keep 2-4):\n{pain_lines}\n\n"

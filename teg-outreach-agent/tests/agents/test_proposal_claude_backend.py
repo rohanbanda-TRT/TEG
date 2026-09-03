@@ -160,3 +160,19 @@ async def test_peers_are_still_restricted_to_the_allowed_list():
     p, _ = await _build(claude)
 
     assert "Some Random Ltd" not in p.peer_companies
+
+
+async def test_missing_context_becomes_a_do_not_invent_instruction():
+    """discovery-v2 escape hatch: when the prospect insisted on a proposal
+    before discovery was complete, the gaps are handed to the prompt as an
+    explicit 'do not invent these' line, and stripped from the facts dict."""
+    claude = _FakeClaude([_payload()])
+    await _build(claude, learned_facts={
+        "goal": "some exposure",
+        "_missing_context": ["target_buyer_role", "acquisition_channels"],
+    })
+    user = claude.calls[0]["user_prompt"]
+    assert "do NOT invent" in user
+    assert "target_buyer_role, acquisition_channels" in user
+    # the marker key itself must not leak into the "Learned in chat" dump
+    assert "_missing_context" not in user

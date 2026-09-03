@@ -70,6 +70,7 @@ class ChatSession(Base):
     persona_remapped: Mapped[bool] = mapped_column(Boolean, default=False)
     needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
     price_requested: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    discovery_state: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class ChatMessage(Base):

@@ -97,6 +97,7 @@ class SessionRepo:
     async def update_state(
         self, session_id, *, cta_status, cta_type, cta_detail, learned_facts,
         persona, persona_remapped, needs_review, price_requested: bool | None = None,
+        discovery_state: dict | None = None,
     ) -> None:
         row = await self.s.get(ChatSession, session_id)
         row.cta_status = cta_status
@@ -108,6 +109,8 @@ class SessionRepo:
         row.needs_review = needs_review
         if price_requested is not None:
             row.price_requested = price_requested
+        if discovery_state is not None:
+            row.discovery_state = discovery_state
 
     async def finalize(self, session_id, *, outcome_status: OutcomeStatus, handoff_generated: bool) -> None:
         row = await self.s.get(ChatSession, session_id)

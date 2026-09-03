@@ -71,8 +71,9 @@ class PersuasionTurn(BaseModel):
     updated_state: dict = Field(default_factory=dict)
     guardrail_flags: list[str] = Field(default_factory=list)
     persona: Persona
-    wants_proposal: bool = False
+    wants_proposal: bool = False          # discovery-v2: this is effective_wants_proposal (policy-gated)
     asked_about_price: bool = False
+    turn_signals: dict | None = None      # discovery-v2: the model's per-turn signal payload
 
 
 class HandoffPacket(BaseModel):
