@@ -184,6 +184,58 @@ class ClaudeCli:
                 raise RuntimeError(ev.message)
         raise RuntimeError("claude produced no result")
 
+    async def probe(
+        self, *, model: str, cwd: str, timeout_s: float = 15.0
+    ) -> tuple[bool, str]:
+        """Cheapest possible real call, to verify the connection actually works."""
+        args = [
+            "-p", "Reply with the single word: ok",
+            "--model", model,
+            "--output-format", "json",
+            "--permission-mode", "dontAsk",
+            "--tools", "",
+        ]
+        try:
+            child = await self.spawn(
+                "claude", *args, cwd=cwd, env=self._env(),
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            return False, "The claude CLI is not installed or not on PATH."
+        except OSError as e:  # pragma: no cover - defensive
+            return False, f"Failed to start claude: {e}"
+
+        try:
+            code = await asyncio.wait_for(child.wait(), timeout=timeout_s)
+        except TimeoutError:
+            child.kill()
+            return False, "Timed out waiting for Claude to respond."
+
+        if code == 0:
+            return True, ""
+        stderr = (await child.stderr.read()).decode(errors="replace").strip()
+        return False, stderr or f"claude exited with code {code}"
+
+    def start_login(self, *, cwd: str) -> None:
+        """Fire-and-forget `claude auth login`.
+
+        The CLI opens the user's real browser to Anthropic's sign-in page and
+        stores the session wherever it normally keeps it — this app never sees
+        or stores a token for this path. Detached so it survives a dev-server
+        reload while the user is still signing in.
+        """
+        import subprocess  # local: only this path shells out synchronously
+
+        subprocess.Popen(
+            ["claude", "auth", "login", "--claudeai"],
+            cwd=cwd,
+            env=self._env(),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+
     async def auth_status(self, *, cwd: str) -> dict | None:
         """Read the CLI's stored login. None on any failure — never a hard 'no'."""
         try:

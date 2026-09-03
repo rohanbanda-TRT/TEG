@@ -112,6 +112,12 @@ class ProposalAgent(Agent):
                 system=system, messages=[{"role": "user", "content": user}],
                 schema=Proposal, model=self._model,
             )
+        # Pick up a key connected at runtime via POST /claude/connect. The
+        # agent may outlive the connection change, so re-read it per call.
+        if not self._claude.api_key:
+            from app.api.claude_conn import get_api_key
+
+            self._claude.api_key = get_api_key() or ""
         result = await self._claude.generate(
             model=self._claude_model,
             system_prompt=system,

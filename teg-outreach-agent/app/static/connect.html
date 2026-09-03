@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Connect Claude — TEG Outreach</title>
+<style>
+  :root {
+    --navy: #111c40; --navy-2: #1a2a5e; --ink: #101828; --slate: #475467;
+    --cyan: #12aec6; --gold: #f5a623; --line: #e4e7ee; --bg-alt: #f6f8fc;
+    --ok: #0f9d58; --bad: #d93025;
+    --font: "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--font); color: var(--ink); background: var(--bg-alt);
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+  h1 { font-size: 1.75rem; margin: 0 0 .4rem; color: var(--navy); letter-spacing: -.02em; }
+  .lede { color: var(--slate); margin: 0 0 2rem; }
+  .card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 1.5rem; margin-bottom: 1.25rem; box-shadow: 0 1px 2px rgba(16,24,40,.06);
+  }
+  .card h2 { font-size: 1.05rem; margin: 0 0 .3rem; color: var(--navy); }
+  .card p { margin: 0 0 1rem; color: var(--slate); font-size: .94rem; }
+  .status { display: flex; align-items: flex-start; gap: .75rem; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: .5rem; flex: none; background: #c3cad9; }
+  .dot.on { background: var(--ok); } .dot.off { background: var(--bad); }
+  .status b { display: block; font-size: 1.02rem; color: var(--navy); }
+  .status small { color: var(--slate); }
+  .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+  button, .btn {
+    font: inherit; font-weight: 600; border-radius: 999px; padding: .6rem 1.2rem;
+    border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  button.primary { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+  button.primary:hover { filter: brightness(1.05); }
+  button:disabled { opacity: .55; cursor: default; }
+  input[type=password], input[type=text] {
+    font: inherit; flex: 1; min-width: 240px; padding: .6rem .9rem;
+    border: 1px solid var(--line); border-radius: 9px; background: #fff;
+  }
+  input:focus { outline: 2px solid var(--cyan); outline-offset: 1px; }
+  .msg { font-size: .88rem; margin-top: .7rem; }
+  .msg.err { color: var(--bad); } .msg.ok { color: var(--ok); }
+  .note {
+    background: #fffaf0; border: 1px solid #f5d9a3; border-radius: 10px;
+    padding: .85rem 1rem; font-size: .88rem; color: #7a5b12; margin-top: 1.5rem;
+  }
+  code { background: var(--bg-alt); padding: .1rem .35rem; border-radius: 4px; font-size: .88em; }
+  .hint { font-size: .82rem; color: var(--slate); margin-top: .5rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Connect Claude</h1>
+  <p class="lede">
+    The outreach agent generates proposals through Claude. Connect with your own
+    Claude account, or with an API key.
+  </p>
+
+  <div class="card">
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <div>
+        <b id="statusLine">Checking…</b>
+        <small id="statusDetail"></small>
+      </div>
+    </div>
+    <div class="row" style="margin-top:1rem">
+      <button id="recheck">Re-check</button>
+      <button id="disconnect" hidden>Disconnect key</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Sign in with your Claude account</h2>
+    <p>
+      Opens Anthropic's sign-in page in your browser. The Claude CLI stores the
+      session itself — this app never sees or stores a token.
+    </p>
+    <div class="row">
+      <button class="primary" id="login">Sign in with browser →</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>…or connect with an API key</h2>
+    <p>
+      Held in memory for as long as the server runs. Never written to disk,
+      never logged, never sent back to this page.
+    </p>
+    <div class="row">
+      <input type="password" id="key" placeholder="sk-ant-…" autocomplete="off" spellcheck="false" />
+      <button class="primary" id="connect">Connect with key →</button>
+    </div>
+    <div class="msg" id="connectMsg"></div>
+    <div class="hint">
+      To persist it across restarts, set <code>ANTHROPIC_API_KEY</code> in <code>.env</code> instead.
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>For production:</strong> Anthropic requires API-key authentication for
+    third-party products. Browser sign-in is intended for local development.
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function setBusy(el, busy, busyLabel, idleLabel) {
+  el.disabled = busy;
+  el.textContent = busy ? busyLabel : idleLabel;
+}
+
+function show(el, text, kind) {
+  el.textContent = text || '';
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+
+async function refresh() {
+  const dot = $('dot'), line = $('statusLine'), detail = $('statusDetail');
+  dot.className = 'dot';
+  line.textContent = 'Checking…';
+  detail.textContent = '';
+  $('disconnect').hidden = true;
+
+  let body;
+  try {
+    const res = await fetch('/claude/status');
+    body = await res.json();
+  } catch {
+    dot.className = 'dot off';
+    line.textContent = 'Not connected';
+    detail.textContent = 'Could not reach the server.';
+    return;
+  }
+
+  if (body.connected) {
+    dot.className = 'dot on';
+    const viaKey = body.source === 'api_key';
+    line.textContent = viaKey ? 'Connected with an API key' : 'Connected with your Claude account';
+    const bits = [];
+    if (body.email) bits.push(body.email);
+    if (body.subscription_type) bits.push(body.subscription_type + ' plan');
+    detail.textContent = bits.join(' · ');
+    $('disconnect').hidden = !viaKey;
+  } else {
+    dot.className = 'dot off';
+    line.textContent = 'Not connected';
+    detail.textContent = body.reason || '';
+  }
+}
+
+$('recheck').addEventListener('click', refresh);
+
+$('login').addEventListener('click', async () => {
+  const b = $('login');
+  setBusy(b, true, 'Opening browser…', 'Sign in with browser →');
+  show($('loginMsg'), '', '');
+  try {
+    await fetch('/claude/login', { method: 'POST' });
+    show($('loginMsg'), 'Finish signing in in your browser, then hit Re-check.', 'ok');
+  } catch {
+    show($('loginMsg'), 'Could not start the sign-in flow.', 'err');
+  }
+  setBusy(b, false, '', 'Sign in with browser →');
+});
+
+$('connect').addEventListener('click', async () => {
+  const key = $('key').value.trim();
+  if (!key) { show($('connectMsg'), 'Paste a key first.', 'err'); return; }
+  const b = $('connect');
+  setBusy(b, true, 'Connecting…', 'Connect with key →');
+  try {
+    const res = await fetch('/claude/connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: key }),
+    });
+    if (!res.ok) throw new Error();
+    $('key').value = '';
+    show($('connectMsg'), 'Key saved for this server session.', 'ok');
+    await refresh();
+  } catch {
+    show($('connectMsg'), 'That key was rejected.', 'err');
+  }
+  setBusy(b, false, '', 'Connect with key →');
+});
+
+$('disconnect').addEventListener('click', async () => {
+  await fetch('/claude/disconnect', { method: 'POST' });
+  show($('connectMsg'), 'Key cleared.', 'ok');
+  await refresh();
+});
+
+refresh();
+</script>
+</body>
+</html>

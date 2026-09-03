@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import inquiries, internal, proposals
+from app.api import claude_conn, inquiries, internal, proposals
 
 
 def create_app() -> FastAPI:
@@ -24,6 +24,7 @@ def create_app() -> FastAPI:
     app.include_router(inquiries.router)
     app.include_router(internal.router)
     app.include_router(proposals.router)
+    app.include_router(claude_conn.router)
 
     from app.api import chat  # imported here to avoid circulars
 
