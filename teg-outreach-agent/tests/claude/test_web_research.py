@@ -1,4 +1,6 @@
 """Claude-backed web research, as a drop-in ResearchTool."""
+import pathlib
+
 import pytest
 
 from app.claude.cli import ClaudeCli, ClaudeResult
@@ -43,27 +45,52 @@ async def test_returns_the_fields_claude_found():
     assert res.tool_name == "web"
 
 
-async def test_the_research_session_gets_web_tools_only():
+async def test_the_research_session_gets_skill_plus_web_tools():
     claude = _FakeClaude({"sector": "X"})
 
     await ClaudeWebSearch(claude).lookup(_query())
 
     call = claude.calls[0]
-    assert set(call["tools"]) == {"WebSearch", "WebFetch"}
-    # Availability is not permission: under --permission-mode dontAsk the web
-    # tools must ALSO be pre-approved, or every call is silently denied and
-    # Claude answers from the prompt alone.
-    assert set(call["allowed_tools"]) == {"WebSearch", "WebFetch"}
+    # Skill lets Claude discover and invoke teg-research itself; the web tools
+    # must ALSO be pre-approved, or dontAsk denies them at call time.
+    assert set(call["tools"]) == {"Skill", "WebSearch", "WebFetch"}
+    assert set(call["allowed_tools"]) == {"Skill", "WebSearch", "WebFetch"}
     # never filesystem or shell access, even here
     assert not {"Read", "Write", "Bash", "Edit"} & set(call["tools"])
 
 
-async def test_the_research_skill_is_loaded():
+async def test_the_session_runs_at_the_repo_root_so_the_skill_is_discoverable():
     claude = _FakeClaude({"sector": "X"})
 
     await ClaudeWebSearch(claude).lookup(_query())
 
-    assert "TEG Prospect Research" in claude.calls[0]["system_prompt"]
+    cwd = claude.calls[0]["cwd"]
+    assert (pathlib.Path(cwd) / ".claude" / "skills" / "teg-research" / "SKILL.md").is_file()
+
+
+async def test_the_system_prompt_points_at_the_skill_by_name():
+    claude = _FakeClaude({"sector": "X"})
+
+    await ClaudeWebSearch(claude).lookup(_query())
+
+    # We no longer inject the skill body — just tell Claude to use it.
+    assert "teg-research skill" in claude.calls[0]["system_prompt"]
+
+
+async def test_a_missing_skill_file_fails_cleanly():
+    claude = _FakeClaude({"sector": "X"})
+    import app.claude.web_research as wr
+
+    real = wr._SKILL_FILE
+    wr._SKILL_FILE = real.with_name("nope.md")
+    try:
+        res = await ClaudeWebSearch(claude).lookup(_query())
+    finally:
+        wr._SKILL_FILE = real
+
+    assert res.available is False
+    assert "skill missing" in res.notes
+    assert claude.calls == []
 
 
 async def test_null_fields_are_dropped_not_stringified():
