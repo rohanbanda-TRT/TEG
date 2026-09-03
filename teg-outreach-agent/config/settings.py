@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     kb_read_file_max_bytes: int = 6144  # read_file page size
     kb_grep_max_matches: int = 30    # grep result cap
 
+    # --- claude CLI backend ---
+    # When true, ProposalAgent generates through the `claude` CLI (skills as
+    # prompt assets, --json-schema structured output) instead of the LLM client.
+    # Guardrails run identically on the result either way.
+    claude_cli_enabled: bool = False
+    claude_cli_model: str = "claude-sonnet-5"
+    claude_cli_timeout_s: float = 180.0
+    skills_path: str = "./skills"
+
     # --- proposal / PDF ---
     proposal_model: str = ""  # empty -> use llm_model_main
     proposal_soft_timeout_s: int = 15

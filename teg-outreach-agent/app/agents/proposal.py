@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from app.agents.base import Agent
+from app.claude.cli import ClaudeCli
+from app.claude.prompt_builder import render_skill
+from app.claude.skill_loader import load_skill
 from app.agents.guardrails import (
     PROPOSAL_SAFE_SECTIONS,
     check_message,
@@ -83,14 +87,42 @@ _PRICING_BY_PERSONA: dict[Persona, ProposalPackage] = {
 
 class ProposalAgent(Agent):
     def __init__(self, llm, *, model: str | None = None,
-                 explorer: KBExplorer | None = None) -> None:
+                 explorer: KBExplorer | None = None,
+                 claude_cli: "ClaudeCli | None" = None) -> None:
         super().__init__(llm)
         s = get_settings()
         self._model = model or s.proposal_model or s.llm_model_main
         self._explorer = explorer or KBExplorer(llm)
+        # Claude-CLI backend: opt-in, so the LLM-client path stays the default
+        # until the CLI path is proven. Guardrails are identical either way.
+        self._claude = claude_cli
+        if self._claude is None and s.claude_cli_enabled:
+            self._claude = ClaudeCli()
+        self._claude_model = s.claude_cli_model
+        self._claude_timeout_s = s.claude_cli_timeout_s
+        self._skills_path = s.skills_path
 
     async def run(self, data):  # ProposalAgent uses build(), not run()
         raise NotImplementedError("ProposalAgent has no run(); call build()")
+
+    async def _generate(self, system: str, user: str) -> Proposal:
+        """One structured Proposal, from whichever backend is configured."""
+        if self._claude is None:
+            return await self.llm.generate_structured(
+                system=system, messages=[{"role": "user", "content": user}],
+                schema=Proposal, model=self._model,
+            )
+        result = await self._claude.generate(
+            model=self._claude_model,
+            system_prompt=system,
+            user_prompt=user,
+            json_schema=Proposal.model_json_schema(),
+            cwd=str(Path(self._skills_path).resolve().parent),
+            timeout_s=self._claude_timeout_s,
+        )
+        # Validate here so a malformed payload fails the same way the LLM
+        # client's own schema validation would, before any guardrail runs.
+        return Proposal.model_validate(result.data)
 
     async def build(
         self, *, intake: IntakeResult, dossier: ResearchDossier, persona: Persona,
@@ -169,6 +201,17 @@ class ProposalAgent(Agent):
             "this is an information document, not a contract. Personalize 'what_you_told_us' and the "
             "pain points from the actual conversation; keep 2-4 pains."
         )
+        if self._claude is not None:
+            # Skills-as-prompt-assets: the durable voice/rules live in
+            # skills/teg-proposal/, editable without touching Python.
+            try:
+                skill = load_skill(
+                    self._skills_path, "teg-proposal",
+                    references=["pain-library.md", "teg-mechanism.md"],
+                )
+                system = render_skill(skill)
+            except FileNotFoundError:
+                _log.warning("teg-proposal skill missing; falling back to the inline prompt")
         convo = "\n".join(f"{m['role']}: {m['content']}" for m in transcript) or "(no messages yet)"
         pain_lines = "\n".join(f"- {p} -> {a}" for p, a in base_pain_pairs)
         testi = "\n".join(f'- {t["name"]} ({t["role"]}): "{t["quote"]}"' for t in testimonials)
@@ -225,10 +268,7 @@ class ProposalAgent(Agent):
             persona, intake.company_name_canonical, dossier.sector, len(peers),
             len(base_pain_pairs), len(testimonials), ex.found,
         )
-        proposal = await self.llm.generate_structured(
-            system=system, messages=[{"role": "user", "content": user}],
-            schema=Proposal, model=self._model,
-        )
+        proposal = await self._generate(system, user)
 
         def _clamp_sector_fit(p: Proposal) -> None:
             p.sector_fit = [
@@ -314,10 +354,8 @@ class ProposalAgent(Agent):
         if violations:
             codes = sorted({v.code for _, v in violations})
             _log.warning("proposal draft violated %s -> regenerating once", codes)
-            proposal = await self.llm.generate_structured(
-                system=system + f"\nYour previous draft violated: {codes}. Fix every one.",
-                messages=[{"role": "user", "content": user}],
-                schema=Proposal, model=self._model,
+            proposal = await self._generate(
+                system + f"\nYour previous draft violated: {codes}. Fix every one.", user
             )
             if not price_requested:
                 _force_no_price(proposal)

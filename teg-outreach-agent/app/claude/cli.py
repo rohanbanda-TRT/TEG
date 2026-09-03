@@ -1,0 +1,235 @@
+"""Drive the `claude` CLI as a subprocess for structured generation.
+
+The CLI runs headless (`-p`), streams line-delimited JSON events, and validates
+its final answer against a JSON Schema we pass in — the schema result arrives on
+the terminal `result` event as ``structured_output``.
+
+Security note: prospect-supplied text flows into these prompts, so `run()`
+grants **no tools** by default. An injection attempt can then only produce bad
+text for our own guardrails to reject, never tool execution or filesystem
+access. Callers that genuinely need a capability (research needs the web) pass
+an explicit, narrow `tools` list.
+
+Auth comes from the machine's own `claude` login, with ANTHROPIC_API_KEY as an
+override. Anthropic requires API-key auth for third-party products, so a
+deployment serving real users must set that key.
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import os
+from dataclasses import dataclass, field
+from typing import Any, AsyncIterator, Awaitable, Callable
+
+from app.obs import get_logger
+
+_log = get_logger("claude.cli")
+
+SpawnFn = Callable[..., Awaitable[Any]]
+
+
+@dataclass(frozen=True)
+class ClaudeProgress:
+    """Streamed-token tick, for surfacing "still working" to a caller."""
+    chars_streamed: int
+
+
+@dataclass(frozen=True)
+class ClaudeResult:
+    data: Any
+    cost_usd: float | None = None
+    session_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ClaudeError:
+    message: str
+
+
+ClaudeEvent = ClaudeProgress | ClaudeResult | ClaudeError
+
+
+async def _default_spawn(program: str, *args: str, **kwargs: Any):
+    return await asyncio.create_subprocess_exec(program, *args, **kwargs)
+
+
+@dataclass
+class ClaudeCli:
+    spawn: SpawnFn = _default_spawn
+    api_key: str = ""
+
+    def _env(self) -> dict[str, str]:
+        env = dict(os.environ)
+        if self.api_key:
+            env["ANTHROPIC_API_KEY"] = self.api_key
+        return env
+
+    async def run(
+        self,
+        *,
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
+        json_schema: dict,
+        cwd: str,
+        tools: list[str] | None = None,
+        add_dirs: list[str] | None = None,
+        timeout_s: float | None = None,
+        resume: str | None = None,
+    ) -> AsyncIterator[ClaudeEvent]:
+        """Yield progress events, then exactly one terminal result or error."""
+        args: list[str] = [
+            "-p", user_prompt,
+            "--append-system-prompt", system_prompt,
+            "--model", model,
+            "--output-format", "stream-json",
+            "--include-partial-messages",
+            "--verbose",
+            "--permission-mode", "dontAsk",
+            "--json-schema", json.dumps(json_schema),
+        ]
+        # `--tools` with no values = no tools at all (the default, and the safe
+        # choice for any prompt carrying untrusted text).
+        args += ["--tools", *(tools or [""])]
+        for d in add_dirs or []:
+            args += ["--add-dir", str(d)]
+        if resume:
+            args += ["--resume", resume]
+
+        try:
+            child = await self.spawn(
+                "claude", *args,
+                cwd=cwd,
+                env=self._env(),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+        except FileNotFoundError:
+            yield ClaudeError("The claude CLI is not installed or not on PATH.")
+            return
+        except OSError as e:  # pragma: no cover - defensive
+            yield ClaudeError(f"Failed to start claude: {e}")
+            return
+
+        chars = 0
+        settled: ClaudeResult | ClaudeError | None = None
+        try:
+            async with asyncio.timeout(timeout_s) if timeout_s else _nullctx():
+                while True:
+                    line = await child.stdout.readline()
+                    if not line:
+                        break
+                    try:
+                        msg = json.loads(line)
+                    except (ValueError, TypeError):
+                        continue  # human-readable noise on stdout; ignore
+
+                    if (
+                        msg.get("type") == "stream_event"
+                        and msg.get("event", {}).get("type") == "content_block_delta"
+                        and msg["event"].get("delta", {}).get("type") == "text_delta"
+                    ):
+                        chars += len(msg["event"]["delta"]["text"])
+                        yield ClaudeProgress(chars_streamed=chars)
+                    elif msg.get("type") == "result" and settled is None:
+                        settled = _terminal_event(msg)
+        except TimeoutError:
+            child.kill()
+            yield ClaudeError(f"claude timed out after {timeout_s}s")
+            return
+        finally:
+            if settled is None:
+                # Nothing usable came back; make sure we don't leak the process.
+                child.kill()
+
+        if settled is not None:
+            yield settled
+            return
+
+        code = await child.wait()
+        stderr = (await child.stderr.read()).decode(errors="replace").strip()
+        yield ClaudeError(
+            "Claude exited without a result."
+            if code == 0
+            else f"claude exited with code {code}: {stderr}"
+        )
+
+    async def generate(
+        self,
+        *,
+        model: str,
+        system_prompt: str,
+        user_prompt: str,
+        json_schema: dict,
+        cwd: str,
+        tools: list[str] | None = None,
+        add_dirs: list[str] | None = None,
+        timeout_s: float | None = None,
+        on_progress: Callable[[int], None] | None = None,
+    ) -> ClaudeResult:
+        """Await a single structured result, raising RuntimeError on failure."""
+        async for ev in self.run(
+            model=model, system_prompt=system_prompt, user_prompt=user_prompt,
+            json_schema=json_schema, cwd=cwd, tools=tools, add_dirs=add_dirs,
+            timeout_s=timeout_s,
+        ):
+            if isinstance(ev, ClaudeProgress):
+                if on_progress:
+                    on_progress(ev.chars_streamed)
+            elif isinstance(ev, ClaudeResult):
+                _log.info("claude ok  cost=%s  session=%s", ev.cost_usd, ev.session_id)
+                return ev
+            else:
+                raise RuntimeError(ev.message)
+        raise RuntimeError("claude produced no result")
+
+    async def auth_status(self, *, cwd: str) -> dict | None:
+        """Read the CLI's stored login. None on any failure — never a hard 'no'."""
+        try:
+            child = await self.spawn(
+                "claude", "auth", "status", "--json",
+                cwd=cwd, env=self._env(),
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            )
+            raw = await asyncio.wait_for(child.stdout.read(), timeout=5)
+            parsed = json.loads(raw)
+        except Exception:
+            return None
+        if not isinstance(parsed, dict):
+            return None
+        return {
+            "logged_in": bool(parsed.get("loggedIn")),
+            "email": parsed.get("email"),
+            "subscription_type": parsed.get("subscriptionType"),
+        }
+
+
+def _terminal_event(msg: dict) -> ClaudeResult | ClaudeError:
+    """Map a CLI `result` message onto our terminal event.
+
+    Keyed on `structured_output` being present rather than on `stop_reason`:
+    a successful schema-validated run reports stop_reason "tool_use", because
+    the schema is delivered through a tool call.
+    """
+    out = msg.get("structured_output")
+    if out is None:
+        return ClaudeError(
+            f"Claude stopped with reason {msg.get('stop_reason', 'unknown')!r} "
+            "and no structured output."
+        )
+    cost = msg.get("total_cost_usd")
+    sid = msg.get("session_id")
+    return ClaudeResult(
+        data=out,
+        cost_usd=cost if isinstance(cost, (int, float)) else None,
+        session_id=sid if isinstance(sid, str) else None,
+    )
+
+
+class _nullctx:
+    async def __aenter__(self):
+        return None
+
+    async def __aexit__(self, *exc):
+        return False
