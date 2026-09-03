@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import get_args
 
 from pydantic import BaseModel
 
 from app.agents.base import Agent
 from app.agents.guardrails import SAFE_TEMPLATES, check_message, check_testimonial
+from app.claude.cli import ClaudeCli
+from app.claude.prompt_builder import render_skill
+from app.claude.skill_loader import load_skill
 from app.domain.schemas import (
     CtaStatus,
     IntakeResult,
@@ -132,15 +136,102 @@ class _Analysis(BaseModel):
 
 
 class PersuasionAgent(Agent):
-    def __init__(self, llm, *, fast_model: str | None = None) -> None:
+    def __init__(self, llm, *, fast_model: str | None = None,
+                 claude_cli: "ClaudeCli | None" = None) -> None:
         super().__init__(llm)
         self._rules = load_rules()
-        self._fast_model = fast_model or get_settings().llm_model_fast
+        s = get_settings()
+        self._fast_model = fast_model or s.llm_model_fast
+        self._claude = claude_cli
+        if self._claude is None and s.claude_cli_enabled:
+            self._claude = ClaudeCli()
+        self._claude_model = s.claude_cli_model
+        self._claude_timeout_s = s.claude_cli_timeout_s
+        self._skills_path = s.skills_path
+
+    async def _generate(self, system: str, user: str) -> _Analysis:
+        """One structured turn, from whichever backend is configured.
+
+        No hook can rewrite the assistant's final text before it reaches the
+        prospect, so the caller MUST run check_message/check_testimonial on
+        `reply` — same as on the LLM-client path.
+        """
+        if self._claude is None:
+            return await self.llm.generate_structured(
+                system=system, messages=[{"role": "user", "content": user}],
+                schema=_Analysis,
+            )
+        if not self._claude.api_key:
+            from app.api.claude_conn import get_api_key
+
+            self._claude.api_key = get_api_key() or ""
+        result = await self._claude.generate(
+            model=self._claude_model,
+            system_prompt=system,
+            user_prompt=user,
+            json_schema=_Analysis.model_json_schema(),
+            cwd=str(Path(self._skills_path).resolve().parent),
+            timeout_s=self._claude_timeout_s,
+            # Prospect text is in this prompt — no tools, ever.
+        )
+        return _Analysis.model_validate(result.data)
+
+    def _claude_system(self, fallback: str) -> str:
+        """Skill-authored system prompt when the CLI backend is active."""
+        if self._claude is None:
+            return fallback
+        try:
+            return render_skill(load_skill(self._skills_path, "teg-conversation"))
+        except FileNotFoundError:
+            _log.warning("teg-conversation skill missing; using the inline prompt")
+            return fallback
 
     async def run(self, data):  # PersuasionAgent uses init()/respond(), not run()
         raise NotImplementedError("PersuasionAgent has no run(); call init() or respond()")
 
     _REQUIRED_DISCOVERY = ("goal", "target_market", "scale")
+
+    def _turn_context(
+        self, persona: Persona, dossier: ResearchDossier, *, learned_facts: dict
+    ) -> str:
+        """Per-turn state the skill can't know: tone, peers, discovery, pricing.
+
+        This is data, not voice, so it is appended on BOTH backends — the skill
+        replaces the durable instructions only.
+        """
+        tone = {
+            "insider": (
+                "This person is on the Tech Expo Gujarat organizing team. Do NOT pitch "
+                "them, quote prices, or push a CTA unless they explicitly ask. Talk "
+                "peer-to-peer as a fellow organiser. Ask what they need sorted for their "
+                "company this year (booth, a bigger presence, speaking, something else)."
+            ),
+            "returning": (
+                "This company/person has taken part in TEG before — welcome them back "
+                "and reference their specific history."
+            ),
+            "cold": "First contact — warm and curious, not familiar.",
+        }[dossier.relationship]
+        peers = dossier.peer_companies[:3]
+        peer_line = (
+            f"Peer companies you may name (only these): {', '.join(peers)}."
+            if peers and dossier.relationship != "insider"
+            else "Do not name other companies — you have no peer list for this prospect."
+        )
+        known = sorted(k for k in self._REQUIRED_DISCOVERY if learned_facts.get(k))
+        missing = [k for k in self._REQUIRED_DISCOVERY if not learned_facts.get(k)]
+        props = self._rules.persona_triggers.get(persona, {}).get("value_props", [])
+        return (
+            f"\n\n## This turn\n"
+            f"Tone: {tone}\n"
+            f"{peer_line}\n"
+            f"Already learned: {known or 'nothing yet'}. "
+            f"Still missing before you may offer a proposal: "
+            f"{', '.join(missing) if missing else 'none — you may offer one'}.\n"
+            f"If they ask about cost, the one indicative line you may give is: "
+            f"\"{_PRICING_LINE[persona]}\"\n"
+            f"Benefits you may draw on (paraphrase, never list): {'; '.join(props)}."
+        )
 
     def _system(
         self, persona: Persona, dossier: ResearchDossier, *,
@@ -304,10 +395,15 @@ class PersuasionAgent(Agent):
 
         peers = dossier.peer_companies[:3]
         price_requested = state.get("price_requested", False)
-        system = self._system(
-            persona, dossier, learned_facts=state.get("learned_facts", {}),
-            price_requested=price_requested,
-        ) + (
+        learned = state.get("learned_facts", {})
+        base = self._claude_system(self._system(
+            persona, dossier, learned_facts=learned, price_requested=price_requested,
+        ))
+        # The skill carries the durable voice/rules; per-turn state is appended
+        # on both backends (the inline prompt already embeds its own copy).
+        if self._claude is not None:
+            base += self._turn_context(persona, dossier, learned_facts=learned)
+        system = base + (
             f"\nTarget CTA: {state.get('target_cta')}. Current cta_status: {state.get('cta_status')}. "
             "Advance it naturally; set cta_status to 'completed' only if the prospect clearly commits. "
             "Set should_handoff true if they say they're just researching or repeatedly deflect. "
@@ -323,9 +419,7 @@ class PersuasionAgent(Agent):
             "Produce the next reply."
         )
 
-        analysis = await self.llm.generate_structured(
-            system=system, messages=[{"role": "user", "content": user}], schema=_Analysis,
-        )
+        analysis = await self._generate(system, user)
 
         async def _violations(a: _Analysis) -> list:
             vs = check_message(
@@ -338,9 +432,8 @@ class PersuasionAgent(Agent):
         flags: list[str] = []
         v = await _violations(analysis)
         if v:
-            analysis = await self.llm.generate_structured(
-                system=system + f"\nPrevious draft violated {[x.code for x in v]}. Fix it.",
-                messages=[{"role": "user", "content": user}], schema=_Analysis,
+            analysis = await self._generate(
+                system + f"\nPrevious draft violated {[x.code for x in v]}. Fix it.", user
             )
             v = await _violations(analysis)
         if v:
@@ -375,7 +468,7 @@ class PersuasionAgent(Agent):
             detected_cta=analysis.detected_cta,
             cta_status=analysis.cta_status,
             cta_type=analysis.cta_type,
-            cta_detail=state["cta_detail"],
+            cta_detail=state.get("cta_detail", {}),
             should_handoff=should_handoff,
             updated_state=state,
             guardrail_flags=flags,

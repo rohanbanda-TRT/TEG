@@ -22,8 +22,12 @@ _CAP_ORG = re.compile(r"\b([A-Z][A-Za-z0-9&.]+(?:\s+[A-Z][A-Za-z0-9&.]+){0,3})\b
 _AWAITING = re.compile(
     r"(the ticket price is|tickets cost ₹|confirmed sponsors include|the 2026 sponsors are)", re.I
 )
+# Plurals matter here: "Stalls start at ₹..." must trip this, so allow a
+# trailing "s" rather than requiring an exact word boundary after the stem.
 _STALL_PRICE_CTX = re.compile(
-    r"\b(stall|sponsor|sponsorship|booth|title sponsor|partner|catalyst zone)\b", re.I
+    r"\b(stalls?|sponsors?|sponsorships?|booths?|title sponsors?|partners?|"
+    r"catalyst zone|packages?|pricing|price|cost)\b",
+    re.I,
 )
 _OVERPROMISE = re.compile(
     r"\b(guarantee[sd]?|you will (?:close|win|get|see)|"

@@ -74,11 +74,19 @@ class ClaudeCli:
         json_schema: dict,
         cwd: str,
         tools: list[str] | None = None,
+        allowed_tools: list[str] | None = None,
         add_dirs: list[str] | None = None,
         timeout_s: float | None = None,
         resume: str | None = None,
     ) -> AsyncIterator[ClaudeEvent]:
-        """Yield progress events, then exactly one terminal result or error."""
+        """Yield progress events, then exactly one terminal result or error.
+
+        `tools` makes a tool *available*; `allowed_tools` pre-approves it.
+        Under `--permission-mode dontAsk` an available-but-unapproved tool is
+        DENIED at call time, so anything in `tools` that must actually run has
+        to appear in `allowed_tools` too — otherwise the model silently works
+        without it.
+        """
         args: list[str] = [
             "-p", user_prompt,
             "--append-system-prompt", system_prompt,
@@ -92,6 +100,8 @@ class ClaudeCli:
         # `--tools` with no values = no tools at all (the default, and the safe
         # choice for any prompt carrying untrusted text).
         args += ["--tools", *(tools or [""])]
+        if allowed_tools:
+            args += ["--allowed-tools", *allowed_tools]
         for d in add_dirs or []:
             args += ["--add-dir", str(d)]
         if resume:
@@ -164,6 +174,7 @@ class ClaudeCli:
         json_schema: dict,
         cwd: str,
         tools: list[str] | None = None,
+        allowed_tools: list[str] | None = None,
         add_dirs: list[str] | None = None,
         timeout_s: float | None = None,
         on_progress: Callable[[int], None] | None = None,
@@ -171,8 +182,8 @@ class ClaudeCli:
         """Await a single structured result, raising RuntimeError on failure."""
         async for ev in self.run(
             model=model, system_prompt=system_prompt, user_prompt=user_prompt,
-            json_schema=json_schema, cwd=cwd, tools=tools, add_dirs=add_dirs,
-            timeout_s=timeout_s,
+            json_schema=json_schema, cwd=cwd, tools=tools,
+            allowed_tools=allowed_tools, add_dirs=add_dirs, timeout_s=timeout_s,
         ):
             if isinstance(ev, ClaudeProgress):
                 if on_progress:

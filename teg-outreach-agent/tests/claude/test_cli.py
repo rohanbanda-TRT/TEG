@@ -135,6 +135,44 @@ async def test_run_can_grant_a_narrow_tool_list():
     assert args[idx + 1:idx + 3] == ["WebSearch", "WebFetch"]
 
 
+async def test_allowed_tools_are_passed_separately_from_tools():
+    """`--tools` makes a tool available; `--allowed-tools` pre-approves it.
+
+    Under `--permission-mode dontAsk` an available-but-unapproved tool is
+    denied at call time, so both flags are needed for a tool that must run.
+    """
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":{},"session_id":"s"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    _ = [e async for e in cli.run(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+        tools=["WebSearch", "WebFetch"], allowed_tools=["WebSearch", "WebFetch"],
+    )]
+
+    args = captured["args"]
+    ti = args.index("--tools")
+    assert args[ti + 1:ti + 3] == ["WebSearch", "WebFetch"]
+    ai = args.index("--allowed-tools")
+    assert args[ai + 1:ai + 3] == ["WebSearch", "WebFetch"]
+
+
+async def test_no_allowed_tools_flag_when_none_are_requested():
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":{},"session_id":"s"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    _ = [e async for e in cli.run(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+    )]
+
+    assert "--allowed-tools" not in captured["args"]
+
+
 async def test_run_errors_when_result_has_no_structured_output():
     captured: dict = {}
     child = _FakeChild(stdout_lines=[

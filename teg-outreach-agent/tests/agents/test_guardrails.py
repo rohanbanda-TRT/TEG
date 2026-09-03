@@ -1,3 +1,5 @@
+import pytest
+
 from app.agents.guardrails import (
     SAFE_TEMPLATES,
     _TestimonialCheck,
@@ -46,6 +48,29 @@ def test_unsolicited_price_flagged_when_not_price_ok():
         allowed_peers=[], persona="it_tech_service", price_ok=False,
     )
     assert "unsolicited_price" in {x.code for x in v}
+
+
+@pytest.mark.parametrize("text", [
+    "Stalls start at just ₹1,17,000 + GST — shall I book you in?",
+    "Our booths are ₹1,17,000 + GST.",
+    "Sponsorships begin at ₹6,00,000 + GST.",
+    "Packages start from ₹35,000 + GST.",
+    "Pricing is ₹1,17,000 + GST.",
+])
+def test_unsolicited_price_catches_plurals_and_synonyms(text):
+    """Regression: `\\bstall\\b` never matched "Stalls", so a plural-worded
+    unprompted price sailed through the guardrail."""
+    v = check_message(text, allowed_peers=[], persona="it_tech_service", price_ok=False)
+    assert "unsolicited_price" in {x.code for x in v}, text
+
+
+def test_unsolicited_price_ignores_a_non_offer_rupee_figure():
+    """The Retreat fundraising figure is evidence, not a price offer."""
+    v = check_message(
+        "The TEG Business Retreat 2025 helped facilitate ₹1.5 crore raised in one day.",
+        allowed_peers=[], persona="it_tech_service", price_ok=False,
+    )
+    assert "unsolicited_price" not in {x.code for x in v}
 
 
 def test_price_allowed_when_price_ok_but_gst_still_enforced():

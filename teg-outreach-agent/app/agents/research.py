@@ -108,7 +108,14 @@ class ResearchAgent(Agent):
         super().__init__(llm)
         self._explorer = explorer or KBExplorer(llm)
         if tools is None:
-            tools = [get_web_search(), PageScraper(), LinkedInStub()]
+            if get_settings().claude_cli_enabled:
+                # Claude runs its own search-and-fetch loop, so the separate
+                # scraper is redundant on this path.
+                from app.claude.web_research import ClaudeWebSearch
+
+                tools = [ClaudeWebSearch(), LinkedInStub()]
+            else:
+                tools = [get_web_search(), PageScraper(), LinkedInStub()]
         tools = [t for t in tools if t is not None]
         self._web = next((t for t in tools if t.name == "web"), None)
         self._scraper = next((t for t in tools if t.name == "scrape"), None)
