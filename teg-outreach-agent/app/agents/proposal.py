@@ -360,18 +360,28 @@ class ProposalAgent(Agent):
         if violations:
             codes = sorted({v.code for _, v in violations})
             _log.warning("proposal draft violated %s -> regenerating once", codes)
-            proposal = await self._generate(
-                system + f"\nYour previous draft violated: {codes}. Fix every one.", user
-            )
-            if not price_requested:
-                _force_no_price(proposal)
-            _clamp_sector_fit(proposal)
-            _clamp_target_industries(proposal)
-            _clamp_section_ctas(proposal)
-            violations = all_violations(proposal)
-            t_v = await _testimonial_violation(proposal)
-            if t_v:
-                violations.append(("proof::0", t_v))
+            first_draft = proposal
+            first_violations = violations
+            try:
+                proposal = await self._generate(
+                    system + f"\nYour previous draft violated: {codes}. Fix every one.", user
+                )
+                if not price_requested:
+                    _force_no_price(proposal)
+                _clamp_sector_fit(proposal)
+                _clamp_target_industries(proposal)
+                _clamp_section_ctas(proposal)
+                violations = all_violations(proposal)
+                t_v = await _testimonial_violation(proposal)
+                if t_v:
+                    violations.append(("proof::0", t_v))
+            except (RuntimeError, TimeoutError) as exc:
+                # A failed regenerate must not lose the proposal — fall back to
+                # the first draft and let the safe-fallback pass below scrub the
+                # flagged sections.
+                _log.warning("regenerate failed (%s); using first draft + safe fallback", exc)
+                proposal = first_draft
+                violations = first_violations
 
         flags: list[str] = []
         if violations:

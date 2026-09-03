@@ -31,7 +31,12 @@ _STALL_PRICE_CTX = re.compile(
 )
 _OVERPROMISE = re.compile(
     r"\b(guarantee[sd]?|you will (?:close|win|get|see)|"
-    r"\d+\s*(?:deals|clients|leads|partnerships)\b|"
+    # a deal count only counts as a promise when TEG is the one delivering it:
+    # "you'll get 3 leads", "expect 5 clients" — not "you told us you want 3-5
+    # leads", where the prospect stated their own goal and we echo it back.
+    r"(?:you(?:'ll| will)|expect(?:\s+to\s+\w+)?|delivers?|delivering|generates?|"
+    r"produces?|lands?|landing)\s+(?:\w+\s+){0,3}\d+\s*(?:\w+\s+){0,3}"
+    r"(?:deals|clients|leads|partnerships)\b|"
     r"\bROI of\b|\breturn of\b)",
     re.I,
 )

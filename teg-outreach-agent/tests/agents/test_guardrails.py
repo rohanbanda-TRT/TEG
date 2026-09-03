@@ -97,6 +97,32 @@ def test_overpromise_patterns():
     ) is None
 
 
+@pytest.mark.parametrize("text", [
+    # TEG promising a count — must flag
+    "You will get 3 enterprise clients.",
+    "We deliver 10 qualified leads.",
+    "Expect to close 5 deals at TEG.",
+    "The programme generates 20 qualified leads for you.",
+    "That produces 4 strategic partnerships.",
+])
+def test_overpromise_flags_a_teg_delivered_count(text):
+    assert check_overpromise(text) is not None, text
+
+
+@pytest.mark.parametrize("text", [
+    # the PROSPECT's own stated goal, echoed back — must NOT flag
+    "A good outcome for you is 3 to 5 high-value, qualified enterprise leads.",
+    "You told us you want 3-5 leads with active digital transformation budgets.",
+    "The leads focus for your channel team is front and centre.",
+    "Your goal is qualified leads from B2B manufacturing.",
+])
+def test_overpromise_ignores_the_prospects_own_goal(text):
+    """Regression: `\\d+ leads` flagged 'a good outcome for you is 3-5 leads' —
+    the prospect's own words echoed back — and every regenerate re-tripped it,
+    so the proposal never sent."""
+    assert check_overpromise(text) is None, text
+
+
 def test_flags_visitor_price():
     v = check_message(
         "A visitor pass costs around ₹500 for early birds.",

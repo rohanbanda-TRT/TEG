@@ -98,6 +98,28 @@ async def test_guardrails_still_fire_and_regenerate_once():
     assert "guaranteed" not in p.roi_framing.lower()
 
 
+async def test_a_failed_regenerate_falls_back_to_the_first_draft():
+    """Regression: the regenerate call raising (CLI timeout/error) propagated
+    out of build() and the prospect got 'the team will follow up' instead of a
+    proposal. It should fall back to the first draft + safe-fallback scrub."""
+    bad = _payload(roi_framing="Guaranteed 10x ROI, you will close deals.")
+
+    class _OneThenBoom(_FakeClaude):
+        async def generate(self, **kwargs):
+            self.calls.append(kwargs)
+            if len(self.calls) == 1:
+                return ClaudeResult(data=bad, cost_usd=0.4, session_id="s")
+            raise RuntimeError("claude timed out after 180s")
+
+    claude = _OneThenBoom([])
+
+    p, flags = await _build(claude)
+
+    assert len(claude.calls) == 2, "it must have attempted the regenerate"
+    assert flags, "the first draft's violation is still flagged"
+    assert "guaranteed" not in p.roi_framing.lower(), "safe fallback scrubbed it"
+
+
 async def test_safe_fallback_when_both_drafts_violate():
     bad = _payload(roi_framing="Guaranteed 10x ROI, you will close deals.")
     claude = _FakeClaude([bad, bad])
