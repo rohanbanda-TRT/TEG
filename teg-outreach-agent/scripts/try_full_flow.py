@@ -51,9 +51,9 @@ async def main() -> int:
             for i, msg in enumerate(TURNS, 1):
                 t = time.time()
                 print(f"{'='*70}\nTURN {i} ({time.time()-t0:.0f}s)\nprospect: {msg}")
-                await ws.send(json.dumps({"message": msg}))
+                await ws.send(json.dumps({"type": "message", "text": msg}))
 
-                # drain until this turn's reply (and any attachment) arrives
+                last_turn = i == len(TURNS)
                 got_reply = False
                 while True:
                     try:
@@ -62,42 +62,49 @@ async def main() -> int:
                         print("  !! timed out waiting for a reply")
                         break
                     ev = json.loads(raw)
-                    kind = ev.get("type") or ev.get("kind")
-                    if kind in ("reply", "message") or "reply_text" in ev:
-                        print(f"agent   : {ev.get('reply_text') or ev.get('text')}")
-                        for k in ("cta_status", "guardrail_flags", "wants_proposal"):
-                            if ev.get(k):
-                                print(f"  {k}: {ev[k]}")
+                    kind = ev.get("type")
+
+                    if kind == "reply":
+                        print(f"agent   : {ev.get('text')}")
+                        print(f"  cta={ev.get('cta_status')}  handoff={ev.get('should_handoff')}")
                         got_reply = True
-                    elif kind in ("attachment", "proposal_link", "proposal"):
+                        # a proposal-triggering turn sends more frames after the reply
+                        if not last_turn:
+                            break
+                    elif kind == "proposal_pending":
+                        print("  [proposal generating…]")
+                    elif kind in ("attachment", "proposal_link"):
                         proposal_card = ev
-                        print(f"  [attachment] {json.dumps(ev)[:200]}")
+                        print(f"  [proposal card] {json.dumps({k: ev[k] for k in ev if k != 'type'})[:220]}")
                         break
-                    elif kind in ("typing", "status", "progress"):
+                    elif kind == "proposal_failed":
+                        print("  !! proposal_failed")
+                        break
+                    elif kind in ("handoff", "opening"):
                         continue
                     else:
                         print(f"  [{kind}] {json.dumps(ev)[:160]}")
-                    if got_reply and kind != "attachment":
-                        break
                 print(f"  ({time.time()-t:.0f}s)")
 
         print(f"\n{'='*70}\nSESSION STATE")
-        s = (await http.get(f"{BASE}/internal/sessions/{sid}")).json()
-        print(f"persona        : {s.get('persona')}")
-        print(f"price_requested: {s.get('price_requested')}")
-        print(f"learned_facts  : {json.dumps(s.get('learned_facts', {}), indent=2)}")
+        st = (await http.get(f"{BASE}/sessions/{sid}")).json()
+        sess = st.get("session", st)
+        print(f"persona        : {sess.get('persona')}")
+        print(f"cta_status     : {sess.get('cta_status')}")
+        print(f"learned_facts  : {json.dumps(sess.get('learned_facts', {}), indent=2)}")
 
         if proposal_card:
             pid = proposal_card.get("proposal_id")
             print(f"\n{'='*70}\nPROPOSAL {pid}")
             print(f"page_url : {BASE}{proposal_card.get('page_url','')}")
             pj = (await http.get(f"{BASE}/proposals/{pid}.json")).json()["proposal"]
-            print(f"hero     : {pj['hero_headline']}")
-            print(f"subline  : {pj['hero_subline']}")
-            print(f"summary  : {pj['executive_summary'][:220]}")
-            print(f"price    : {pj['recommended_package']['price_line']!r}")
+            print(f"hero      : {pj.get('hero_headline')}")
+            print(f"subline   : {pj.get('hero_subline')}")
+            print(f"summary   : {pj.get('executive_summary','')[:260]}")
+            print(f"price     : {pj['recommended_package']['price_line']!r}")
             print(f"industries: {pj.get('target_industries')}")
-            print(f"peers    : {pj.get('peer_companies')} of {pj.get('peers_in_sector_total')}")
+            print(f"peers     : {pj.get('peer_companies')} of {pj.get('peers_in_sector_total')}")
+            print(f"pains     : {[p['pain'][:60] for p in pj.get('pains', [])]}")
             html = await http.get(f"{BASE}{proposal_card.get('page_url','')}")
             print(f"landing page: HTTP {html.status_code}")
         else:
