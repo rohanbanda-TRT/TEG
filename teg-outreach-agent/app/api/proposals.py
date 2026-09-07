@@ -39,7 +39,8 @@ async def get_proposal_json(proposal_id: uuid.UUID) -> JSONResponse:
         "id": str(row.id),
         "version": row.version,
         "generated_on": row.proposal_json.get("generated_on"),
-        "pdf_url": f"/proposals/{row.id}.pdf",
+        # unset unless this proposal predates the link-only delivery path
+        "pdf_url": f"/proposals/{row.id}.pdf" if row.pdf_path else None,
         "proposal": row.proposal_json,
     })
 

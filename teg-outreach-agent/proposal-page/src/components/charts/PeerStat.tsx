@@ -1,3 +1,5 @@
+import { motion } from "framer-motion";
+
 interface PeerStatProps {
   names: string[];
   sector?: string | null;
@@ -21,16 +23,30 @@ export function PeerStat({ names, sector, sectorTotal, contextLine }: PeerStatPr
   return (
     <div className="peer-stat">
       <div className="peer-stat__lead">
-        <div className="stat-ring">
+        <motion.div
+          className="stat-ring"
+          initial={{ opacity: 0, scale: 0.75 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true, amount: 0.8 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+        >
           <b>{total}</b>
-        </div>
+        </motion.div>
         <p>
           <strong>{total}</strong> {line}
         </p>
       </div>
       <div className="peer-grid">
-        {names.map((n) => (
-          <span key={n}>{n}</span>
+        {names.map((n, i) => (
+          <motion.span
+            key={n}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.8 }}
+            transition={{ type: "spring", stiffness: 180, damping: 18, delay: i * 0.04 }}
+          >
+            {n}
+          </motion.span>
         ))}
       </div>
     </div>

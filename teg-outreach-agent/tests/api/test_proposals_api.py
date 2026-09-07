@@ -125,7 +125,7 @@ def test_get_proposal_json(built_proposal):
     body = r.json()
     assert body["id"] == str(pid)
     assert body["version"] >= 1
-    assert body["pdf_url"] == f"/proposals/{pid}.pdf"
+    assert body["pdf_url"] is None  # link-only delivery: no PDF was ever rendered
     assert body["proposal"]["company"]
 
 

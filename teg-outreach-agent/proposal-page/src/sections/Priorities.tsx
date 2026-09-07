@@ -11,7 +11,7 @@ export function Priorities({ p }: { p: Proposal }) {
         <span className="eyebrow">Your priorities</span>
         <h2>Where TEG moves the needle for you</h2>
       </div>
-      <div style={{ display: "grid", gap: "1rem" }}>
+      <div className="priorities-grid">
         {p.pains.map((pain, i) => (
           <Reveal key={i} delay={i * 0.08}>
             <div className="priority">

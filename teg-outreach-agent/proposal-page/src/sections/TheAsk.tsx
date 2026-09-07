@@ -1,8 +1,15 @@
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import type { Proposal } from "../lib/types";
 import { closingBody, closingHeadline, sectionCta } from "../lib/fallbacks";
 import { Section } from "../components/Section";
 import { Reveal } from "../components/Reveal";
 import { CtaButton } from "../components/CtaButton";
+
+function onCardMove(e: ReactPointerEvent<HTMLDivElement>) {
+  const rect = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--mx", `${e.clientX - rect.left}px`);
+  e.currentTarget.style.setProperty("--my", `${e.clientY - rect.top}px`);
+}
 
 export function TheAsk({ p }: { p: Proposal }) {
   const pkg = p.recommended_package;
@@ -16,7 +23,13 @@ export function TheAsk({ p }: { p: Proposal }) {
       </div>
 
       <Reveal>
-        <div className="ask-card">
+        {/* the card's border glows toward the cursor — pure CSS, tracked via
+            two custom properties updated on pointer move */}
+        <div
+          className="ask-card"
+          onPointerMove={onCardMove}
+          style={{ "--mx": "50%", "--my": "0%" } as CSSProperties}
+        >
           <h3>{pkg.name}</h3>
           <ul>
             {pkg.includes.map((x, i) => (

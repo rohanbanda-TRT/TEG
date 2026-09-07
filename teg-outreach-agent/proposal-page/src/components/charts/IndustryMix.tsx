@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { INDUSTRIES } from "../../lib/chartData";
 
 /**
@@ -24,10 +25,17 @@ export function IndustryMix({
             {note || "The industries TEG draws that matter most for you."}
           </p>
           <div className="ind-grid ind-grid--hl">
-            {highlight.map((name) => (
-              <span className="ind-chip ind-chip--on" key={name}>
+            {highlight.map((name, i) => (
+              <motion.span
+                className="ind-chip ind-chip--on"
+                key={name}
+                initial={{ opacity: 0, scale: 0.85 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.8 }}
+                transition={{ type: "spring", stiffness: 220, damping: 16, delay: i * 0.05 }}
+              >
                 {name}
-              </span>
+              </motion.span>
             ))}
           </div>
           <p className="ind-rest-label">Plus buyers from every other TEG industry:</p>

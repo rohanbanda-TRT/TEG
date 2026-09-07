@@ -54,6 +54,8 @@ export interface Payload {
   id: string;
   version: number;
   generated_on: string | null;
-  pdf_url: string;
+  // Present only for proposals rendered before the link-only delivery path —
+  // the page itself is the deliverable now, so this is never shown in the UI.
+  pdf_url?: string | null;
   proposal: Proposal;
 }

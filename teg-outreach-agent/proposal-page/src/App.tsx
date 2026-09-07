@@ -8,6 +8,7 @@ import { Journey } from "./sections/Journey";
 import { TheAsk } from "./sections/TheAsk";
 import { Section } from "./components/Section";
 import { Reveal } from "./components/Reveal";
+import { ScrollProgress } from "./components/ScrollProgress";
 import { TEG_LOGO_DATA_URI } from "./lib/brand";
 
 function linkify(step: string) {
@@ -25,6 +26,7 @@ export function App({ payload }: { payload: Payload }) {
   const p = payload.proposal;
   return (
     <>
+      <ScrollProgress />
       <Hero p={p} version={payload.version} generatedOn={payload.generated_on} />
 
       {p.executive_summary && (
@@ -60,10 +62,7 @@ export function App({ payload }: { payload: Payload }) {
           </ul>
           <small>
             v{payload.version} · {payload.generated_on} · This is an information document, not a
-            contract.{" "}
-            <a href={payload.pdf_url} target="_blank" rel="noopener">
-              Download as PDF
-            </a>
+            contract.
           </small>
           <small>© AIMED TECH EXPO GUJARAT LLP</small>
         </div>
