@@ -30,10 +30,9 @@ export type ChatEvent = {
   kind?: string;
   proposal_id?: string;
   version?: number;
-  filename?: string;
-  bytes?: number;
-  pdf_url?: string;
-  png_url?: string;
+  page_url?: string;
+  title?: string;
+  blurb?: string;
 };
 
 export async function submitInquiry(

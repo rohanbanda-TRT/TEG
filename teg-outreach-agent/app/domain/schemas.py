@@ -161,13 +161,17 @@ class Proposal(BaseModel):
 
 
 class ProposalCard(BaseModel):
-    kind: str = "proposal"
+    """A delivered proposal. `page_url` (the live `/p/{id}` page) is the only
+    required delivery surface — `pdf_url`/`png_url` are unset on the current
+    (link-only) path and only appear for proposals rendered before it."""
+
+    kind: str = "proposal_link"
     proposal_id: str
     version: int
-    filename: str
-    bytes: int
-    pdf_url: str
-    png_url: str
+    filename: str = ""
+    bytes: int | None = None
+    pdf_url: str | None = None
+    png_url: str | None = None
     page_url: str = ""
     title: str = ""
     blurb: str = ""

@@ -54,28 +54,11 @@ export function renderForm(
   root.appendChild(form);
 }
 
-export function humanSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-export interface AttachmentPayload {
-  kind: string;
-  proposal_id: string;
-  version: number;
-  filename: string;
-  bytes: number;
-  pdf_url: string;
-  png_url: string;
-}
-
 export interface ProposalLinkPayload {
   kind: "proposal_link";
   proposal_id: string;
   version: number;
   page_url: string;
-  pdf_url: string;
   title: string;
   blurb: string;
 }
@@ -85,7 +68,6 @@ export function renderChat(root: HTMLElement): {
   setStatus: (s: string) => void;
   onSend: (cb: (text: string) => void) => void;
   showProposalPending: (company?: string) => void;
-  showAttachment: (att: AttachmentPayload) => void;
   showProposalLink: (card: ProposalLinkPayload) => void;
   showProposalFailed: () => void;
 } {
@@ -134,24 +116,6 @@ export function renderChat(root: HTMLElement): {
       log.appendChild(card);
       pendingCard = card;
     },
-    showAttachment(att: AttachmentPayload) {
-      const card = h("div", { "data-attachment": "proposal", class: "teg-card" });
-      card.appendChild(h("img", { src: att.png_url, alt: "Proposal preview", class: "teg-card-thumb" }));
-      card.appendChild(
-        h("div", { class: "teg-card-meta" }, `${att.filename} · ${humanSize(att.bytes)}`),
-      );
-      card.appendChild(
-        h("a", { href: att.pdf_url, target: "_blank", rel: "noopener", class: "teg-card-btn" }, "Open"),
-      );
-      card.appendChild(
-        h("a", { href: att.pdf_url, download: att.filename, class: "teg-card-btn" }, "Download"),
-      );
-      if (pendingCard && (log as any).removeChild) {
-        (log as any).removeChild(pendingCard);
-      }
-      log.appendChild(card);
-      pendingCard = null;
-    },
     showProposalLink(card: ProposalLinkPayload) {
       const el = h("div", { "data-attachment": "proposal-link", class: "teg-card" });
       el.appendChild(h("div", { class: "teg-card-title" }, card.title));
@@ -159,10 +123,6 @@ export function renderChat(root: HTMLElement): {
       el.appendChild(
         h("a", { href: card.page_url, target: "_blank", rel: "noopener", class: "teg-card-btn" },
           "Open your proposal"),
-      );
-      el.appendChild(
-        h("a", { href: card.pdf_url, target: "_blank", rel: "noopener", class: "teg-card-btn teg-card-btn-ghost" },
-          "Download PDF"),
       );
       if (pendingCard && (log as any).removeChild) (log as any).removeChild(pendingCard);
       log.appendChild(el);

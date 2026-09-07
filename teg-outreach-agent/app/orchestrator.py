@@ -5,7 +5,6 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 
 from app.agents.analysis import AnalysisAgent
 from app.agents.persuasion import PersuasionAgent
@@ -21,8 +20,7 @@ from app.domain.schemas import (
 )
 from app.llm.base import get_llm
 from app.obs import get_logger
-from app.proposal.email import send_proposal_email
-from app.proposal.render import render_first_page_png, render_html, render_pdf
+from app.proposal.email import send_proposal_link_email
 from app.store.db import SessionLocal
 from app.store.repositories import (
     DossierRepo,
@@ -298,43 +296,40 @@ class Orchestrator:
             timeout=settings.proposal_hard_timeout_s,
         )
         proposal.generated_on = datetime.now(UTC).date().isoformat()
-        _log.info("proposal built  flags=%s  rendering pdf/png", flags or "-")
+        _log.info("proposal built  flags=%s", flags or "-")
 
-        html = render_html(proposal, price_requested=price_requested)
-        pdf = await asyncio.to_thread(render_pdf, html)
-        png = await asyncio.to_thread(render_first_page_png, html)
-
-        out_dir = Path(settings.proposal_dir) / str(session_id)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        pdf_path = out_dir / f"v{version}.pdf"
-        png_path = out_dir / f"v{version}.png"
-        pdf_path.write_bytes(pdf)
-        png_path.write_bytes(png)
-
-        filename = f"TEG-2026-Proposal-{_slug(proposal.company)}-v{version}.pdf"
-        emailed_to = None
-        if email:
-            ok = await send_proposal_email(
-                to=email, pdf_bytes=pdf, filename=filename, company=proposal.company
-            )
-            emailed_to = email if ok else None
+        # Delivered as the live `/p/{id}` page only — no PDF/PNG render pass.
+        # That render (headless Chromium via playwright) was the slow, most
+        # failure-prone part of this path; dropping it also means a
+        # proposal's numbers can never drift from what the page shows.
+        filename = f"TEG-2026-Proposal-{_slug(proposal.company)}-v{version}"
 
         async with SessionLocal() as s:
             row = await ProposalRepo(s).create(
                 session_id, proposal=proposal, version=version,
-                pdf_path=str(pdf_path), png_path=str(png_path), bytes_=len(pdf),
-                guardrail_flags=flags, emailed_to=emailed_to,
+                pdf_path=None, png_path=None, bytes_=None,
+                guardrail_flags=flags, emailed_to=None,
             )
             await s.flush()
             page_url = f"/p/{row.id}"
-            pdf_url = f"/proposals/{row.id}.pdf"
-            png_url = f"/proposals/{row.id}/preview.png"
             blurb = (proposal.hero_subline or proposal.executive_summary or "")[:160]
             title = f"Your TEG 2026 proposal for {proposal.company}"
+
+            emailed_to = None
+            if email:
+                full_url = (
+                    f"{settings.public_base_url}{page_url}"
+                    if settings.public_base_url else page_url
+                )
+                ok = await send_proposal_link_email(
+                    to=email, page_url=full_url, company=proposal.company
+                )
+                emailed_to = email if ok else None
+                row.emailed_to = emailed_to
+
             card = {
                 "kind": "proposal_link", "proposal_id": str(row.id), "version": version,
-                "page_url": page_url, "pdf_url": pdf_url, "png_url": png_url,
-                "title": title, "blurb": blurb,
+                "page_url": page_url, "title": title, "blurb": blurb,
             }
             mr = MessageRepo(s)
             await mr.append(
@@ -351,6 +346,5 @@ class Orchestrator:
 
         return ProposalCard(
             kind="proposal_link", proposal_id=proposal_id, version=version, filename=filename,
-            bytes=len(pdf), pdf_url=pdf_url, png_url=png_url,
             page_url=page_url, title=title, blurb=blurb,
         )

@@ -110,8 +110,7 @@ def test_proposal_landing_page_fields_default_empty():
 
 def test_proposal_card_link_fields():
     from app.domain.schemas import ProposalCard
-    c = ProposalCard(
-        proposal_id="p1", version=1, filename="f.pdf", bytes=1, pdf_url="/x.pdf", png_url="/x.png",
-    )
+    c = ProposalCard(proposal_id="p1", version=1)
     assert c.page_url == "" and c.title == "" and c.blurb == ""
-    assert c.kind == "proposal"
+    assert c.kind == "proposal_link"
+    assert c.pdf_url is None and c.png_url is None

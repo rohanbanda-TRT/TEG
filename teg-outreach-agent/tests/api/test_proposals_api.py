@@ -53,7 +53,8 @@ def _orch():
     )
 
 
-def test_post_proposal_then_get_pdf_and_png(tmp_path, monkeypatch):
+def test_post_proposal_then_get_page(tmp_path, monkeypatch):
+    """Proposals are delivered as the live `/p/{id}` page only — no PDF/PNG."""
     monkeypatch.setenv("PROPOSAL_DIR", str(tmp_path / "proposals"))
     from config.settings import get_settings
     get_settings.cache_clear()
@@ -70,16 +71,17 @@ def test_post_proposal_then_get_pdf_and_png(tmp_path, monkeypatch):
     assert r.status_code == 202
     card = r.json()
     assert card["version"] == 1
-    assert card["pdf_url"].endswith(".pdf")
+    assert card["kind"] == "proposal_link"
+    assert card["page_url"] == f"/p/{card['proposal_id']}"
+    assert card["pdf_url"] is None and card["png_url"] is None
 
-    pdf = client.get(card["pdf_url"])
-    assert pdf.status_code == 200
-    assert pdf.headers["content-type"] == "application/pdf"
-    assert pdf.content[:5] == b"%PDF-"
+    proposal_json = client.get(f"/proposals/{card['proposal_id']}.json")
+    assert proposal_json.status_code == 200
+    assert proposal_json.json()["proposal"]["company"] == "Third Rock Techkno"
 
-    png = client.get(card["png_url"])
-    assert png.status_code == 200
-    assert png.headers["content-type"] == "image/png"
+    # no file was ever rendered, so both legacy file routes 404
+    assert client.get(f"/proposals/{card['proposal_id']}.pdf").status_code == 404
+    assert client.get(f"/proposals/{card['proposal_id']}/preview.png").status_code == 404
 
     sess = client.get(f"/sessions/{sid}").json()
     assert len(sess["proposals"]) == 1

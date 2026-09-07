@@ -48,8 +48,10 @@ async def get_session(session_id: uuid.UUID) -> dict:
                 {
                     "version": p.version,
                     "created_at": p.created_at.isoformat() if p.created_at else None,
-                    "pdf_url": f"/proposals/{p.id}.pdf",
-                    "png_url": f"/proposals/{p.id}/preview.png",
+                    "page_url": f"/p/{p.id}",
+                    # unset unless this proposal predates the link-only path
+                    "pdf_url": f"/proposals/{p.id}.pdf" if p.pdf_path else None,
+                    "png_url": f"/proposals/{p.id}/preview.png" if p.png_path else None,
                     "guardrail_flags": p.guardrail_flags or [],
                     "emailed_to": p.emailed_to,
                 }

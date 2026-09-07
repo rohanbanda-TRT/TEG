@@ -75,11 +75,11 @@ async def test_generate_proposal_writes_files_row_and_message(tmp_path, monkeypa
 
     assert card.version == 1
     assert card.filename.startswith("TEG-2026-Proposal-Third-Rock-Techkno-v1")
-    assert card.bytes > 2000
-    assert card.pdf_url == f"/proposals/{card.proposal_id}.pdf"
-
-    pdf_file = tmp_path / "proposals" / str(sid) / "v1.pdf"
-    assert pdf_file.exists() and pdf_file.read_bytes()[:5] == b"%PDF-"
+    assert card.kind == "proposal_link"
+    assert card.page_url == f"/p/{card.proposal_id}"
+    # link-only delivery: no PDF/PNG render pass, no files on disk.
+    assert card.pdf_url is None and card.png_url is None
+    assert not (tmp_path / "proposals").exists()
 
     async with SessionLocal() as s:
         pr = (await s.execute(select(ProposalRow))).scalars().one()

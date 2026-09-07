@@ -103,47 +103,7 @@ test("renderChat onSend fires with input value", () => {
   assert.equal(sent, "how much is a stall?");
 });
 
-import { humanSize } from "./ui.ts";
-
-test("humanSize formats", () => {
-  assert.equal(humanSize(900), "900 B");
-  assert.equal(humanSize(148213), "145 KB");
-});
-
-test("renderChat shows attachment card with links", () => {
-  const root = new El("div") as any;
-  const chat = renderChat(root);
-  chat.showAttachment({
-    kind: "proposal",
-    proposal_id: "p1",
-    version: 2,
-    filename: "TEG-2026-Proposal-Acme-v2.pdf",
-    bytes: 148213,
-    pdf_url: "/proposals/p1.pdf",
-    png_url: "/proposals/p1/preview.png",
-  });
-  assert.ok(JSON.stringify(root).includes("/proposals/p1.pdf"));
-  assert.ok(JSON.stringify(root).includes("data-attachment"));
-});
-
-test("renderChat pending then attachment replaces skeleton", () => {
-  const root = new El("div") as any;
-  const chat = renderChat(root);
-  chat.showProposalPending("Acme");
-  chat.showAttachment({
-    kind: "proposal",
-    proposal_id: "p1",
-    version: 1,
-    filename: "f.pdf",
-    bytes: 1000,
-    pdf_url: "/proposals/p1.pdf",
-    png_url: "/x.png",
-  });
-  const cards = JSON.stringify(root).match(/data-attachment/g) || [];
-  assert.equal(cards.length, 1);
-});
-
-test("renderProposalLink shows title, blurb, open + pdf links", () => {
+test("renderProposalLink shows title, blurb, and an open link — no PDF", () => {
   const root = new El("div") as any;
   const chat = renderChat(root);
   chat.showProposalLink({
@@ -151,15 +111,14 @@ test("renderProposalLink shows title, blurb, open + pdf links", () => {
     proposal_id: "p1",
     version: 1,
     page_url: "/p/p1",
-    pdf_url: "/proposals/p1.pdf",
     title: "Your TEG 2026 proposal for Acme",
     blurb: "Three focused days from cold outreach to booked meetings.",
   });
   const s = JSON.stringify(root);
   assert.ok(s.includes("/p/p1"));
-  assert.ok(s.includes("/proposals/p1.pdf"));
   assert.ok(s.includes("Your TEG 2026 proposal for Acme"));
   assert.ok(s.includes("data-attachment"));
+  assert.ok(!s.includes(".pdf"));
 });
 
 test("pending then proposal_link replaces skeleton", () => {
@@ -168,7 +127,7 @@ test("pending then proposal_link replaces skeleton", () => {
   chat.showProposalPending("Acme");
   chat.showProposalLink({
     kind: "proposal_link", proposal_id: "p1", version: 1,
-    page_url: "/p/p1", pdf_url: "/proposals/p1.pdf", title: "t", blurb: "b",
+    page_url: "/p/p1", title: "t", blurb: "b",
   });
   const cards = JSON.stringify(root).match(/data-attachment/g) || [];
   assert.equal(cards.length, 1);

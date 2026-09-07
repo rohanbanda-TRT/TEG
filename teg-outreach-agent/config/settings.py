@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     proposal_soft_timeout_s: int = 240
     proposal_hard_timeout_s: int = 240
     proposal_dir: str = "./proposals"
+    # Proposals are delivered as a link to `/p/{id}`, not a PDF. The widget
+    # resolves that path against its own origin fine, but an emailed link
+    # needs an absolute URL — set this to the deployed app's origin (no
+    # trailing slash), e.g. "https://outreach.techexpogujarat.com".
+    public_base_url: str = ""
     email_enabled: bool = False
     smtp_host: str = ""
     smtp_port: int = 587
