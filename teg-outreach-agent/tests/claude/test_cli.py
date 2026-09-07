@@ -303,3 +303,99 @@ async def test_auth_status_returns_none_on_garbage():
     cli = ClaudeCli(spawn=_spawner(child, captured))
 
     assert await cli.auth_status(cwd="/tmp") is None
+
+
+def _sequence_spawner(children: list[_FakeChild], captured: dict):
+    """A spawner that hands out a fresh child per call, for retry tests."""
+    captured["spawns"] = 0
+
+    async def spawn(program, *args, **kwargs):
+        child = children[min(captured["spawns"], len(children) - 1)]
+        captured["spawns"] += 1
+        captured["args"] = list(args)
+        return child
+
+    return spawn
+
+
+async def test_run_salvages_json_the_model_wrote_as_plain_text():
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":null,"stop_reason":"stop_sequence",'
+              '"result":"```json\\n{\\"reply\\":\\"hi\\"}\\n```","session_id":"s"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    events = [e async for e in cli.run(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+    )]
+
+    assert isinstance(events[0], ClaudeResult)
+    assert events[0].data == {"reply": "hi"}
+
+
+async def test_missing_structured_output_is_marked_retryable():
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":null,"stop_reason":"stop_sequence",'
+              '"result":"sorry, I cannot"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    events = [e async for e in cli.run(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+    )]
+
+    assert isinstance(events[0], ClaudeError)
+    assert events[0].retryable
+
+
+async def test_generate_retries_once_when_structured_output_is_missing():
+    captured: dict = {}
+    first = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":null,"stop_reason":"stop_sequence",'
+              '"result":"plain prose, no json"}'),
+    ])
+    second = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":{"reply":"ok"},"session_id":"s2"}'),
+    ])
+    cli = ClaudeCli(spawn=_sequence_spawner([first, second], captured))
+
+    result = await cli.generate(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+    )
+
+    assert result.data == {"reply": "ok"}
+    assert captured["spawns"] == 2
+
+
+async def test_generate_gives_up_after_the_retry():
+    captured: dict = {}
+    bad = [
+        _FakeChild(stdout_lines=[
+            _line('{"type":"result","structured_output":null,'
+                  '"stop_reason":"stop_sequence","result":"nope"}'),
+        ])
+        for _ in range(3)
+    ]
+    cli = ClaudeCli(spawn=_sequence_spawner(bad, captured))
+
+    with pytest.raises(RuntimeError, match="stop_sequence"):
+        await cli.generate(
+            model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+        )
+
+    assert captured["spawns"] == 2
+
+
+async def test_generate_does_not_retry_a_hard_failure():
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[], stderr=b"not logged in", returncode=1)
+    cli = ClaudeCli(spawn=_sequence_spawner([child], captured))
+
+    with pytest.raises(RuntimeError, match="not logged in"):
+        await cli.generate(
+            model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+        )
+
+    assert captured["spawns"] == 1

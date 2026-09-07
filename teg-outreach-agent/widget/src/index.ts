@@ -40,6 +40,11 @@ export function mount(
         }
       } else if (ev.type === "proposal_failed") {
         chat.showProposalFailed();
+      } else if (ev.type === "turn_failed") {
+        chat.addMessage(
+          "agent",
+          "Sorry — I lost that one. Could you send it again?",
+        );
       }
     });
     chat.onSend((text) => {

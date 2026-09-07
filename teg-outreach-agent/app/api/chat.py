@@ -45,7 +45,14 @@ async def chat(
             if msg.get("type") != "message":
                 continue
             prospect_turns += 1
-            turn = await orch.run_turn(session_id, msg.get("text", ""))
+            try:
+                turn = await orch.run_turn(session_id, msg.get("text", ""))
+            except Exception as exc:  # noqa: BLE001 — one bad turn must not kill the chat
+                from app.obs import get_logger
+
+                get_logger("api.chat").error("turn failed: %s", exc)
+                await websocket.send_json({"type": "turn_failed"})
+                continue
             await websocket.send_json({
                 "type": "reply",
                 "text": turn.reply_text,

@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator, Awaitable, Callable
 
@@ -45,6 +46,7 @@ class ClaudeResult:
 @dataclass(frozen=True)
 class ClaudeError:
     message: str
+    retryable: bool = False
 
 
 ClaudeEvent = ClaudeProgress | ClaudeResult | ClaudeError
@@ -178,22 +180,39 @@ class ClaudeCli:
         add_dirs: list[str] | None = None,
         timeout_s: float | None = None,
         on_progress: Callable[[int], None] | None = None,
+        attempts: int = 2,
     ) -> ClaudeResult:
-        """Await a single structured result, raising RuntimeError on failure."""
-        async for ev in self.run(
-            model=model, system_prompt=system_prompt, user_prompt=user_prompt,
-            json_schema=json_schema, cwd=cwd, tools=tools,
-            allowed_tools=allowed_tools, add_dirs=add_dirs, timeout_s=timeout_s,
-        ):
-            if isinstance(ev, ClaudeProgress):
-                if on_progress:
-                    on_progress(ev.chars_streamed)
-            elif isinstance(ev, ClaudeResult):
-                _log.info("claude ok  cost=%s  session=%s", ev.cost_usd, ev.session_id)
-                return ev
-            else:
-                raise RuntimeError(ev.message)
-        raise RuntimeError("claude produced no result")
+        """Await a single structured result, raising RuntimeError on failure.
+
+        A run that ends without structured output is a transient model slip
+        (it wrote prose, or stopped on a stop sequence) rather than a broken
+        call, so it is retried once. Non-retryable failures — no CLI, a bad
+        exit code, a timeout — raise on the first attempt.
+        """
+        last = "claude produced no result"
+        for attempt in range(1, max(1, attempts) + 1):
+            settled: ClaudeError | None = None
+            async for ev in self.run(
+                model=model, system_prompt=system_prompt, user_prompt=user_prompt,
+                json_schema=json_schema, cwd=cwd, tools=tools,
+                allowed_tools=allowed_tools, add_dirs=add_dirs, timeout_s=timeout_s,
+            ):
+                if isinstance(ev, ClaudeProgress):
+                    if on_progress:
+                        on_progress(ev.chars_streamed)
+                elif isinstance(ev, ClaudeResult):
+                    _log.info("claude ok  cost=%s  session=%s", ev.cost_usd, ev.session_id)
+                    return ev
+                else:
+                    settled = ev
+
+            if settled is None:
+                raise RuntimeError(last)
+            last = settled.message
+            if not settled.retryable or attempt >= max(1, attempts):
+                raise RuntimeError(last)
+            _log.warning("claude retryable failure (attempt %d): %s", attempt, last)
+        raise RuntimeError(last)
 
     async def probe(
         self, *, model: str, cwd: str, timeout_s: float = 15.0
@@ -268,6 +287,31 @@ class ClaudeCli:
         }
 
 
+def _salvage_structured(text: Any) -> Any | None:
+    """Last-ditch parse of a JSON object the model wrote as plain text.
+
+    The CLI normally delivers the schema through a tool call, but the model
+    sometimes ends a turn on a stop sequence having written the JSON straight
+    into its answer instead. That answer is still schema-shaped, so parse it
+    rather than throw away a paid-for turn. The caller validates it against the
+    real model, so a wrong shape still fails loudly.
+    """
+    if not isinstance(text, str):
+        return None
+    body = text.strip()
+    if body.startswith("```"):
+        body = re.sub(r"^```[a-zA-Z]*\n?", "", body)
+        body = re.sub(r"\n?```$", "", body).strip()
+    start, end = body.find("{"), body.rfind("}")
+    if start == -1 or end <= start:
+        return None
+    try:
+        parsed = json.loads(body[start : end + 1])
+    except (ValueError, TypeError):
+        return None
+    return parsed if isinstance(parsed, dict) else None
+
+
 def _terminal_event(msg: dict) -> ClaudeResult | ClaudeError:
     """Map a CLI `result` message onto our terminal event.
 
@@ -277,9 +321,12 @@ def _terminal_event(msg: dict) -> ClaudeResult | ClaudeError:
     """
     out = msg.get("structured_output")
     if out is None:
+        out = _salvage_structured(msg.get("result"))
+    if out is None:
         return ClaudeError(
             f"Claude stopped with reason {msg.get('stop_reason', 'unknown')!r} "
-            "and no structured output."
+            "and no structured output.",
+            retryable=True,
         )
     cost = msg.get("total_cost_usd")
     sid = msg.get("session_id")

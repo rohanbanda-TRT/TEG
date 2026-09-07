@@ -21,7 +21,8 @@ export type ChatEvent = {
     | "handoff"
     | "proposal_pending"
     | "attachment"
-    | "proposal_failed";
+    | "proposal_failed"
+    | "turn_failed";
   text?: string;
   cta_status?: string;
   should_handoff?: boolean;
