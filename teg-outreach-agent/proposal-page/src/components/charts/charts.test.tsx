@@ -2,35 +2,52 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Funnel } from "./Funnel";
 import { GrowthBars } from "./GrowthBars";
-import { IndustryMix } from "./IndustryMix";
+import { IndustryList } from "./IndustryList";
 import { PeerStat } from "./PeerStat";
 import { SectorFitBars } from "./SectorFitBars";
 
+const INDUSTRIES = Array.from({ length: 18 }, (_, i) => `Industry ${i + 1}`);
+const GROWTH_SERIES = [
+  { label: "Attendees", from: 8000, to: 15000 },
+  { label: "Exhibitors", from: 125, to: 250 },
+];
+
 describe("charts", () => {
-  it("GrowthBars renders both group labels and the real values", () => {
-    const { getByText } = render(<GrowthBars />);
+  it("GrowthBars takes its series as a prop and renders labels + values", () => {
+    const { getByText } = render(<GrowthBars series={GROWTH_SERIES} />);
     expect(getByText("Attendees")).toBeInTheDocument();
     expect(getByText("Exhibitors")).toBeInTheDocument();
     expect(getByText("15,000")).toBeInTheDocument();
     expect(getByText("250")).toBeInTheDocument();
   });
 
-  it("IndustryMix lists all 18 industries when nothing is highlighted", () => {
-    const { container } = render(<IndustryMix />);
+  it("GrowthBars renders nothing for an empty series", () => {
+    const { container } = render(<GrowthBars series={[]} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("IndustryList lists the full given list when nothing is highlighted", () => {
+    const { container } = render(<IndustryList all={INDUSTRIES} />);
     expect(container.querySelectorAll(".ind-chip").length).toBe(18);
     expect(container.querySelectorAll(".ind-chip--on").length).toBe(0);
   });
 
-  it("IndustryMix pulls the highlighted industries out and keeps the rest", () => {
+  it("IndustryList pulls the highlighted industries out and tucks the rest behind a disclosure", () => {
     const { container, getByText } = render(
-      <IndustryMix highlight={["Manufacturing", "Textile"]} note="Your buyers sit here." />,
+      <IndustryList all={INDUSTRIES} highlight={["Industry 1", "Industry 2"]} note="Your buyers sit here." />,
     );
     const on = container.querySelectorAll(".ind-chip--on");
     expect(on.length).toBe(2);
-    expect(Array.from(on).map((e) => e.textContent)).toEqual(["Manufacturing", "Textile"]);
-    // highlighted ones are not repeated in the remainder
-    expect(container.querySelectorAll(".ind-chip").length).toBe(18);
+    expect(Array.from(on).map((e) => e.textContent)).toEqual(["Industry 1", "Industry 2"]);
+    // the rest live inside <details>, not repeated among the highlighted chips
+    const rest = container.querySelectorAll(".ind-rest .ind-chip");
+    expect(rest.length).toBe(16);
     expect(getByText("Your buyers sit here.")).toBeInTheDocument();
+  });
+
+  it("IndustryList works with a short list too — no assumption of exactly 18", () => {
+    const { container } = render(<IndustryList all={["A", "B", "C"]} />);
+    expect(container.querySelectorAll(".ind-chip").length).toBe(3);
   });
 
   it("Funnel renders one band per step with legible labels", () => {
@@ -67,7 +84,7 @@ describe("charts", () => {
       <PeerStat names={["X", "Y", "Z"]} sector="Digital Marketing & SEO" sectorTotal={4} />,
     );
     expect(getByText("X")).toBeTruthy();
-    expect(container.querySelector(".stat-ring b")?.textContent).toBe("4");
+    expect(container.querySelector(".peer-count")?.textContent).toBe("4");
     expect(container.querySelector(".peer-stat__lead p")?.textContent).toMatch(
       /Digital Marketing & SEO exhibited at TEG 2024/,
     );
@@ -75,7 +92,12 @@ describe("charts", () => {
 
   it("PeerStat clamps the count up to the number of names when sectorTotal is smaller", () => {
     const { container } = render(<PeerStat names={["A", "B", "C", "D", "E"]} sectorTotal={2} />);
-    expect(container.querySelector(".stat-ring b")?.textContent).toBe("5");
+    expect(container.querySelector(".peer-count")?.textContent).toBe("5");
+  });
+
+  it("PeerStat handles a large count without a fixed-size shape to overflow", () => {
+    const { container } = render(<PeerStat names={["A"]} sectorTotal={12345} />);
+    expect(container.querySelector(".peer-count")?.textContent).toBe("12,345");
   });
 
   it("PeerStat strips a leading count the model may have written in contextLine", () => {

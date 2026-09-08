@@ -5,21 +5,25 @@ import { Section } from "../components/Section";
 import { Reveal } from "../components/Reveal";
 
 /**
- * The six-stage growth argument — where the company is, where it could go,
- * what stops it, what TEG opens, how they'd work it, where it could lead.
- * Rendered as a connected vertical flow: each stage is a card, with a single
- * connector line down the left that draws itself in as the reader scrolls
- * through the list (not on mount) — the line's fill tracks how far down the
- * argument they've actually read.
+ * The growth argument, told as one connected flow: where the company is now,
+ * the move that's available to it, what's stood in the way of it so far, how
+ * TEG opens market access, how they'd actually engage, and where it could
+ * lead. Six stages, always in this order — `_clamp_growth_journey` on the
+ * backend guarantees all six or none, so there's no partial-journey case to
+ * design for here.
+ *
+ * The connector line draws itself in as the reader scrolls through the
+ * argument (not on mount) — its fill tracks how far down the story they've
+ * actually read.
  */
 
 const STAGE_LABEL: Record<string, string> = {
-  today: "Today",
+  today: "Current position",
   growth_move: "The growth move",
-  barrier: "What stands in the way",
-  teg_opportunity: "What Tech Expo Gujarat opens",
-  action: "How you'd work the three days",
-  potential: "Where it could lead",
+  barrier: "What's stood in the way",
+  teg_opportunity: "How TEG opens market access",
+  action: "How you'd engage",
+  potential: "Where the opportunity leads",
 };
 
 const STAGE_KIND: Record<string, string> = {
@@ -31,7 +35,7 @@ const STAGE_KIND: Record<string, string> = {
   potential: "gj-stage--potential",
 };
 
-export function GrowthJourney({
+export function GrowthOpportunity({
   stages,
   company,
 }: {
@@ -49,13 +53,14 @@ export function GrowthJourney({
   if (!stages || stages.length === 0) return null;
 
   return (
-    <Section band="light" id="growth">
+    <Section band="alt" id="opportunity" wide>
       <div className="sec-head">
-        <span className="eyebrow">The opportunity</span>
+        <span className="eyebrow">The growth opportunity</span>
         <h2>How {company} could grow through TEG</h2>
         <p>
-          Not a pitch for the event — a read on where you are, what's next, and
-          the part three days on the floor could play in getting there.
+          Not a pitch for the event — a read on where you are, the move
+          that's open to you, and the part three days on the floor could
+          play in reaching it.
         </p>
       </div>
 
@@ -71,9 +76,7 @@ export function GrowthJourney({
             <li key={i} className={`gj-stage ${STAGE_KIND[s.stage] ?? ""}`}>
               <Reveal delay={i * 0.05}>
                 <div className="gj-stage__inner">
-                  <span className="gj-stage__label">
-                    {STAGE_LABEL[s.stage] ?? s.stage}
-                  </span>
+                  <span className="gj-stage__label">{STAGE_LABEL[s.stage] ?? s.stage}</span>
                   <h3 className="gj-stage__title">{s.title}</h3>
                   {s.points.length > 0 && (
                     <ul className="gj-stage__points">

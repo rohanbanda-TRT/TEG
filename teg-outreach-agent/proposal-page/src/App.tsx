@@ -1,72 +1,50 @@
 import "./theme.css";
 import type { Payload } from "./lib/types";
+import { GROWTH, INDUSTRIES } from "./lib/chartData";
+import { ProposalHeader } from "./sections/ProposalHeader";
 import { Hero } from "./sections/Hero";
-import { Priorities } from "./sections/Priorities";
-import { SectorFit, TheRoom, Mechanism } from "./sections/Charts";
-import { GrowthJourney } from "./sections/GrowthJourney";
-import { Journey } from "./sections/Journey";
-import { TheAsk } from "./sections/TheAsk";
-import { Section } from "./components/Section";
-import { Reveal } from "./components/Reveal";
-import { ScrollProgress } from "./components/ScrollProgress";
-import { TEG_LOGO_DATA_URI } from "./lib/brand";
+import { CurrentState } from "./sections/CurrentState";
+import { GrowthOpportunity } from "./sections/GrowthOpportunity";
+import { MarketOpportunity } from "./sections/MarketOpportunity";
+import { TEGEnablement } from "./sections/TEGEnablement";
+import { ThreeDayPlan } from "./sections/ThreeDayPlan";
+import { PotentialOutcomes } from "./sections/PotentialOutcomes";
+import { Recommendation } from "./sections/Recommendation";
+import { Footer } from "./sections/Footer";
 
-function linkify(step: string) {
-  const m = step.match(/https?:\/\/\S+|[\w.-]+\.com\/\S+/);
-  if (!m) return step;
-  const href = m[0].startsWith("http") ? m[0] : `https://${m[0]}`;
-  return (
-    <a href={href} target="_blank" rel="noopener">
-      {step}
-    </a>
-  );
-}
+// The two frontend-owned static datasets — passed down as props rather than
+// imported inside the leaf chart components, so those components stay
+// data-agnostic and this is the one place that decides what "TEG's scale"
+// and "the full industry list" mean.
+const GROWTH_SERIES = [
+  { label: "Attendees", from: GROWTH.attendees[0], to: GROWTH.attendees[1] },
+  { label: "Exhibitors", from: GROWTH.exhibitors[0], to: GROWTH.exhibitors[1] },
+];
 
+/**
+ * The page narrative, top to bottom: the opportunity (hero) -> where the
+ * company is today -> the growth move available to it -> why this market ->
+ * how TEG specifically helps -> the operating plan -> what it could lead to
+ * -> the recommendation. Every section is presentation-only against the
+ * same `Proposal` the backend already produces — nothing here changes what
+ * gets generated, only how it's told.
+ */
 export function App({ payload }: { payload: Payload }) {
   const p = payload.proposal;
+  const mail = `mailto:${p.contact}?subject=${encodeURIComponent(`TEG 2026 — ${p.company}`)}`;
+
   return (
     <>
-      <ScrollProgress />
+      <ProposalHeader mailHref={mail} />
       <Hero p={p} version={payload.version} generatedOn={payload.generated_on} />
-
-      {p.executive_summary && (
-        <Section band="light" id="summary">
-          <Reveal>
-            <div className="sec-head">
-              <span className="eyebrow">In short</span>
-            </div>
-            <p style={{ fontSize: "1.25rem", lineHeight: 1.7, color: "var(--ink)" }}>
-              {p.executive_summary}
-            </p>
-          </Reveal>
-        </Section>
-      )}
-
-      <GrowthJourney stages={p.growth_journey} company={p.company} />
-      <Priorities p={p} />
-      <SectorFit p={p} />
-      <TheRoom p={p} />
-      <Mechanism />
-      <Journey p={p} />
-      <TheAsk p={p} />
-
-      <footer className="footer section--dark">
-        <div className="container">
-          <img src={TEG_LOGO_DATA_URI} alt="Tech Expo Gujarat" className="footer__logo" />
-          <p className="footer__tagline">Beacon of Rising Innovation &amp; AI</p>
-          <p style={{ fontWeight: 600, marginTop: "1.25rem" }}>Contact: {p.contact}</p>
-          <ul>
-            {p.next_steps.map((s, i) => (
-              <li key={i}>{linkify(s)}</li>
-            ))}
-          </ul>
-          <small>
-            v{payload.version} · {payload.generated_on} · This is an information document, not a
-            contract.
-          </small>
-          <small>© AIMED TECH EXPO GUJARAT LLP</small>
-        </div>
-      </footer>
+      <CurrentState p={p} />
+      <GrowthOpportunity stages={p.growth_journey} company={p.company} />
+      <MarketOpportunity p={p} allIndustries={INDUSTRIES} growthSeries={GROWTH_SERIES} />
+      <TEGEnablement p={p} />
+      <ThreeDayPlan p={p} />
+      <PotentialOutcomes p={p} />
+      <Recommendation p={p} />
+      <Footer payload={payload} />
     </>
   );
 }
