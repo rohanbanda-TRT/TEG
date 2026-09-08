@@ -17,7 +17,7 @@ const FUNNEL: [string, string][] = [
 export function SectorFit({ p }: { p: Proposal }) {
   if (!p.sector_fit.length) return null;
   return (
-    <Section band="light" id="numbers">
+    <Section band="light" id="numbers" wide>
       <div className="sec-head">
         <span className="eyebrow">Fit for {p.sector ?? "your sector"}</span>
         <h2>How your sector benefits</h2>
@@ -34,7 +34,7 @@ export function SectorFit({ p }: { p: Proposal }) {
 
 export function TheRoom({ p }: { p: Proposal }) {
   return (
-    <Section band="alt" id="room">
+    <Section band="alt" id="room" wide>
       <div className="sec-head">
         <span className="eyebrow">The audience</span>
         <h2>Who's in the room</h2>

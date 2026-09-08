@@ -6,7 +6,7 @@ import { Reveal } from "../components/Reveal";
 export function Priorities({ p }: { p: Proposal }) {
   if (!p.pains.length) return null;
   return (
-    <Section band="alt" id="priorities">
+    <Section band="alt" id="priorities" wide>
       <div className="sec-head">
         <span className="eyebrow">Your priorities</span>
         <h2>Where TEG moves the needle for you</h2>
