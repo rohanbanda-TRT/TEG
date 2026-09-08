@@ -1,9 +1,9 @@
 # Sector-Wise Participation — Tech Expo Gujarat
 
 > **Purpose:** Track sector representation and company participation across TEG editions
-> **Last updated:** August 2026
+> **Last updated:** September 9, 2026 ("AIMED member?" column added to all 19 sector tables — "Yes" only where explicitly stated on a company's own promo material, "Unknown" everywhere else; earlier content from August 2026)
 > **Status:** Based on verified data from techexpogujarat.com/exhibitors and company profiles
-> **Sources:** exhibitors_directory.md, exhibitors/individuals/, techexpogujarat.com/exhibitors
+> **Sources:** exhibitors_directory.md, exhibitors/individuals/, techexpogujarat.com/exhibitors, thecodevision.com / green-apex.com / technobrains.io (AIMED-membership confirmation, Sept 9, 2026)
 
 ---
 
@@ -48,20 +48,20 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 1: AI & Machine Learning
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer; also in Fintech/EdTech/Software Dev |
-| 2 | ViitorCloud | https://viitorcloud.com/ | — | Core organizer Vishal Rajpurohit; also Cloud/Software Dev |
-| 3 | Green Apex | https://www.green-apex.com/ | — | Core organizer Nilay Khandhar; also Software Dev |
-| 4 | ZeroThreat | https://zerothreat.ai/ | G3 | Gold sponsor |
-| 5 | Bytes Technolabs | https://www.bytestechnolab.com/ | — | AI Product Engineering; also Software Dev/Logistics |
-| 6 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | Also Cloud/GenAI/ERP (2026 confirmed) |
-| 7 | Perigeon | https://perigeon.com/ | A144 | Salesforce/AI Solutions; also Enterprise Software (2026 new) |
-| 8 | NeuraMonks | https://neuramonks.com/ | — | AI/ML consulting |
-| 9 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also Data Engineering/Cloud/Software Dev |
-| 10 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also Software Dev/Cloud/Cybersecurity |
-| 11 | Dev IT Simplified | https://devitpl.com/ | — | Also Cybersecurity/Cloud/Blockchain |
-| 12 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | Also Software Dev/Digital Marketing |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer; also in Fintech/EdTech/Software Dev | Unknown |
+| 2 | ViitorCloud | https://viitorcloud.com/ | — | Core organizer Vishal Rajpurohit; also Cloud/Software Dev | Unknown |
+| 3 | Green Apex | https://www.green-apex.com/ | — | Core organizer Nilay Khandhar; also Software Dev | Yes |
+| 4 | ZeroThreat | https://zerothreat.ai/ | G3 | Gold sponsor | Unknown |
+| 5 | Bytes Technolabs | https://www.bytestechnolab.com/ | — | AI Product Engineering; also Software Dev/Logistics | Unknown |
+| 6 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | Also Cloud/GenAI/ERP (2026 confirmed) | Unknown |
+| 7 | Perigeon | https://perigeon.com/ | A144 | Salesforce/AI Solutions; also Enterprise Software (2026 new) | Unknown |
+| 8 | NeuraMonks | https://neuramonks.com/ | — | AI/ML consulting | Unknown |
+| 9 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also Data Engineering/Cloud/Software Dev | Unknown |
+| 10 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also Software Dev/Cloud/Cybersecurity | Unknown |
+| 11 | Dev IT Simplified | https://devitpl.com/ | — | Also Cybersecurity/Cloud/Blockchain | Unknown |
+| 12 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | Also Software Dev/Digital Marketing | Unknown |
 
 **Total TEG 2024 AI/ML companies:** 12 (including multi-domain companies)
 **Total TEG 2026 confirmed AI/ML companies:** 3 (Eternal Web, Perigeon, Third Rock Techkno)
@@ -70,38 +70,38 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 2: Software Development & IT Services
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | TechnoBrains | https://technobrains.io/ | A71–72 | Core organizer Bhavik Shah (2026 confirmed); also AI/E-commerce/Cloud |
-| 2 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also E-commerce/Healthcare/EdTech/Fintech |
-| 3 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Cloud/Cybersecurity |
-| 4 | Theta Technolabs | https://www.thetatechnolabs.com/ | — | — |
-| 5 | Dev Information Technology | https://devitpl.com/ | — | Speaker Jaimin Shah; also AI/Cybersecurity/Cloud/Blockchain |
-| 6 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also AI/Data Engineering/Cloud |
-| 7 | TechnoStacks | — | — | — |
-| 8 | TechNotery | — | — | — |
-| 9 | Technoville | — | — | — |
-| 10 | The One Technologies | — | — | Co-organizer Divyesh Gohil |
-| 11 | Infynno Solutions | — | — | Co-organizer Krutik Patel |
-| 12 | AppsRow Solutions | https://www.appsrow.com/ | — | Core organizer Sandeep Sisodiya; also Digital Marketing |
-| 13 | WanBuffer Services | — | — | Co-organizer Jigar Joshi |
-| 14 | Metizsoft Solutions | — | — | Co-organizer Manthan Bhavsar |
-| 15 | WebOccult Technologies | — | — | Co-organizer Parth Talaviya |
-| 16 | iCreative Technologies | — | — | Co-organizer Jainesh Shah |
-| 17 | Aktiv Software | — | — | Co-organizer Jainesh Shah |
-| 18 | Elision Group | — | — | Co-organizer Mehul Shah; also Telecom/VoIP |
-| 19 | The One Technologies | — | — | Co-organizer Divyesh Gohil |
-| 20 | IOTTIVE | — | — | Co-organizer Rushabh Champaneri; also IoT/Hardware |
-| 21 | Thinktanker | https://thinktanker.io/ | — | Core organizer Rajan Rawal; also E-commerce |
-| 22 | Techify Solutions | https://techifysolutions.com/ | — | Core organizer Taral Shah; also Cloud |
-| 23 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer Tapan Patel; also AI/Fintech/EdTech |
-| 24 | ViitorCloud | https://viitorcloud.com/ | — | Core organizer Vishal Rajpurohit; also AI/Cloud |
-| 25 | Green Apex | https://www.green-apex.com/ | — | Core organizer Nilay Khandhar; also AI |
-| 26 | Bytes Technolabs | https://www.bytestechnolab.com/ | — | Also AI/Logistics |
-| 27 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | Also AI/Cloud/GenAI/ERP (2026 confirmed) |
-| 28 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | Also AI/Digital Marketing |
-| 29 | Samcom | https://www.samcomtechnobrains.com/ | — | — |
-| 30 | Dev IT Simplified | https://devitpl.com/ | — | Also AI/Cybersecurity/Cloud/Blockchain |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | TechnoBrains | https://technobrains.io/ | A71–72 | Core organizer Bhavik Shah (2026 confirmed); also AI/E-commerce/Cloud | Yes |
+| 2 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also E-commerce/Healthcare/EdTech/Fintech | Unknown |
+| 3 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Cloud/Cybersecurity | Unknown |
+| 4 | Theta Technolabs | https://www.thetatechnolabs.com/ | — | — | Unknown |
+| 5 | Dev Information Technology | https://devitpl.com/ | — | Speaker Jaimin Shah; also AI/Cybersecurity/Cloud/Blockchain | Unknown |
+| 6 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also AI/Data Engineering/Cloud | Unknown |
+| 7 | TechnoStacks | — | — | — | Unknown |
+| 8 | TechNotery | — | — | — | Unknown |
+| 9 | Technoville | — | — | — | Unknown |
+| 10 | The One Technologies | — | — | Co-organizer Divyesh Gohil | Unknown |
+| 11 | Infynno Solutions | — | — | Co-organizer Krutik Patel | Unknown |
+| 12 | AppsRow Solutions | https://www.appsrow.com/ | — | Core organizer Sandeep Sisodiya; also Digital Marketing | Unknown |
+| 13 | WanBuffer Services | — | — | Co-organizer Jigar Joshi | Unknown |
+| 14 | Metizsoft Solutions | — | — | Co-organizer Manthan Bhavsar | Unknown |
+| 15 | WebOccult Technologies | — | — | Co-organizer Parth Talaviya | Unknown |
+| 16 | iCreative Technologies | — | — | Co-organizer Jainesh Shah | Unknown |
+| 17 | Aktiv Software | — | — | Co-organizer Jainesh Shah | Unknown |
+| 18 | Elision Group | — | — | Co-organizer Mehul Shah; also Telecom/VoIP | Unknown |
+| 19 | The One Technologies | — | — | Co-organizer Divyesh Gohil | Unknown |
+| 20 | IOTTIVE | — | — | Co-organizer Rushabh Champaneri; also IoT/Hardware | Unknown |
+| 21 | Thinktanker | https://thinktanker.io/ | — | Core organizer Rajan Rawal; also E-commerce | Unknown |
+| 22 | Techify Solutions | https://techifysolutions.com/ | — | Core organizer Taral Shah; also Cloud | Unknown |
+| 23 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer Tapan Patel; also AI/Fintech/EdTech | Unknown |
+| 24 | ViitorCloud | https://viitorcloud.com/ | — | Core organizer Vishal Rajpurohit; also AI/Cloud | Unknown |
+| 25 | Green Apex | https://www.green-apex.com/ | — | Core organizer Nilay Khandhar; also AI | Yes |
+| 26 | Bytes Technolabs | https://www.bytestechnolab.com/ | — | Also AI/Logistics | Unknown |
+| 27 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | Also AI/Cloud/GenAI/ERP (2026 confirmed) | Unknown |
+| 28 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | Also AI/Digital Marketing | Unknown |
+| 29 | Samcom | https://www.samcomtechnobrains.com/ | — | — | Unknown |
+| 30 | Dev IT Simplified | https://devitpl.com/ | — | Also AI/Cybersecurity/Cloud/Blockchain | Unknown |
 
 **Total TEG 2024 Software Dev/IT Services companies:** 30 (including multi-domain companies)
 **Total TEG 2026 confirmed Software Dev companies:** 1 (TechnoBrains)
@@ -110,16 +110,16 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 3: Cloud & Infrastructure
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | AWS Partner; also AI/GenAI/ERP (2026 confirmed) |
-| 2 | Techify Solutions | https://techifysolutions.com/ | — | Core organizer Taral Shah; also Software Dev |
-| 3 | CloudPe | — | — | Cloud Solutions |
-| 4 | ViitorCloud | https://viitorcloud.com/ | — | Core organizer Vishal Rajpurohit; also AI/Software Dev |
-| 5 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Software Dev/Cybersecurity |
-| 6 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also AI/Data Engineering/Software Dev |
-| 7 | Dev IT Simplified | https://devitpl.com/ | — | Also AI/Cybersecurity/Software Dev/Blockchain |
-| 8 | TechnoBrains | https://technobrains.io/ | A71–72 | Core organizer Bhavik Shah; also AI/Software Dev/E-commerce (2026 confirmed) |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | AWS Partner; also AI/GenAI/ERP (2026 confirmed) | Unknown |
+| 2 | Techify Solutions | https://techifysolutions.com/ | — | Core organizer Taral Shah; also Software Dev | Unknown |
+| 3 | CloudPe | — | — | Cloud Solutions | Unknown |
+| 4 | ViitorCloud | https://viitorcloud.com/ | — | Core organizer Vishal Rajpurohit; also AI/Software Dev | Unknown |
+| 5 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Software Dev/Cybersecurity | Unknown |
+| 6 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also AI/Data Engineering/Software Dev | Unknown |
+| 7 | Dev IT Simplified | https://devitpl.com/ | — | Also AI/Cybersecurity/Software Dev/Blockchain | Unknown |
+| 8 | TechnoBrains | https://technobrains.io/ | A71–72 | Core organizer Bhavik Shah; also AI/Software Dev/E-commerce (2026 confirmed) | Yes |
 
 **Total TEG 2024 Cloud/Infrastructure companies:** 8 (including multi-domain companies)
 **Total TEG 2026 confirmed Cloud companies:** 1 (Eternal Web)
@@ -128,11 +128,11 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 4: Data & Analytics
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also AI/Cloud/Software Dev |
-| 2 | IQ Infinite | — | — | — |
-| 3 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Software Dev/Cloud/Cybersecurity |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | MagnusMinds | https://www.magnusminds.net/ | — | Core organizer Tejas Shah; also AI/Cloud/Software Dev | Unknown |
+| 2 | IQ Infinite | — | — | — | Unknown |
+| 3 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Software Dev/Cloud/Cybersecurity | Unknown |
 
 **Total TEG 2024 Data & Analytics companies:** 3 (including multi-domain companies)
 
@@ -140,11 +140,11 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 5: Cybersecurity
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | ZeroThreat | https://zerothreat.ai/ | G3 | Gold sponsor |
-| 2 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Software Dev/Cloud/Data |
-| 3 | Dev IT Simplified | https://devitpl.com/ | — | Also AI/Cloud/Software Dev/Blockchain |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | ZeroThreat | https://zerothreat.ai/ | G3 | Gold sponsor | Unknown |
+| 2 | HorizonCore | https://www.horizoncore.com/ | — | Core organizer Pinakin Soni; also AI/Software Dev/Cloud/Data | Unknown |
+| 3 | Dev IT Simplified | https://devitpl.com/ | — | Also AI/Cloud/Software Dev/Blockchain | Unknown |
 
 **Total TEG 2024 Cybersecurity companies:** 3 (including multi-domain companies)
 
@@ -152,14 +152,14 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 6: E-commerce & Retail Technology
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Magento IT Solutions | https://magnetoitsolutions.com/ | — | — |
-| 2 | SetuBridge | https://www.setubridge.com/ | — | eCommerce Development |
-| 3 | Thinktanker | https://thinktanker.io/ | — | Core organizer Rajan Rawal; also Software Dev |
-| 4 | TechnoBrains | https://technobrains.io/ | A71–72 | Core organizer Bhavik Shah; also AI/Software Dev/Cloud (2026 confirmed) |
-| 5 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also Software Dev/Healthcare/EdTech/Fintech |
-| 6 | Bytes Technolabs | https://www.bytestechnolab.com/ | — | Also AI/Software Dev/Logistics |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Magento IT Solutions | https://magnetoitsolutions.com/ | — | — | Unknown |
+| 2 | SetuBridge | https://www.setubridge.com/ | — | eCommerce Development | Unknown |
+| 3 | Thinktanker | https://thinktanker.io/ | — | Core organizer Rajan Rawal; also Software Dev | Unknown |
+| 4 | TechnoBrains | https://technobrains.io/ | A71–72 | Core organizer Bhavik Shah; also AI/Software Dev/Cloud (2026 confirmed) | Yes |
+| 5 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also Software Dev/Healthcare/EdTech/Fintech | Unknown |
+| 6 | Bytes Technolabs | https://www.bytestechnolab.com/ | — | Also AI/Software Dev/Logistics | Unknown |
 
 **Total TEG 2024 E-commerce/Retail companies:** 6 (including multi-domain companies)
 
@@ -167,12 +167,12 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 7: Digital Marketing & SEO
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | AONE SEO Service | https://www.aoneseoservice.com/ | — | Co-organizer Pruthviraj Zala |
-| 2 | Elsner Technologies | https://www.elsner.com/ | — | Core organizer Harshal Shah |
-| 3 | AppsRow Solutions | https://www.appsrow.com/ | — | Core organizer Sandeep Sisodiya; also Software Dev |
-| 4 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | Also AI/Software Dev |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | AONE SEO Service | https://www.aoneseoservice.com/ | — | Co-organizer Pruthviraj Zala | Unknown |
+| 2 | Elsner Technologies | https://www.elsner.com/ | — | Core organizer Harshal Shah | Unknown |
+| 3 | AppsRow Solutions | https://www.appsrow.com/ | — | Core organizer Sandeep Sisodiya; also Software Dev | Unknown |
+| 4 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | Also AI/Software Dev | Unknown |
 
 **Total TEG 2024 Digital Marketing companies:** 4 (including multi-domain companies)
 
@@ -180,12 +180,12 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 8: Fintech
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer Tapan Patel; also AI/EdTech/Software Dev |
-| 2 | Razorpay | https://razorpay.com/ | — | Speaker Akshit Rao |
-| 3 | Fintegration | — | — | — |
-| 4 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also Software Dev/E-commerce/Healthcare/EdTech |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer Tapan Patel; also AI/EdTech/Software Dev | Unknown |
+| 2 | Razorpay | https://razorpay.com/ | — | Speaker Akshit Rao | Unknown |
+| 3 | Fintegration | — | — | — | Unknown |
+| 4 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also Software Dev/E-commerce/Healthcare/EdTech | Unknown |
 
 **Total TEG 2024 Fintech companies:** 4 (including multi-domain companies)
 
@@ -193,9 +193,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 9: HR Tech
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | FactoHR | https://factohr.com/ | — | Speaker Aniruddh Nagodra |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | FactoHR | https://factohr.com/ | — | Speaker Aniruddh Nagodra | Unknown |
 
 **Total TEG 2024 HR Tech companies:** 1
 
@@ -203,10 +203,10 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 10: Telecom & VoIP
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Ecosmob | — | — | — |
-| 2 | Elision Group | — | — | Co-organizer Mehul Shah; also Software Dev |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Ecosmob | — | — | — | Unknown |
+| 2 | Elision Group | — | — | Co-organizer Mehul Shah; also Software Dev | Unknown |
 
 **Total TEG 2024 Telecom/VoIP companies:** 2 (including multi-domain companies)
 
@@ -214,9 +214,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 11: IoT & Hardware
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | IOTTIVE | — | — | Co-organizer Rushabh Champaneri; also Software Dev |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | IOTTIVE | — | — | Co-organizer Rushabh Champaneri; also Software Dev | Unknown |
 
 **Total TEG 2024 IoT/Hardware companies:** 1 (including multi-domain companies)
 
@@ -224,9 +224,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 12: Manufacturing & Industrial Technology
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Powertrac Group | — | — | Speaker Kishorsinh Zala |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Powertrac Group | — | — | Speaker Kishorsinh Zala | Unknown |
 
 **Total TEG 2024 Manufacturing/Industrial companies:** 1
 
@@ -234,12 +234,12 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 13: Enterprise Software (ERP, CRM, HRMS)
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | GetOnCRM | — | — | — |
-| 2 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | Odoo ERP; also AI/Cloud/GenAI (2026 confirmed) |
-| 3 | Perigeon | https://perigeon.com/ | A144 | Salesforce CRM; also AI (2026 new) |
-| 4 | Dev IT Simplified | https://devitpl.com/ | — | Microsoft Dynamics 365; also AI/Cybersecurity/Cloud/Software Dev/Blockchain |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | GetOnCRM | — | — | — | Unknown |
+| 2 | Eternal Web Pvt Ltd | https://www.eternalsoftsolutions.com/ | A48–A55 | Odoo ERP; also AI/Cloud/GenAI (2026 confirmed) | Unknown |
+| 3 | Perigeon | https://perigeon.com/ | A144 | Salesforce CRM; also AI (2026 new) | Unknown |
+| 4 | Dev IT Simplified | https://devitpl.com/ | — | Microsoft Dynamics 365; also AI/Cybersecurity/Cloud/Software Dev/Blockchain | Unknown |
 
 **Total TEG 2024 Enterprise Software companies:** 4 (including multi-domain companies)
 
@@ -247,9 +247,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 14: Energy & Power
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Advait Energy Transitions | — | — | Speaker Shalin Sheth |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Advait Energy Transitions | — | — | Speaker Shalin Sheth | Unknown |
 
 **Total TEG 2024 Energy companies:** 1
 
@@ -257,9 +257,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 15: Real Estate & Construction Technology
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Shivalik Group | — | — | Speaker Chitrak Shah |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Shivalik Group | — | — | Speaker Chitrak Shah | Unknown |
 
 **Total TEG 2024 Real Estate companies:** 1
 
@@ -267,12 +267,12 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 16: Healthcare Tech
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | 7Health | — | — | Healthcare Tech |
-| 2 | CampusDean | — | — | EdTech/Healthcare |
-| 3 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also Software Dev/E-commerce/EdTech/Fintech |
-| 4 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer Tapan Patel; also AI/Fintech/Software Dev |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | 7Health | — | — | Healthcare Tech | Unknown |
+| 2 | CampusDean | — | — | EdTech/Healthcare | Unknown |
+| 3 | AppAspect | https://www.appaspect.com/ | — | Core organizer Gurpritsingh Saini; also Software Dev/E-commerce/EdTech/Fintech | Unknown |
+| 4 | Third Rock Techkno | https://www.thirdrocktechkno.com/ | TBD | Core organizer Tapan Patel; also AI/Fintech/Software Dev | Unknown |
 
 **Total TEG 2024 Healthcare/EdTech companies:** 4 (including multi-domain companies)
 
@@ -280,9 +280,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 17: Startup & Innovation Zone (Catalyst Zone)
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | [Various startups] | — | Catalyst Zone | Startup-focused booths |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | [Various startups] | — | Catalyst Zone | Startup-focused booths | Unknown |
 
 **Total TEG 2024 Startup companies:** To be confirmed
 
@@ -290,9 +290,9 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 18: Consulting & Professional Services
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Pragmatic Consultancy | https://www.pragmaticconsultancy.in/ | — | Speaker Vatsal Shah |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Pragmatic Consultancy | https://www.pragmaticconsultancy.in/ | — | Speaker Vatsal Shah | Unknown |
 
 **Total TEG 2024 Consulting companies:** 1
 
@@ -300,64 +300,64 @@ Based on the official TEG industries page, the event targets these 18 sectors:
 
 ### Sector 19: Cross-Sector / Miscellaneous
 
-| # | Company Name | Website | Booth | Notes |
-|---|---|---|---|---|
-| 1 | Acespritech | — | — | — |
-| 2 | Alphabets | — | — | — |
-| 3 | API Maker | — | — | — |
-| 4 | Alpha-E | — | — | — |
-| 5 | Appunik | — | — | — |
-| 6 | BOSC | — | — | — |
-| 7 | Calidad | — | — | — |
-| 8 | Capermint | — | — | — |
-| 9 | Cirrops | — | — | — |
-| 10 | Codevision | — | — | — |
-| 11 | Delta | — | — | — |
-| 12 | Dev IT Simplified | https://devitpl.com/ | — | — |
-| 13 | DevsTree | — | — | — |
-| 14 | DIT | — | — | — |
-| 15 | DNT Infotech | — | — | — |
-| 16 | eCount | — | — | — |
-| 17 | Emgage | ⚠️ | — | **CONFLICT:** Official site links to unrelated US cybersecurity company. Likely real exhibitor is emgage.work (HRMS). Flagged, not resolved. |
-| 18 | Equitysoft | — | — | — |
-| 19 | Flits | — | — | — |
-| 20 | GetOnCRM | — | — | — |
-| 21 | Glasier | — | — | — |
-| 22 | Hana | — | — | — |
-| 23 | HK Infosoft | — | — | — |
-| 24 | iBoom | — | — | — |
-| 25 | Impero IT Services | — | — | — |
-| 26 | InBound Web Hub | — | — | — |
-| 27 | IndianBiz | — | — | — |
-| 28 | Inevitable | — | — | — |
-| 29 | iTech Nation | — | — | — |
-| 30 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | — |
-| 31 | JCASP | — | — | — |
-| 32 | Jignect | — | — | — |
-| 33 | KeyCarrier | — | — | — |
-| 34 | Linksture | — | — | — |
-| 35 | Lucent | — | — | — |
-| 36 | MindQuad | — | — | — |
-| 37 | NSIQ | — | — | — |
-| 38 | OTF Coder | — | — | — |
-| 39 | Prompt | — | — | — |
-| 40 | Saeculum | — | — | — |
-| 41 | Samcom | https://www.samcomtechnobrains.com/ | — | — |
-| 42 | Satva | — | — | — |
-| 43 | Serpent Consulting | — | — | — |
-| 44 | Six Sigma | — | — | — |
-| 45 | Syndell | — | — | — |
-| 46 | Technoforte | — | — | — |
-| 47 | Tisha | — | — | Verified — Tisha Technologies, Ahmedabad, founder Parth Mehta |
-| 48 | Tuvoc | — | — | — |
-| 49 | UpMatrix | — | — | — |
-| 50 | UXTeam | — | — | — |
-| 51 | Virtue Info | — | — | — |
-| 52 | Viscap | https://www.viscap-cs.com/ | — | Verified — SAP implementation |
-| 53 | Wappnet | — | — | — |
-| 54 | Webapprise | — | — | — |
-| 55 | The Intech Group | — | — | — |
-| 56 | Pixster | — | — | — |
+| # | Company Name | Website | Booth | Notes | AIMED member? |
+|---|---|---|---|---|---|
+| 1 | Acespritech | — | — | — | Unknown |
+| 2 | Alphabets | — | — | — | Unknown |
+| 3 | API Maker | — | — | — | Unknown |
+| 4 | Alpha-E | — | — | — | Unknown |
+| 5 | Appunik | — | — | — | Unknown |
+| 6 | BOSC | — | — | — | Unknown |
+| 7 | Calidad | — | — | — | Unknown |
+| 8 | Capermint | — | — | — | Unknown |
+| 9 | Cirrops | — | — | — | Unknown |
+| 10 | Codevision | — | — | — | Yes |
+| 11 | Delta | — | — | — | Unknown |
+| 12 | Dev IT Simplified | https://devitpl.com/ | — | — | Unknown |
+| 13 | DevsTree | — | — | — | Unknown |
+| 14 | DIT | — | — | — | Unknown |
+| 15 | DNT Infotech | — | — | — | Unknown |
+| 16 | eCount | — | — | — | Unknown |
+| 17 | Emgage | ⚠️ | — | **CONFLICT:** Official site links to unrelated US cybersecurity company. Likely real exhibitor is emgage.work (HRMS). Flagged, not resolved. | Unknown |
+| 18 | Equitysoft | — | — | — | Unknown |
+| 19 | Flits | — | — | — | Unknown |
+| 20 | GetOnCRM | — | — | — | Unknown |
+| 21 | Glasier | — | — | — | Unknown |
+| 22 | Hana | — | — | — | Unknown |
+| 23 | HK Infosoft | — | — | — | Unknown |
+| 24 | iBoom | — | — | — | Unknown |
+| 25 | Impero IT Services | — | — | — | Unknown |
+| 26 | InBound Web Hub | — | — | — | Unknown |
+| 27 | IndianBiz | — | — | — | Unknown |
+| 28 | Inevitable | — | — | — | Unknown |
+| 29 | iTech Nation | — | — | — | Unknown |
+| 30 | Jarvis Technolabs | https://jarvistechnolabs.com/ | — | — | Unknown |
+| 31 | JCASP | — | — | — | Unknown |
+| 32 | Jignect | — | — | — | Unknown |
+| 33 | KeyCarrier | — | — | — | Unknown |
+| 34 | Linksture | — | — | — | Unknown |
+| 35 | Lucent | — | — | — | Unknown |
+| 36 | MindQuad | — | — | — | Unknown |
+| 37 | NSIQ | — | — | — | Unknown |
+| 38 | OTF Coder | — | — | — | Unknown |
+| 39 | Prompt | — | — | — | Unknown |
+| 40 | Saeculum | — | — | — | Unknown |
+| 41 | Samcom | https://www.samcomtechnobrains.com/ | — | — | Unknown |
+| 42 | Satva | — | — | — | Unknown |
+| 43 | Serpent Consulting | — | — | — | Unknown |
+| 44 | Six Sigma | — | — | — | Unknown |
+| 45 | Syndell | — | — | — | Unknown |
+| 46 | Technoforte | — | — | — | Unknown |
+| 47 | Tisha | — | — | Verified — Tisha Technologies, Ahmedabad, founder Parth Mehta | Unknown |
+| 48 | Tuvoc | — | — | — | Unknown |
+| 49 | UpMatrix | — | — | — | Unknown |
+| 50 | UXTeam | — | — | — | Unknown |
+| 51 | Virtue Info | — | — | — | Unknown |
+| 52 | Viscap | https://www.viscap-cs.com/ | — | Verified — SAP implementation | Unknown |
+| 53 | Wappnet | — | — | — | Unknown |
+| 54 | Webapprise | — | — | — | Unknown |
+| 55 | The Intech Group | — | — | — | Unknown |
+| 56 | Pixster | — | — | — | Unknown |
 
 ---
 

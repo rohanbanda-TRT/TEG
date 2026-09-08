@@ -117,4 +117,5 @@ The brochure's "The TEG Impact (Year 2024)" page carries 4 attributed testimonia
 - **Kanaksinh Rana** (Director, GTPL)
 
 ---
-*Source: techexpogujarat.com (become-a-sponsor, tech-expo-2024, retreat-2025); teg-sponsors-brochure.pdf and teg-cost.pdf (confirmed 2026 sponsorship pricing, 2024/2025 sponsor logos, associate partners, testimonials). VC roster moved to `venture_capital/venture_capital_and_investors.md`.*
+*Last updated: September 9, 2026 (tier list cross-checked against a live headless-browser render of /become-a-sponsor/ — already consistent, no changes needed; earlier content unchanged since August 27, 2026)*
+*Source: techexpogujarat.com (become-a-sponsor, tech-expo-2024, retreat-2025 — incl. live headless-browser render, Sept 9, 2026); teg-sponsors-brochure.pdf and teg-cost.pdf (confirmed 2026 sponsorship pricing, 2024/2025 sponsor logos, associate partners, testimonials). VC roster moved to `venture_capital/venture_capital_and_investors.md`.*
