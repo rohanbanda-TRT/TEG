@@ -3,7 +3,7 @@
 > **Event:** Tech Expo Gujarat 2026 (TEG 2026)
 > **Ticketing portal:** https://events.techexpogujarat.com/e/6946415bbc05410ef59021d7
 > **Ticketing platform:** Xpro.ai
-> **Last updated:** August 27, 2026
+> **Last updated:** September 1, 2026
 
 ---
 
@@ -29,7 +29,7 @@
 - **Sponsor inquiry ("Become Sponsor"):** https://www.techexpogujarat.com/become-a-sponsor/
 
 ## Current promotion
-At the time of this crawl, the site displayed: **"Limited Super Early Bird Ticket Offer – 60% OFF | 2,600+ Tickets Sold"** as a running site-wide banner. Specific visitor ticket price tiers were not present in static page content — the ticketing portal (events.techexpogujarat.com, built on the Xpro.ai platform) renders pricing dynamically; check there for current tiers.
+As of the September 2026 re-check, the site's running banner reads: **"Early Bird Offer Live! — 50% OFF"** (a "Tickets Sold" counter is shown but renders dynamically and was not populated on fetch). An earlier crawl (August 2026) had shown **"Limited Super Early Bird Ticket Offer – 60% OFF | 2,600+ Tickets Sold"** — the discount has since been reduced from 60% to 50% and the "2,600+ sold" figure is no longer displayed. Specific visitor ticket price tiers are still not present in static page content — the ticketing portal (events.techexpogujarat.com, built on the Xpro.ai platform) renders pricing dynamically; check there for current tiers.
 
 **Update (re-checked August 27, 2026):** A third-party exhibitor page (technobrains.io/techexpo-gujarat-2026/) confirms the TEG 2026 visitor ticket structure has **two named tiers: "Regular Visitor" and "Golden Ticket"** — but neither that page nor the official ticketing portal (events.techexpogujarat.com) discloses the actual rupee amounts for either tier in static/fetchable content; the page explicitly defers to techexpogujarat.com for "details and benefits of each ticket type." That page also states entry is **not free** ("There is NO FREE entry") and confirms online purchase is recommended over on-site registration-desk purchase to avoid delays. Exact pricing therefore remains unresolved — only the tier *names* are now known, not the amounts.
 
@@ -41,6 +41,9 @@ At the time of this crawl, the site displayed: **"Limited Super Early Bird Ticke
 
 ## Exhibitor pass entitlements (bundled into stall packages)
 See `exhibitors/exhibitors_directory.md` for the full breakdown by stall size — exhibitor passes, pre/post-party passes, and visitor passes all scale with stall size (from 2 exhibitor passes / 5 visitor passes at 3x3m up to 8 exhibitor passes / 20 visitor passes at 6x6m).
+
+## Confirmed stall & sponsorship pricing (exhibitor/sponsor, not visitor)
+**As of August 31, 2026**, the official TEG 2026 cost sheet (`teg-cost.pdf`) confirms exhibitor stall prices (3×3 ₹1,17,000* + GST up to 6×6 ₹4,68,000* + GST; Catalyst Zone ₹35,000*) and the full sponsorship price list (Title Sponsor ₹35,00,000*). It also confirms a 4-instalment payment plan (25% each on 9 Apr / 30 Jun / 31 Jul / 31 Aug 2026) and an exhibitor/sponsor refund schedule (non-refundable after 1 Oct 2026). Full detail: **`pricing/pricing_and_packages.md`**. **Visitor** ticket amounts are still not in the cost sheet — see below.
 
 ## Is there an entry fee?
 Yes — per a third-party summary (technobrains.io), there is a fee to enter the expo, with early bird and group pricing available on the official site/ticketing portal.
@@ -65,5 +68,5 @@ All tiers were sold out at last check, and included accommodation, meals, and ne
 *(This is historical Retreat pricing, not TEG 2026 expo ticket pricing — included for pattern reference.)*
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com (become-an-exhibitor, become-a-sponsor, homepage banner), events.techexpogujarat.com, retreat-2025 page, technobrains.io*
+*Last updated: September 1, 2026*
+*Source: techexpogujarat.com (become-an-exhibitor, become-a-sponsor, homepage banner), events.techexpogujarat.com, retreat-2025 page, technobrains.io, teg-cost.pdf (confirmed exhibitor/sponsor pricing, payment plan, refund schedule)*

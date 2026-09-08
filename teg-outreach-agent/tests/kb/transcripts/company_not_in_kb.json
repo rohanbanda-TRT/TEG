@@ -1,0 +1,69 @@
+{
+  "goal": "Profile the company Zzxqwerty Nonexistent Ltd. Look for its profile: list_dir exhibitors/companies/ and grep 'Zzxqwerty'. Return facts: sector, website. If no file mentions it, set found=false.",
+  "model_turns": [
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "list_dir",
+          "args": {
+            "path": "exhibitors/companies"
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "grep",
+          "args": {
+            "path": ".",
+            "pattern": "Zzxqwerty"
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "grep",
+          "args": {
+            "pattern": "Nonexistent",
+            "path": "."
+          }
+        }
+      ]
+    },
+    {
+      "tool_calls": [
+        {
+          "id": "c0",
+          "name": "read_file",
+          "args": {
+            "path": "exhibitors/companies/companies_index.md",
+            "offset": 0
+          }
+        }
+      ]
+    },
+    {
+      "final": "{\"found\": false, \"summary\": \"No profile or record exists for Zzxqwerty Nonexistent Ltd in the Tech Expo Gujarat knowledge base.\", \"facts\": {}, \"sources\": [\"exhibitors/companies/companies_index.md\"], \"confidence\": 1.0}"
+    }
+  ],
+  "final": "{\"found\": false, \"summary\": \"No profile or record exists for Zzxqwerty Nonexistent Ltd in the Tech Expo Gujarat knowledge base.\", \"facts\": {}, \"sources\": [\"exhibitors/companies/companies_index.md\"], \"confidence\": 1.0}",
+  "expected": {
+    "found": false,
+    "summary": "No profile or record exists for Zzxqwerty Nonexistent Ltd in the Tech Expo Gujarat knowledge base.",
+    "facts": {},
+    "sources": [
+      "exhibitors/companies/companies_index.md"
+    ],
+    "confidence": 1.0
+  },
+  "reads_ok": [
+    "exhibitors/companies/companies_index.md"
+  ],
+  "reads_missed": []
+}

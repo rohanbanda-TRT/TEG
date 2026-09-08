@@ -1,8 +1,8 @@
 # Exhibitor Company Profiles — Index
 
 > **Purpose:** Index of individual company profile files for TEG 2024/2026 exhibitors
-> **Total companies profiled:** 83 (all named TEG 2024 exhibitors from `exhibitors_directory.md`)
-> **Last updated:** August 27, 2026
+> **Total companies profiled:** 133 (83 named TEG 2024 exhibitors + 50 TEG 2026 brochure exhibitors added August 31, 2026)
+> **Last updated:** August 31, 2026
 
 ---
 
@@ -10,16 +10,19 @@
 
 | Tier | Count | Meaning |
 |---|---|---|
-| **Verified** | 82 | Real website + specific, independently confirmed company match |
-| **Medium** | 1 | A plausible real company found, but not fully confirmed as *the* TEG-exhibiting entity (common name, no direct TEG-specific source, or an unresolved discrepancy in official sourcing) |
-| **Could Not Verify** | 0 | Name too generic / no matching company identified at all — none remain in this tier |
-| **Total** | 83 | |
+| **Verified** | 127 | Real website + specific, independently confirmed company match |
+| **Medium** | 4 | A plausible real company found, but not fully confirmed as *the* TEG-exhibiting entity (common name, no direct TEG-specific source, or an unresolved discrepancy in official sourcing) |
+| **Could Not Verify / Low** | 2 | Logo abbreviation or name with no matching company identified at all (Splededge, Ittive — both from the TEG 2026 brochure) |
+| **Total** | 133 | |
+
+### August 31, 2026 pass — TEG 2026 brochure exhibitors
+The official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) "Our Exhibitors (Year 2026)" page named ~66 TEG 2026 exhibitors. 18 already had profiles here (annotated with a "## TEG 2026 Participation" note); 50 new profile files were created in this pass. Of the 50: 45 Verified, 3 Medium (Visiobyte, iValue, JMS — plausible entity but not TEG-confirmed), 2 Low (Splededge, Ittive — no matching company found). **AP and AIWI**, initially Low, were resolved via URLs provided by the TEG team: AP = **Apicem Partners** (apicem-partners.com), AIWI = **Aiwi Software Solutions** (aiwi.io). Several new entries are companies of TEG organizers (AONE SEO / Pruthviraj Zala, AppsRow / Sandeep Sisodiya, Techify / Taral Shah, ThinkTanker / Rajan Rawal, XPRO.AI / Saumil Patel & Nilay Khandhar). XPRO.AI is cross-linked to `registration/registration_and_passes.md` and `related_events/related_events.md`. Connecti5 is a ThinkTanker product; Xobito is a Saeculum Solutions product.
 
 This tier count reflects two research passes: (1) a broad pass that fetched the official `techexpogujarat.com/exhibitors` sponsor-logo links, resolving nearly every prior Medium/Could-Not-Verify company to Verified; and (2) a targeted pass cross-referencing the **"Tech Talks at Gujarat Tech Expo 2024"** podcast mini-series (Chai Time with ManthanBaba, ~49 of an apparent 50 episodes catalogued, hosted by TEG exhibitor/organizer Manthan Bhavsar of Metizsoft), which named specific exhibitor founders on-record and is now cited as an additional source on ~35 company files — upgrading several (Hana, TechNotery, Viscap, JCASP, Lucent, Webapprise, KeyCarrier) from Medium to Verified on its own evidence, and adding a previously-unknown founder name to many others. See each file's own `*Source:*` footer for exactly which sources apply.
 
 ---
 
-## Verified (82)
+## Verified — TEG 2024 exhibitors (82)
 
 | Company | Profile |
 |---|---|
@@ -106,19 +109,73 @@ This tier count reflects two research passes: (1) a broad pass that fetched the 
 | Wappnet | [`wappnet.md`](./wappnet.md) |
 | Webapprise | [`webapprise.md`](./webapprise.md) |
 
-## Medium (1)
+## Verified — TEG 2026 brochure exhibitors, new profiles August 31, 2026 (45)
 
 | Company | Profile |
 |---|---|
-| Emgage | [`emgage.md`](./emgage.md) |
+| Ace Analytics | [`ace_analytics.md`](./ace_analytics.md) |
+| AIWI (Aiwi Software Solutions) | [`aiwi.md`](./aiwi.md) |
+| AONE SEO Service | [`aone_seo.md`](./aone_seo.md) |
+| AP (Apicem Partners) | [`ap.md`](./ap.md) |
+| AppsRow | [`appsrow.md`](./appsrow.md) |
+| beRound | [`beround.md`](./beround.md) |
+| BetterBugs | [`betterbugs.md`](./betterbugs.md) |
+| BizCompass | [`bizcompass.md`](./bizcompass.md) |
+| Calyzer / Callyzer | [`calyzer.md`](./calyzer.md) |
+| Cantech | [`cantech.md`](./cantech.md) |
+| Chronox AI | [`chronox_ai.md`](./chronox_ai.md) |
+| Codemech | [`codemech.md`](./codemech.md) |
+| Connecti5 | [`connecti5.md`](./connecti5.md) |
+| DevOpsLabs | [`devopslabs.md`](./devopslabs.md) |
+| Dropit | [`dropit.md`](./dropit.md) |
+| Easebiz | [`easebiz.md`](./easebiz.md) |
+| Emblit.ai | [`emblit_ai.md`](./emblit_ai.md) |
+| Essence Solusoft | [`essence_solusoft.md`](./essence_solusoft.md) |
+| factoHR | [`factohr.md`](./factohr.md) |
+| GavBit | [`gavbit.md`](./gavbit.md) |
+| Integrax Technolabs | [`integrax_technolabs.md`](./integrax_technolabs.md) |
+| Intelliworkz | [`intelliworkz.md`](./intelliworkz.md) |
+| iSmartRecruit | [`ismartrecruit.md`](./ismartrecruit.md) |
+| MatrixHive | [`matrixhive.md`](./matrixhive.md) |
+| The MediTale | [`meditale.md`](./meditale.md) |
+| Miracle Accounting Software | [`miracle.md`](./miracle.md) |
+| Onbbits | [`onbbits.md`](./onbbits.md) |
+| Perigeon | [`perigeon.md`](./perigeon.md) |
+| SalesHandy | [`saleshandy.md`](./saleshandy.md) |
+| Samyak | [`samyak.md`](./samyak.md) |
+| SeedData | [`seeddata.md`](./seeddata.md) |
+| Sheth Info | [`sheth_info.md`](./sheth_info.md) |
+| Shubhkey | [`shubhkey.md`](./shubhkey.md) |
+| SoftConn | [`softconn.md`](./softconn.md) |
+| SoftQube Technologies | [`softqube.md`](./softqube.md) |
+| Techalmas | [`techalmas.md`](./techalmas.md) |
+| Techanek | [`techanek.md`](./techanek.md) |
+| TechEniac | [`techeniac.md`](./techeniac.md) |
+| Techify | [`techify.md`](./techify.md) |
+| TechSofya | [`techsofya.md`](./techsofya.md) |
+| ThinkTanker | [`thinktanker.md`](./thinktanker.md) |
+| Webtual | [`webtual.md`](./webtual.md) |
+| WeekMate | [`weekmate.md`](./weekmate.md) |
+| Xobito | [`xobito.md`](./xobito.md) |
+| XPRO.AI | [`xpro_ai.md`](./xpro_ai.md) |
 
-*Emgage remains Medium due to an unresolved discrepancy: the official TEG exhibitors page links its "Emgage" sponsor logo to an unrelated US cybersecurity company (emgage.com), while the plausible actual exhibitor is Ahmedabad HRMS company emgage.work — see the file for detail. No podcast episode was found covering this company.*
+## Medium (4)
 
-## Could Not Verify (0)
+| Company | Profile | Note |
+|---|---|---|
+| Emgage | [`emgage.md`](./emgage.md) | Official TEG exhibitors page links the "Emgage" logo to an unrelated US cybersecurity company; plausible real exhibitor is Ahmedabad HRMS firm emgage.work. |
+| Visiobyte | [`visiobyte.md`](./visiobyte.md) | Two similarly-named entities (software studio vs. AI visual-intelligence); exact TEG-exhibiting entity unconfirmed. |
+| iValue | [`ivalue.md`](./ivalue.md) | Likely the national iValue InfoSolutions (Bangalore VAD), but no TEG-specific source confirms it over a local same-name firm. |
+| JMS | [`jms.md`](./jms.md) | Brochure logo "JMS"; best Ahmedabad match is JMS Advisory Services, unconfirmed. |
 
-*(none remaining — all previously-CNV companies were resolved to Verified via the official techexpogujarat.com/exhibitors sponsor-logo cross-reference and/or the "Tech Talks at Gujarat Tech Expo 2024" podcast series)*
+## Could Not Verify / Low (2)
+
+| Company | Profile | Note |
+|---|---|---|
+| Splededge | [`splededge.md`](./splededge.md) | Software / staffing per brochure; no matching company found. |
+| Ittive | [`ittive.md`](./ittive.md) | Software development per brochure; no matching Gujarat company found. |
 
 ---
-*Every company here was a named exhibitor in TEG 2024's master list (`exhibitors/exhibitors_directory.md`). Eternal Web and TechnoBrains are also confirmed TEG 2026 exhibitors (see their profiles above). Perigeon, the third TEG 2026-confirmed exhibitor, was not a TEG 2024 exhibitor and has no profile here — see `exhibitors_directory.md` for its detail.*
+*The first table's companies were named exhibitors in TEG 2024's master list (`exhibitors/exhibitors_directory.md`); 18 of them (BOSC, NeuraMonks, UpMatrix, MindQuad, Codevision, Elision, MagnusMinds, Third Rock Techkno, AppAspect, TechnoBrains, Delta, Capermint, DIT, Jignect, Eternal Web, Satva, ViitorCloud, Jarvis Technolabs) are also named in the TEG 2026 brochure and now carry a "## TEG 2026 Participation" note. The remaining tables are TEG 2026 brochure exhibitors profiled August 31, 2026.*
 
-*Source: individual research per company (WebSearch/WebFetch conducted August 27, 2026), cross-referenced against the official `techexpogujarat.com/exhibitors` sponsor-logo listing and the "Tech Talks at Gujarat Tech Expo 2024" podcast mini-series (Chai Time with ManthanBaba, YouTube) — see each file's own `*Source:*` footer for specifics.*
+*Source: individual research per company (WebSearch/WebFetch conducted August 27, 2026 and August 31, 2026), cross-referenced against the official `techexpogujarat.com/exhibitors` sponsor-logo listing, the "Tech Talks at Gujarat Tech Expo 2024" podcast mini-series (Chai Time with ManthanBaba, YouTube), and the official TEG sponsors brochure `teg-sponsors-brochure.pdf` ("Our Exhibitors — Year 2026" page) — see each file's own `*Source:*` footer for specifics.*

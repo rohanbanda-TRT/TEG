@@ -2,7 +2,7 @@
 
 > **Category:** IT Services — Digital agency (web/eCommerce/UI-UX/AI automation)
 > **Website:** http://ditinteractive.com/
-> **TEG participation:** TEG 2024 exhibitor (confirmed via official TEG exhibitors page)
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure) (confirmed via official TEG exhibitors page)
 > **Confidence:** Verified
 
 ---
@@ -22,6 +22,9 @@ Identified with confidence. The official Tech Expo Gujarat exhibitors page links
 ## TEG 2024 Participation
 Listed as a named TEG 2024 exhibitor (IT Services category) in `exhibitors_directory.md`, and referenced under "IT Services" in `sector_wise_participation.md`. Now confirmed via the official techexpogujarat.com/exhibitors page, which links the "DIT" sponsor logo directly to ditinteractive.com. No booth number or TEG-specific promotional detail was found on the company's own site.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -29,5 +32,5 @@ Listed as a named TEG 2024 exhibitor (IT Services category) in `exhibitors_direc
 | LinkedIn | https://in.linkedin.com/company/ditinteractive |
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); ditinteractive.com and in.linkedin.com/company/ditinteractive (fetched directly); `exhibitors/exhibitors_directory.md`, `sector_wise_participation.md`*
+*Last updated: August 31, 2026*
+*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); ditinteractive.com and in.linkedin.com/company/ditinteractive (fetched directly); `exhibitors/exhibitors_directory.md`, `sector_wise_participation.md`; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

@@ -1,0 +1,9 @@
+.venv/
+*.egg-info/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+proposals/*
+!proposals/.gitkeep
+app/static/proposal/

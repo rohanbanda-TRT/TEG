@@ -2,7 +2,7 @@
 
 > **Category:** Mobile App / Game Development
 > **Website:** https://www.capermint.com/
-> **TEG participation:** TEG 2024 exhibitor
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure)
 > **Confidence:** Verified
 
 ---
@@ -18,6 +18,9 @@ Capermint Technologies Pvt. Ltd. is a mobile game and app development company he
 ## TEG 2024 Participation
 Named TEG 2024 exhibitor (Software Dev category) in `exhibitors_directory.md`. Capermint was also directly named in techexpogujarat.com's own "Standard Sponsors" exhibitor listing on the official event site, confirming its presence as a listed 2024 exhibitor.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 | Channel | URL |
 |---|---|
@@ -27,5 +30,5 @@ Named TEG 2024 exhibitor (Software Dev category) in `exhibitors_directory.md`. C
 | Facebook | https://www.facebook.com/CapermintTechnologies/ |
 
 ---
-*Last updated: August 27, 2026*
-*Source: capermint.com, Crunchbase, Glassdoor, IndiaMART, www.techexpogujarat.com/exhibitors, `exhibitors/exhibitors_directory.md`*
+*Last updated: August 31, 2026*
+*Source: capermint.com, Crunchbase, Glassdoor, IndiaMART, www.techexpogujarat.com/exhibitors, `exhibitors/exhibitors_directory.md`; teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*

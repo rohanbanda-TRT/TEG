@@ -11,26 +11,28 @@
 
 TEG's ecosystem is explicitly designed to facilitate connections between startups and investors, as demonstrated by the TEG Business Retreat 2025.
 
+> **Canonical VC record:** The full 15-firm VC roster (brochure-confirmed spellings), individual investor-speakers, funding track record, and what is / isn't confirmed for TEG 2026 now live in **`venture_capital/venture_capital_and_investors.md`**. The summary below is retained for context within the Retreat 2025 narrative.
+
 ### Key Investor Presence at the Retreat
 
-The Retreat 2025 attracted **15+ VCs** with a combined portfolio value of **₹3,000 Cr**, including:
-- Ekatva
+The Retreat 2025 attracted **15+ VCs** with a combined portfolio value of **₹3,000 Cr**. Brochure-confirmed roster (canonical spellings; prior-KB variant in parentheses):
+- Katva (prior KB: Ekatva)
 - Unicorn India Ventures
 - Enrission India Capital
-- GVFL Limited
-- Morphosis
-- Growth Capital
-- Vyoma
+- GVFL (GVFL Limited)
+- Morphosis Venture Advisors (prior KB: Morphosis)
+- GrowthCap.vc (prior KB: Growth Capital)
+- Vyoma Capital (prior KB: Vyoma)
 - BM Capital
 - Warmup Ventures
-- Blinc VC
+- BLnC (prior KB: Blinc VC)
 - IIMA Ventures
-- Ashika VC
+- Ashika (prior KB: Ashika VC)
 - Caret Capital
 - Seafund
 - DevX
 
-*(Source: related_events.md, line 29)*
+*(Source: teg-sponsors-brochure.pdf, "Our Associated Venture Capitalists — Year 2025" page; see `venture_capital/venture_capital_and_investors.md`.)*
 
 ### Track Record of Funding Success
 
@@ -72,7 +74,7 @@ The organizing body runs more than the flagship expo. Two satellite events feed 
 Ankur Warikoo (Entrepreneur, Investor, Content Creator & Author), Kiran Deshpande (Former CEO, Tech Mahindra; Co-Founder, Mojo Networks; TiE Global Board Member), Mihir Joshi (MD, GVFL Limited), Pratul Shroff (Founder & Former CEO, eInfochips; Venture Investor & Philanthropist), Vishal Virani (Co-Founder & CEO, Rocket), Vatsal Shah (Business Catalyst & CEO Coach; VP, Magento Association), Mandar Mhatre (CRO, FORMIDIUM; Angel Investor), Bhavin Bhagat (CEO & Co-Founder, IBGrid; Independent Director, Dev IT Ltd; President, TiE Ahmedabad), Anil Joshi (Managing Partner, Unicorn India Ventures), Winston Tixeira (Investment Manager, Enrission India Capital), Sharad Bansal (Founder & Managing Partner, Warmup Ventures; Charter Member, TiE Bangalore), Jimit Bagadia (Co-Founder/CEO, SocialPilot), Pratiksinh Chudasama (AI-Driven Growth Marketing Strategist; Founder, Digital Pratik Productions), Satyarth Srivastava (Honorary Chairman Elect & Director, GESIA; Director & COO, Adit Microsys), CA Harsh Mehta (Founder, Money Plus Consultancy Services; Co-Founder, GujreraExperts).
 
 ### VCs present
-Ekatva, Unicorn India Ventures, Enrission India Capital, GVFL Limited, Morphosis, Growth Capital, Vyoma, BM Capital, Warmup Ventures, Blinc VC, IIMA Ventures, Ashika VC, Caret Capital, Seafund, DevX. A "Submit Pitch Deck" channel let founders pitch to this VC pool (portfolio value cited as ₹3,000 Cr combined).
+Same 15-firm roster as the Retreat (Katva/Ekatva, Unicorn India Ventures, Enrission India Capital, GVFL, Morphosis Venture Advisors, GrowthCap.vc, Vyoma Capital, BM Capital, Warmup Ventures, BLnC, IIMA Ventures, Ashika, Caret Capital, Seafund, DevX) — full detail and canonical spellings in `venture_capital/venture_capital_and_investors.md`. A "Submit Pitch Deck" channel let founders pitch to this VC pool (portfolio value cited as ₹3,000 Cr combined).
 
 ### Agenda highlights
 **Day 1:** Registration/breakfast → Inauguration → Keynote "How to grow yourself to grow your business" (Ankur Warikoo) → Title sponsor session → Networking → Parallel tracks: Founder's Pitch (VC round) / Fireside chat "Beyond the Founder" (Pratul Shroff & Satyarth Srivastava) → Plenary "Agentic CEO" (Vishal Virani) → Lunch → Mastermind workshop (Coach Vatsal Shah) → Networking break → Drum circle (destressing session) → Networking dinner & after-party.

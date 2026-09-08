@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tech Expo Gujarat 2026 — Get in touch</title>
+  <style>
+    :root { --navy: #1b2a5b; --ink: #1f2430; --line: #d7dbe6; --bg: #f6f8fc; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--ink); background: var(--bg); line-height: 1.5;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 64px; }
+    header h1 { color: var(--navy); font-size: 22px; margin: 0 0 4px; }
+    header p { margin: 0 0 24px; color: #5a6272; }
+    #teg-outreach {
+      background: #fff; border: 1px solid var(--line); border-radius: 10px;
+      padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    /* form */
+    #teg-outreach form { display: flex; flex-direction: column; gap: 10px; }
+    #teg-outreach input[type=text], #teg-outreach input[type=email], #teg-outreach select {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px;
+      font: inherit;
+    }
+    #teg-outreach label { font-size: 13px; color: #5a6272; display: inline; }
+    #teg-outreach input[type=checkbox] { margin-right: 6px; vertical-align: middle; }
+    #teg-outreach button[type=submit] {
+      margin-top: 4px; padding: 10px 16px; background: var(--navy); color: #fff;
+      border: 0; border-radius: 6px; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    #teg-outreach button[type=submit]:hover { background: #16224a; }
+
+    /* chat */
+    .teg-chat { display: flex; flex-direction: column; gap: 8px; }
+    .teg-log {
+      display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow-y: auto;
+      padding: 4px 2px;
+    }
+    .teg-msg { padding: 9px 12px; border-radius: 10px; max-width: 90%; white-space: pre-wrap; }
+    .teg-agent { background: #eef1f7; align-self: flex-start; }
+    .teg-you { background: var(--navy); color: #fff; align-self: flex-end; }
+    .teg-status { font-size: 12px; color: #8a91a0; min-height: 16px; }
+    .teg-chat input[name=chat_input] {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; font: inherit;
+    }
+    .teg-chat button[name=chat_send] {
+      padding: 10px 16px; background: var(--navy); color: #fff; border: 0; border-radius: 6px;
+      font: inherit; font-weight: 600; cursor: pointer; align-self: flex-end;
+    }
+
+    /* proposal attachment card */
+    .teg-card {
+      border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: #fff;
+      display: grid; grid-template-columns: 88px 1fr; grid-template-rows: auto auto;
+      gap: 6px 12px; align-self: flex-start; max-width: 95%;
+    }
+    .teg-card-thumb {
+      grid-row: 1 / span 2; width: 88px; height: 120px; object-fit: cover;
+      border: 1px solid var(--line); border-radius: 4px; background: var(--bg);
+    }
+    .teg-card-meta { font-size: 13px; font-weight: 600; align-self: end; }
+    .teg-card-btn {
+      display: inline-block; margin-right: 8px; padding: 6px 12px; font-size: 13px;
+      text-decoration: none; color: var(--navy); border: 1px solid var(--navy); border-radius: 6px;
+    }
+    .teg-card-btn:hover { background: var(--navy); color: #fff; }
+    .teg-card-pending {
+      display: block; font-size: 13px; color: #5a6272; background: var(--bg);
+      border: 1px dashed var(--line); border-radius: 10px; padding: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Tech Expo Gujarat 2026</h1>
+      <p>Tell us a little about you and your company — the assistant will take it from there.</p>
+    </header>
+    <div id="teg-outreach"></div>
+  </div>
+  <script>
+    // set the API/WS base (same origin) BEFORE the widget script auto-mounts
+    var el = document.getElementById("teg-outreach");
+    el.setAttribute("data-api", location.origin);
+    el.setAttribute("data-ws", (location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+  </script>
+  <script src="/demo/dist/teg-outreach-widget.js"></script>
+</body>
+</html>

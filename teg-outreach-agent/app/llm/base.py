@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from typing import Literal, TypedDict, TypeVar
+
+from pydantic import BaseModel
+
+from config.settings import get_settings
+
+BaseModelT = TypeVar("BaseModelT", bound=BaseModel)
+
+
+class LLMMessage(TypedDict):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class ToolResultMessage(TypedDict):
+    role: Literal["tool"]
+    tool_call_id: str
+    content: str
+
+
+class ToolCall(BaseModel):
+    id: str
+    name: str
+    args: dict = {}
+
+
+class ToolTurn(BaseModel):
+    """One model response in a tool-use loop: either tool calls, or a final text answer.
+
+    ``raw`` carries the provider's native turn object (e.g. a Gemini ``Content``)
+    so the caller can echo it back verbatim on the next request — required by
+    thinking models that sign their function-call parts.
+    """
+
+    model_config = {"arbitrary_types_allowed": True}
+
+    tool_calls: list[ToolCall] = []
+    text: str = ""
+    raw: object | None = None
+
+
+class LLMClient(ABC):
+    @abstractmethod
+    async def generate(
+        self, *, system: str, messages: list[LLMMessage],
+        model: str | None = None, max_tokens: int = 2048, temperature: float = 0.3,
+    ) -> str: ...
+
+    @abstractmethod
+    async def generate_structured(
+        self, *, system: str, messages: list[LLMMessage],
+        schema: type[BaseModelT], model: str | None = None,
+    ) -> BaseModelT: ...
+
+    @abstractmethod
+    async def generate_with_tools(
+        self, *, system: str, messages: list,
+        tools: list[dict], model: str | None = None,
+        max_tokens: int = 2048, temperature: float = 0.2,
+    ) -> ToolTurn: ...
+
+
+def get_llm() -> LLMClient:
+    provider = get_settings().llm_provider
+    if provider == "gemini":
+        from app.llm.gemini_client import GeminiClient
+        inner: LLMClient = GeminiClient()
+    elif provider == "anthropic":
+        from app.llm.anthropic_client import AnthropicClient
+        inner = AnthropicClient()
+    else:
+        raise ValueError(f"unknown llm_provider: {provider!r}")
+
+    from app.llm.logging_client import LoggingLLMClient
+    return LoggingLLMClient(inner)

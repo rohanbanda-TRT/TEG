@@ -2,7 +2,7 @@
 
 > **Category:** WhatsApp-based CRM / Business Automation
 > **Website:** https://upmatrix.in/
-> **TEG participation:** TEG 2024 exhibitor (confirmed via official TEG exhibitors page)
+> **TEG participation:** TEG 2024 exhibitor · TEG 2026 exhibitor (named in official TEG sponsors brochure) (confirmed via official TEG exhibitors page)
 > **Confidence:** Verified
 
 ---
@@ -25,6 +25,9 @@ Confirmed. The official Tech Expo Gujarat exhibitors page links the "UpMatrix" s
 
 Listed only by name ("UpMatrix") in the TEG 2024 exhibitor master table in `exhibitors_directory.md`. Now confirmed via the official techexpogujarat.com/exhibitors page, which links the "UpMatrix" sponsor logo directly to upmatrix.in.
 
+## TEG 2026 Participation
+Named in the "Our Exhibitors (Year 2026)" page of the official TEG sponsors brochure (`teg-sponsors-brochure.pdf`) — confirming return participation at TEG 2026 (27–29 November 2026, GUCEC, Ahmedabad).
+
 ## Contact & Digital Channels
 
 | Channel | URL |
@@ -34,5 +37,5 @@ Listed only by name ("UpMatrix") in the TEG 2024 exhibitor master table in `exhi
 | Parent co. IndiaMART listing | https://www.indiamart.com/matrixhivetechnologies/ |
 
 ---
-*Last updated: August 27, 2026*
-*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); upmatrix.in (fetched directly); prior WebSearch results (IndiaMART)*
+*Last updated: August 31, 2026*
+*Source: techexpogujarat.com/exhibitors (official sponsor logo link, verified via direct fetch); upmatrix.in (fetched directly); prior WebSearch results (IndiaMART); teg-sponsors-brochure.pdf ("Our Exhibitors — Year 2026" page)*
