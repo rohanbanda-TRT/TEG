@@ -18,12 +18,14 @@
   --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
   --font: "Manrope", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  /* page-filling columns, not a narrow centered app-shell card — a
-     moderate width for reading (hero, the narrative timeline, the ask)
-     and a wide one for grids and charts, which have more use for the
-     extra room */
-  --maxw: 880px;
-  --maxw-wide: 1180px;
+  /* page-filling columns, not a narrow centered app-shell card. Scaled by
+     viewport (not a flat px cap) so a wide monitor actually gets a wider
+     page instead of a bigger empty margin — capped so lines never run
+     absurdly long. Two tiers: a moderate one for reading (hero, the
+     narrative timeline, the ask) and a wide one for grids and charts,
+     which have more use for the extra room. */
+  --maxw: min(90vw, 1320px);
+  --maxw-wide: min(94vw, 1640px);
   --radius: 18px;
   --radius-sm: 10px;
 
@@ -239,12 +241,12 @@ a {
 }
 .hero h1 {
   color: #fff;
-  max-width: 16ch;
+  max-width: 21ch;
 }
 .hero__sub {
   color: #dfe6fb !important;
   font-size: clamp(1.15rem, 2vw, 1.4rem);
-  max-width: 50ch;
+  max-width: 60ch;
   margin-top: 1.6rem;
 }
 .hero__meta {

@@ -369,8 +369,15 @@ class PersuasionAgent(Agent):
             f"{peer_line}\n"
             "Personalization: when you know the person's role, address them through it and "
             "reference one concrete fact about their company from the overview — not a "
-            "generic line. If you do NOT know their role, ask it naturally in your first "
-            "reply.\n\n"
+            "generic line. A concrete fact is something from Company facts / Person facts "
+            "below (sector, location, size, history with TEG) or something actually said in "
+            "the conversation — NEVER a guess about how they currently operate (their client "
+            "acquisition channel, pipeline makeup, team process, tools). Companies in the "
+            "same sector run very differently from each other; stating an assumption like "
+            "that as fact reads as generic, not personalized, and is often just wrong. If "
+            "you're curious about it, ask — don't assert it, even with a hedge like 'I "
+            "imagine' or 'I'd guess'. If you do NOT know their role, ask it naturally in "
+            "your first reply.\n\n"
             "Discovery: you are also gathering context for a possible tailored proposal. "
             "Naturally learn and record in `discovery`: goal (the outcome they want from "
             "TEG), target_market (who they sell to / their buyer industries), scale (rough "
@@ -390,7 +397,9 @@ class PersuasionAgent(Agent):
             "regardless.\n\n"
             f"You may draw on these benefits (paraphrase, do not list): {'; '.join(props)}.\n"
             "Hard rules: only name peer companies from the list you are given; never invent "
-            "statistics or testimonials; never state a visitor ticket price."
+            "statistics or testimonials; never state a visitor ticket price; never say 'you "
+            "told us', 'you mentioned', or similar unless they actually said it in this "
+            "conversation — at the very first message they have said nothing to us yet."
         )
 
     async def init(self, intake: IntakeResult, dossier: ResearchDossier) -> PersuasionInit:
@@ -458,7 +467,10 @@ class PersuasionAgent(Agent):
         text = await self._generate_text(system, user)
 
         async def _violations(t: str) -> list:
-            vs = check_message(t, allowed_peers=peers, persona=persona, price_ok=False)
+            vs = check_message(
+                t, allowed_peers=peers, persona=persona, price_ok=False,
+                prospect_has_spoken=False,
+            )
             vt = await check_testimonial(t, self.llm)
             return [*vs, vt] if vt else vs
 

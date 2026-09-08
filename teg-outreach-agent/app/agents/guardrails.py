@@ -71,6 +71,16 @@ _COMMITMENT = re.compile(
     r"binding\s+(?:offer|agreement|quote)|authoris?ed\s+signator|signature\s*[:_]|signatory\s*[:_])",
     re.I,
 )
+# The opening message is the FIRST thing we send — the prospect has said nothing
+# to us yet at that point, so any phrasing that attributes a claim to them
+# ("you told us your pipeline runs on referrals", "as you mentioned") is a
+# fabrication, not a paraphrase. Applies only where `prospect_has_spoken=False`.
+_FABRICATED_ATTRIBUTION = re.compile(
+    r"\b(you\s+(?:told|informed|mentioned|shared|said)\s+us|"
+    r"as\s+you\s+(?:told|mentioned|said|shared)|you\s+said\s+that|"
+    r"you(?:'ve| have)\s+(?:told|mentioned|shared)\s+(?:me|us))\b",
+    re.I,
+)
 
 
 @dataclass
@@ -85,8 +95,16 @@ def _kb_company_names() -> set[str]:
 
 def check_message(
     text: str, *, allowed_peers: list[str], persona: Persona, price_ok: bool = False,
+    prospect_has_spoken: bool = True,
 ) -> list[GuardrailViolation]:
     out: list[GuardrailViolation] = []
+
+    # fabricated attribution — only checked pre-first-reply, where it's
+    # unambiguous: nothing the prospect "told us" can be true yet.
+    if not prospect_has_spoken:
+        fm = _FABRICATED_ATTRIBUTION.search(text)
+        if fm:
+            out.append(GuardrailViolation("fabricated_attribution", fm.group(0)))
 
     # visitor price
     for m in _RUPEE.finditer(text):

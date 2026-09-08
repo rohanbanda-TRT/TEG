@@ -176,3 +176,31 @@ def test_allows_listed_peer():
 def test_safe_templates_cover_all_personas():
     for p in ("it_tech_service", "ai_startup", "non_tech_sponsor", "visitor"):
         assert p in SAFE_TEMPLATES and SAFE_TEMPLATES[p].strip()
+
+
+# --- fabricated_attribution: the opening message is the first thing sent —
+# nothing can have been "told" to us yet at that point.
+
+def test_flags_fabricated_attribution_before_the_prospect_has_spoken():
+    v = check_message(
+        "Good to hear from you — you told us your pipeline runs mostly on referrals today.",
+        allowed_peers=[], persona="it_tech_service", prospect_has_spoken=False,
+    )
+    assert any(x.code == "fabricated_attribution" for x in v)
+
+
+def test_allows_told_us_once_the_prospect_has_actually_spoken():
+    v = check_message(
+        "Good — you told us you're targeting enterprise buyers, so here's how TEG fits.",
+        allowed_peers=[], persona="it_tech_service", prospect_has_spoken=True,
+    )
+    assert not any(x.code == "fabricated_attribution" for x in v)
+
+
+def test_fabricated_attribution_off_by_default_for_backward_compatibility():
+    # existing callers (mid-conversation turns) don't pass prospect_has_spoken
+    v = check_message(
+        "As you mentioned, budget is a concern this quarter.",
+        allowed_peers=[], persona="it_tech_service",
+    )
+    assert not any(x.code == "fabricated_attribution" for x in v)
