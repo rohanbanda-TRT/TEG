@@ -180,12 +180,15 @@ def check_section_consistency(
 
 
 def _company_standing(deep_findings: DeepFindings | None) -> str:
-    """Deterministic, not LLM-authored — a plain assembly of stored
-    DeepFindings fields, the same "state facts, never invent" discipline
-    every other forced field in this module follows. Written as flowing
-    sentences, not "Label: a, b." fragments — this renders as a real
-    paragraph on the proposal page, not a punchy one-liner, so it reads
-    like prose rather than a data dump.
+    """The GUARDRAIL-VIOLATION FALLBACK for company_standing, not the
+    default value — the model writes this field itself, from the same
+    deep_findings facts, as part of the normal generation call (see
+    build()'s deep_research_block); this deterministic assembly only ever
+    gets used if that generated text violates a guardrail check twice (the
+    same "regenerate once, then scrub to a safe deterministic version"
+    pattern PROPOSAL_SAFE_SECTIONS provides for every other field). Written
+    as flowing sentences, not "Label: a, b." fragments, so even the
+    fallback reads like prose, not a data dump.
     Empty string (not a placeholder sentence) when no deep pass has landed
     for this company yet, so the frontend can hide the section entirely
     rather than show an empty-sounding one."""
@@ -427,12 +430,41 @@ class ProposalAgent(Agent):
             if _missing_ctx else ""
         )
 
+        # Independent (deep-research) facts, when a background pass has
+        # landed for this company — grounding for company_standing below.
+        # Raw structured facts are fine to hand the model AS CONTEXT (that's
+        # what every other block here already is); the fix is making sure
+        # company_standing is actually WRITTEN by the model from them,
+        # rather than assembled by Python and forced over whatever the
+        # model produced (see the "force trusted fields" tail for why that
+        # used to happen and no longer does).
+        deep_research_block = ""
+        if deep_findings is not None:
+            fact_lines = []
+            if deep_findings.market_positioning:
+                fact_lines.append(f"Positioning: {deep_findings.market_positioning}")
+            if deep_findings.core_capabilities:
+                fact_lines.append(f"Core capabilities: {', '.join(deep_findings.core_capabilities)}")
+            if deep_findings.customer_segments:
+                fact_lines.append(f"Currently serves: {', '.join(deep_findings.customer_segments)}")
+            if deep_findings.growth_trend:
+                fact_lines.append(f"Growth trend: {deep_findings.growth_trend}")
+            if deep_findings.competitive_position:
+                fact_lines.append(f"Competitive position: {deep_findings.competitive_position}")
+            if fact_lines:
+                deep_research_block = (
+                    "Independent research on this company (ground company_standing in "
+                    "ONLY these facts, written as natural sentences, never as labeled "
+                    "fragments or a list):\n" + "\n".join(f"- {ln}" for ln in fact_lines) + "\n\n"
+                )
+
         user = (
             f"Persona: {persona}\n"
             f"Person: {intake.person_name}  Company: {intake.company_name_canonical}  Sector: {dossier.sector}\n"
             f"Company facts: {dossier.company_profile}\nPerson facts: {dossier.person_profile}\n"
             f"Learned in chat: {learned_facts}\n\n"
             f"{missing_line}"
+            f"{deep_research_block}"
             f"Conversation:\n{convo}\n\n"
             f"TEG goals: {gp_goals}\n\nTEG mechanism: {gp_mechanism}\n\nEvidence: {gp_evidence}\n\n"
             f"Base pain points for this persona (personalize, keep 2-4):\n{pain_lines}\n\n"
@@ -443,7 +475,17 @@ class ProposalAgent(Agent):
             f"Scale note (use verbatim, do not alter numbers): {scale_note!r}\n\n"
             f"{pkg_line}\n\n"
             "Also produce:\n"
-            "- executive_summary: 3-4 sentences (their role + company, their goal, why TEG fits, "
+            + (
+                "- company_standing: 2-4 plain, natural sentences describing where this company "
+                "stands today — written ONLY from the 'Independent research on this company' "
+                "facts above, in your own words, as flowing prose (never 'Label: value' "
+                "fragments, never a bullet list). If those facts say nothing on some point, "
+                "just don't cover it — do not pad with generic filler.\n"
+                if deep_research_block else
+                "- company_standing: leave this as an empty string — no independent research "
+                "exists for this company yet.\n"
+            )
+            + "- executive_summary: 3-4 sentences (their role + company, their goal, why TEG fits, "
             "the headline recommendation)\n"
             "- how_a_teg_plays_out: 3-6 bullets walking the 3 days, tuned to their goal\n"
             "- roi_framing: a value paragraph with NO numbers and NO promised outcomes — phrase it "
@@ -523,6 +565,7 @@ class ProposalAgent(Agent):
                 ("hero_subline", p.hero_subline),
                 ("closing_cta_body", p.closing_cta_body),
                 ("peer_context_line", p.peer_context_line),
+                ("company_standing", p.company_standing),
             ]
             for i, pn in enumerate(p.pains):
                 texts.append((f"pain::{i}", pn.pain))
@@ -542,7 +585,8 @@ class ProposalAgent(Agent):
                 for v in check_message(txt, allowed_peers=peers, persona=persona,
                                        price_ok=price_requested):
                     found.append((label, v))
-            for label in ("roi_framing", "hero_headline", "hero_subline", "closing_cta_body"):
+            for label in ("roi_framing", "hero_headline", "hero_subline", "closing_cta_body",
+                          "company_standing"):
                 op = check_overpromise(getattr(p, label))
                 if op:
                     found.append((label, op))
@@ -649,6 +693,11 @@ class ProposalAgent(Agent):
                 proposal.hero_subline = PROPOSAL_SAFE_SECTIONS["hero_subline"][persona]
             if "closing_cta_body" in bad:
                 proposal.closing_cta_body = PROPOSAL_SAFE_SECTIONS["closing_cta_body"][persona]
+            if "company_standing" in bad:
+                # Safe fallback ONLY, not the default: a plain, deterministic
+                # assembly of the same deep-research facts, in place of
+                # whatever the model wrote that violated a rule twice.
+                proposal.company_standing = _company_standing(deep_findings)
             if "price_line" in bad:
                 proposal.recommended_package = fallback_pkg
                 if not price_requested:
@@ -710,13 +759,20 @@ class ProposalAgent(Agent):
         proposal.peer_companies = [p for p in proposal.peer_companies if p in peers][:5] or peers[:3]
         proposal.peers_in_sector_total = sector_peer_count
         proposal.scale_note = scale_note
-        # Deterministic, not LLM-authored (§ same discipline as scale_note
-        # above) — both empty when no deep-research pass exists for this
-        # company yet, so the page renders identically to before this field
-        # existed. teg_fit_points is a direct copy of DeepFindings.teg_fit_reasons
-        # (already grounded, guardrail-guided output from the deep-research
-        # pass itself) rather than a second LLM call re-deriving it.
-        proposal.company_standing = _company_standing(deep_findings)
+        # company_standing is now the MODEL's own prose, written from the
+        # deep_research_block facts in the prompt above and guardrail-
+        # checked in all_violations() like every other narrative field —
+        # NOT overwritten here. The one thing still forced: if no deep
+        # research exists, there is nothing to write from, so the field is
+        # cleared regardless of what the model produced (it was told to
+        # leave it empty, but this is the safety net, same discipline as
+        # every other trusted-field override in this block).
+        if deep_findings is None:
+            proposal.company_standing = ""
+        # teg_fit_points is a direct copy of DeepFindings.teg_fit_reasons —
+        # already grounded, guardrail-guided prose from the deep-research
+        # pass itself (see .claude/skills/teg-deep-research/SKILL.md), not
+        # raw data, so no second LLM call is needed to "polish" it further.
         proposal.teg_fit_points = list(deep_findings.teg_fit_reasons) if deep_findings else []
         if not proposal.peer_companies or "peer_context_line" in {label for label, _ in violations}:
             proposal.peer_context_line = ""

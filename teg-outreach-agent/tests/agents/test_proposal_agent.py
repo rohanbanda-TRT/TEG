@@ -356,8 +356,18 @@ async def test_itorix_infotech_business_focused_proposal():
     print("=== END TEST RESULTS ===\n")
 
 
-# ---- company_standing / teg_fit_points — deep-research passthrough,
-# deterministic (no LLM authorship), see app/research/deep.py.
+# ---- company_standing / teg_fit_points — see app/research/deep.py.
+#
+# company_standing is now MODEL-WRITTEN prose (fed the deep-research facts
+# as grounding context in build()'s prompt, then guardrail-checked like
+# every other narrative field) — NOT assembled by Python and forced over
+# the model's own output. _company_standing() only ever runs as the
+# guardrail-VIOLATION fallback, the same "regenerate once, then scrub to a
+# safe deterministic version" pattern every other field already has.
+# teg_fit_points stays a direct passthrough of DeepFindings.teg_fit_reasons
+# — that text is already grounded, guardrail-guided prose from the
+# deep-research pass itself (see .claude/skills/teg-deep-research/SKILL.md),
+# not raw data, so no second LLM call is needed to "polish" it further.
 
 def _deep_findings(**over) -> DeepFindings:
     base = dict(
@@ -372,7 +382,9 @@ def _deep_findings(**over) -> DeepFindings:
     return DeepFindings(**base)
 
 
-def test_company_standing_assembles_deterministically_from_deep_findings():
+def test_company_standing_fallback_assembles_deterministically_from_deep_findings():
+    """Tests the FALLBACK function directly — not what build() uses by
+    default (see the module comment above)."""
     text = _company_standing(_deep_findings())
     assert "Odoo + Salesforce implementation partner" in text
     assert "Odoo ERP implementation" in text
@@ -380,25 +392,70 @@ def test_company_standing_assembles_deterministically_from_deep_findings():
     assert "headcount growing faster than revenue" in text.lower()
 
 
-def test_company_standing_empty_when_no_deep_findings():
+def test_company_standing_fallback_empty_when_no_deep_findings():
     assert _company_standing(None) == ""
 
 
-async def test_build_populates_company_standing_and_teg_fit_points_when_deep_findings_given():
-    llm = FakeLLMClient(structured=[_good_proposal()])
+async def test_build_uses_the_models_own_company_standing_text_unchanged():
+    """The whole point of this fix: build() must NOT discard what the model
+    wrote and replace it with the deterministic assembly — that was the
+    original bug (raw context shown as-is instead of a natural-language
+    response). A guardrail-clean model sentence must pass through verbatim."""
+    natural_sentence = (
+        "DataZen Analytics has built a name doing Odoo and Salesforce implementation work, "
+        "with a client base concentrated in manufacturing and retail."
+    )
+    llm = FakeLLMClient(structured=[_good_proposal(company_standing=natural_sentence)])
     p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
         transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
         deep_findings=_deep_findings(),
     )
-    assert "Odoo + Salesforce implementation partner" in p.company_standing
+    assert p.company_standing == natural_sentence
     assert p.teg_fit_points == [
         "Their ERP/CRM mix maps directly to TEG's manufacturing and retail floor"
     ]
 
 
-async def test_build_leaves_company_standing_and_teg_fit_points_empty_without_deep_findings():
-    llm = FakeLLMClient(structured=[_good_proposal()])
+async def test_build_prompts_for_company_standing_grounded_in_deep_research_facts():
+    """Confirms the model is actually HANDED the facts and told to write
+    natural prose from them — not left to guess, and not told to copy
+    labeled fragments."""
+    llm = FakeLLMClient(structured=[_good_proposal(company_standing="whatever")])
+    await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+        deep_findings=_deep_findings(),
+    )
+    user_prompt = llm.calls[-1]["messages"][0]["content"]
+    assert "Odoo + Salesforce implementation partner" in user_prompt  # the raw fact, as context
+    assert "natural sentences" in user_prompt or "flowing prose" in user_prompt
+    assert "never a bullet list" in user_prompt or "never 'Label: value'" in user_prompt
+
+
+async def test_build_scrubs_company_standing_to_the_deterministic_fallback_on_violation():
+    """When the model's own company_standing draft violates a guardrail
+    twice, it scrubs to _company_standing()'s deterministic text — the
+    safety net, not the default."""
+    bad_standing = "You will definitely land 10x more clients from this."  # overpromise
+    bad = _good_proposal(company_standing=bad_standing)
+    llm = FakeLLMClient(structured=[bad, bad])
+    p, flags = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+        deep_findings=_deep_findings(),
+    )
+    assert p.company_standing != bad_standing
+    assert "Odoo + Salesforce implementation partner" in p.company_standing
+    assert "company_standing" in {label.split("::")[0] for label in flags} or any(
+        "overpromise" in f for f in flags
+    )
+
+
+async def test_build_forces_company_standing_empty_without_deep_findings_even_if_model_wrote_one():
+    """Safety net: the model was told to leave it empty, but if it doesn't,
+    build() still forces it — there's nothing to have grounded it in."""
+    llm = FakeLLMClient(structured=[_good_proposal(company_standing="Some plausible-looking text.")])
     p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
         intake=_intake(), dossier=_dossier(), persona="it_tech_service",
         transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,

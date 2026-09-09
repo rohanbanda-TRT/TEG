@@ -32,7 +32,7 @@ class _DeadWeb(ResearchTool):
         return ResearchResult(available=False, tool_name="web")
 
 
-def _good_proposal():
+def _good_proposal(**overrides):
     return Proposal(
         company="Third Rock Techkno", person="Tapan Patel", person_role="CMO",
         sector="Software Development", persona="it_tech_service",
@@ -48,6 +48,7 @@ def _good_proposal():
         peer_companies=["NeuraMonks", "ViitorCloud"],
         next_steps=["Book at techexpogujarat.com/become-an-exhibitor"],
         contact="info@techexpogujarat.com",
+        **overrides,
     )
 
 
@@ -95,6 +96,14 @@ async def test_generate_proposal_writes_files_row_and_message(tmp_path, monkeypa
 
 
 async def test_generate_proposal_picks_up_a_stored_deep_research_brief(tmp_path, monkeypatch):
+    """company_standing is now the MODEL's own prose (written from the
+    deep-research facts handed to it as grounding context, guardrail-
+    checked) — not a Python-assembled override of whatever it produced.
+    This test queues a plausible natural-language draft (what Claude would
+    actually write when grounded on "AI + cloud engineering consultancy")
+    and confirms it survives into the stored proposal unchanged, and that
+    the deep-findings-derived facts genuinely reached the generation
+    prompt."""
     monkeypatch.setenv("PROPOSAL_DIR", str(tmp_path / "proposals"))
     from config.settings import get_settings
     get_settings.cache_clear()
@@ -109,12 +118,38 @@ async def test_generate_proposal_picks_up_a_stored_deep_research_brief(tmp_path,
         )
         await s.commit()
 
-    orch, sid = await _seed_session()
-    await orch.generate_proposal(sid)
+    proposal_llm = FakeLLMClient(structured=[_good_proposal(
+        company_standing=(
+            "Third Rock Techkno has built its name as an AI and cloud engineering "
+            "consultancy, working closely with clients on infrastructure and applied AI."
+        ),
+    )])
+    orch = Orchestrator(
+        analysis=AnalysisAgent(FakeLLMClient(structured=[_CanonResult(canonical="Third Rock Techkno", intent_hint="exhibitor")])),
+        research=ResearchAgent(FakeLLMClient(structured=[_Synthesis(
+            sector="AI Consulting", company_size="200", hq="Ahmedabad", founder=None,
+            designation=None, seniority=None, is_technical=None, person_company_match=None,
+        )]), explorer=StubExplorer(), tools=[_DeadWeb()]),
+        persuasion=PersuasionAgent(FakeLLMClient(
+            structured=[_PersonaChoice(persona="it_tech_service", reason="software services")],
+            responses=["Welcome back. A 3m x 3m stall is ₹1,17,000 + GST (indicative, confirmed at booking). Want details?"],
+        )),
+        proposal=ProposalAgent(proposal_llm, explorer=StubExplorer()),
+    )
+    res = await orch.run_pipeline(IntakePayload(person_name="Tapan Patel", company_name="Third Rock Techkno"))
+    await orch.generate_proposal(res.session_id)
+
+    # The raw fact reached the model as grounding context, not as the final answer.
+    user_prompt = proposal_llm.calls[-1]["messages"][0]["content"]
+    assert "AI + cloud engineering consultancy" in user_prompt
 
     async with SessionLocal() as s:
         pr = (await s.execute(select(ProposalRow))).scalars().one()
-        assert "AI + cloud engineering consultancy" in pr.proposal_json["company_standing"]
+        # the MODEL's own sentence, verbatim — not a Python-reassembled version of the facts
+        assert pr.proposal_json["company_standing"] == (
+            "Third Rock Techkno has built its name as an AI and cloud engineering "
+            "consultancy, working closely with clients on infrastructure and applied AI."
+        )
         assert pr.proposal_json["teg_fit_points"] == [
             "Their AI/cloud practice maps to TEG's tech-cluster visitors"
         ]
