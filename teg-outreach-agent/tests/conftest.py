@@ -21,6 +21,20 @@ os.environ["CLAUDE_CLI_ENABLED"] = "false"
 # subprocess via POST /inquiries even if that gate is ever loosened.
 os.environ["DEEP_RESEARCH_ENABLED"] = "false"
 
+# Settings.discovery_v2_enabled defaults to False, but that default is only
+# as real as nobody's local .env overriding it — pydantic-settings reads
+# .env unconditionally, so a developer who has DISCOVERY_V2_ENABLED=true
+# in their own .env (to test that path manually) would otherwise silently
+# flip every test in this suite onto the discovery-v2 path, breaking tests
+# that were written against (and whose whole point is proving) the legacy
+# path — tests/orchestrator/test_run_turn_discovery.py's own docstring
+# calls the rest of this suite "the flag-off suite," a claim that should be
+# true by construction, not by accident of whoever's .env happens to run
+# it. Tests that need v2 on (test_run_turn_discovery.py) already
+# monkeypatch.setenv + get_settings.cache_clear() per-test to opt in, so
+# forcing the default off here doesn't take anything away from them.
+os.environ["DISCOVERY_V2_ENABLED"] = "false"
+
 from typing import ClassVar
 
 import pytest
