@@ -1,0 +1,142 @@
+{
+  "generated_from_kb_at": "2026-09-09",
+  "tier_ladders": {
+    "it_tech_service": [
+      {
+        "name": "3m x 3m stall",
+        "price_line": "₹1,17,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "2 exhibitor passes",
+          "1 pre/post-party passes",
+          "5 visitor passes",
+          "modular stall + fascia",
+          "pre-scheduled 1:1 B2B meetings",
+          "TEG Community Network Portal access"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      },
+      {
+        "name": "3m x 9m corner stall",
+        "price_line": "₹3,51,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "6 exhibitor passes",
+          "2 pre/post-party passes",
+          "15 visitor passes",
+          "modular stall + fascia",
+          "pre-scheduled 1:1 B2B meetings",
+          "TEG Community Network Portal access"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      },
+      {
+        "name": "6m x 6m stall",
+        "price_line": "₹4,68,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "8 exhibitor passes",
+          "3 pre/post-party passes",
+          "20 visitor passes",
+          "modular stall + fascia",
+          "pre-scheduled 1:1 B2B meetings",
+          "TEG Community Network Portal access"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      }
+    ],
+    "ai_startup": [
+      {
+        "name": "Catalyst Zone (2m x 2m startup stall)",
+        "price_line": "₹35,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "2 exhibitor passes",
+          "modular stall + fascia",
+          "pre-scheduled 1:1 B2B meetings",
+          "TEG Community Network Portal access"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      },
+      {
+        "name": "3m x 3m stall",
+        "price_line": "₹1,17,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "2 exhibitor passes",
+          "1 pre/post-party passes",
+          "5 visitor passes",
+          "modular stall + fascia",
+          "pre-scheduled 1:1 B2B meetings",
+          "TEG Community Network Portal access"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      },
+      {
+        "name": "3m x 6m stall",
+        "price_line": "₹2,34,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "4 exhibitor passes",
+          "2 pre/post-party passes",
+          "10 visitor passes",
+          "modular stall + fascia",
+          "pre-scheduled 1:1 B2B meetings",
+          "TEG Community Network Portal access"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      }
+    ],
+    "non_tech_sponsor": [
+      {
+        "name": "Official Category Partner (Banking / Real Estate)",
+        "price_line": "₹6,00,000–7,00,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "category exclusivity",
+          "3m x 3m stall",
+          "15 visitor passes",
+          "2 VIP passes",
+          "website logo",
+          "stage mention",
+          "on-stage trophy"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      },
+      {
+        "name": "Official AI Partner",
+        "price_line": "₹10,00,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "category exclusivity",
+          "3m x 3m stall",
+          "15 visitor passes",
+          "3 VIP passes",
+          "website logo",
+          "stage mention",
+          "on-stage trophy",
+          "1 digital PR"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      },
+      {
+        "name": "Title Sponsor",
+        "price_line": "₹35,00,000 + GST (indicative, confirmed at booking)",
+        "includes": [
+          "6m x 6m stall (all benefits included)",
+          "largest logo on all branding",
+          "entry-gate branding",
+          "media & PR coverage",
+          "5 VIP passes",
+          "all attendee & exhibitor data shared",
+          "10-minute main-stage speaker slot"
+        ],
+        "payment_plan": "4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)"
+      }
+    ],
+    "visitor": [
+      {
+        "name": "Visitor pass",
+        "price_line": "ticketed entry (no free entry); current pricing on the official ticketing portal",
+        "includes": [
+          "access to 250+ exhibitors across 18 industries",
+          "keynote sessions",
+          "the TEG networking app"
+        ],
+        "payment_plan": "—"
+      }
+    ]
+  }
+}

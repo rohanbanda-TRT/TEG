@@ -20,7 +20,7 @@ import asyncio
 import json
 import os
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, AsyncIterator, Awaitable, Callable
 
 from app.obs import get_logger
@@ -41,6 +41,12 @@ class ClaudeResult:
     data: Any
     cost_usd: float | None = None
     session_id: str | None = None
+    # How many WebSearch/WebFetch tool calls happened inside this one CLI
+    # invocation — makes "let Claude search as much as it needs" (the
+    # uncapped internal agentic loop granted tools like WebSearch/WebFetch
+    # rely on) measurable instead of an assumption. Always 0 for a call
+    # granted no such tools.
+    tool_calls: int = 0
 
 
 @dataclass(frozen=True)
@@ -125,6 +131,8 @@ class ClaudeCli:
             return
 
         chars = 0
+        tool_calls = 0
+        _COUNTED_TOOLS = {"WebSearch", "WebFetch"}
         settled: ClaudeResult | ClaudeError | None = None
         try:
             async with asyncio.timeout(timeout_s) if timeout_s else _nullctx():
@@ -137,15 +145,23 @@ class ClaudeCli:
                     except (ValueError, TypeError):
                         continue  # human-readable noise on stdout; ignore
 
+                    event = msg.get("event", {}) if msg.get("type") == "stream_event" else {}
                     if (
-                        msg.get("type") == "stream_event"
-                        and msg.get("event", {}).get("type") == "content_block_delta"
-                        and msg["event"].get("delta", {}).get("type") == "text_delta"
+                        event.get("type") == "content_block_delta"
+                        and event.get("delta", {}).get("type") == "text_delta"
                     ):
-                        chars += len(msg["event"]["delta"]["text"])
+                        chars += len(event["delta"]["text"])
                         yield ClaudeProgress(chars_streamed=chars)
+                    elif (
+                        event.get("type") == "content_block_start"
+                        and event.get("content_block", {}).get("type") == "tool_use"
+                        and event["content_block"].get("name") in _COUNTED_TOOLS
+                    ):
+                        tool_calls += 1
                     elif msg.get("type") == "result" and settled is None:
                         settled = _terminal_event(msg)
+                        if isinstance(settled, ClaudeResult):
+                            settled = replace(settled, tool_calls=tool_calls)
         except TimeoutError:
             child.kill()
             yield ClaudeError(f"claude timed out after {timeout_s}s")
@@ -201,7 +217,8 @@ class ClaudeCli:
                     if on_progress:
                         on_progress(ev.chars_streamed)
                 elif isinstance(ev, ClaudeResult):
-                    _log.info("claude ok  cost=%s  session=%s", ev.cost_usd, ev.session_id)
+                    _log.info("claude ok  cost=%s  session=%s  tool_calls=%d",
+                              ev.cost_usd, ev.session_id, ev.tool_calls)
                     return ev
                 else:
                     settled = ev

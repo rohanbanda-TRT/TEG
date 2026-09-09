@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 
 from pydantic import BaseModel
 
 from app.agents.base import Agent
+from app.claude.cli import ClaudeCli
 from app.domain.schemas import IntakeResult, ResearchDossier, SourceRef
 from app.kb._names import _norm
 from app.kb.explorer import ExploreResult, KBExplorer, default_explorer
@@ -17,6 +19,25 @@ from config.outreach_rules import load_rules
 from config.settings import get_settings
 
 _log = get_logger("agent.research")
+
+# Process-lifetime memo: a `claude` CLI probe spawns a real subprocess, so we
+# only ever pay that cost once per (model, cwd) — every ResearchAgent
+# instance after the first shares this cache rather than re-probing.
+_claude_probe_cache: dict[str, bool] = {}
+
+
+async def _claude_cli_usable(cli: ClaudeCli, *, model: str, cwd: str) -> bool:
+    key = f"{model}@{cwd}"
+    if key in _claude_probe_cache:
+        return _claude_probe_cache[key]
+    ok, reason = await cli.probe(model=model, cwd=cwd)
+    if not ok:
+        _log.warning(
+            "claude CLI unavailable (%s) -> ResearchAgent falls back to Tavily/Brave web search",
+            reason,
+        )
+    _claude_probe_cache[key] = ok
+    return ok
 
 # TEG spans tech verticals AND broader industries — the event is explicitly not
 # IT-only. Both the explorer goal and the web-fallback classifier use this list.
@@ -107,6 +128,14 @@ class ResearchAgent(Agent):
     ) -> None:
         super().__init__(llm)
         self._explorer = explorer or default_explorer(llm)
+        # Claude's own WebSearch/WebFetch loop is the default research
+        # backend (config.settings.claude_cli_enabled) — Tavily/Brave is an
+        # explicit FALLBACK ONLY, triggered when ClaudeCli.probe() reports
+        # the CLI unavailable (not installed, not authenticated), never run
+        # in parallel as a second default. That check needs an `await`, so
+        # it can't happen here in __init__ — see _ensure_web_tool(), called
+        # once at the top of run().
+        self._probe_pending = tools is None and get_settings().claude_cli_enabled
         if tools is None:
             if get_settings().claude_cli_enabled:
                 # Claude runs its own search-and-fetch loop, so the separate
@@ -127,7 +156,29 @@ class ResearchAgent(Agent):
         # above this we trust the KB and skip the web spend.
         self._kb_trust = 0.7
 
+    async def _ensure_web_tool(self) -> None:
+        """Probe once (memoized process-wide — see _claude_cli_usable) and
+        swap to the Tavily/Brave fallback if the `claude` CLI turns out to be
+        unavailable. Only runs when __init__ picked ClaudeWebSearch itself
+        (tools=None + claude_cli_enabled) — an explicitly injected `tools`
+        list (every test in this suite) is never second-guessed."""
+        if not self._probe_pending:
+            return
+        self._probe_pending = False
+        s = get_settings()
+        cli = ClaudeCli()
+        if not cli.api_key:
+            from app.api.claude_conn import get_api_key
+
+            cli.api_key = get_api_key() or ""
+        cwd = str(Path(s.skills_path).resolve().parent)
+        usable = await _claude_cli_usable(cli, model=s.claude_cli_model, cwd=cwd)
+        if not usable:
+            self._web = get_web_search()
+            self._scraper = PageScraper()
+
     async def run(self, intake: IntakeResult) -> ResearchDossier:
+        await self._ensure_web_tool()
         s = get_settings()
         budget = _Budget(s.research_max_searches_per_track, s.research_max_scrapes)
         company = intake.company_name_canonical
@@ -256,6 +307,47 @@ class ResearchAgent(Agent):
         )
 
     # ---- tracks ----
+    #
+    # run_company_track / run_person_track are the public, separately-callable
+    # wrappers docs/superpowers/specs/2026-09-10-verification-harness-and-graph-design.md
+    # §3.3.3's research_company/research_person graph nodes call — a pure
+    # refactor over the existing _company_track/_person_track (unchanged
+    # below), NOT a behavior change: run() still builds one shared _Budget
+    # and gathers both trackers exactly as before.
+    #
+    # KNOWN GAP, flagged rather than silently resolved: _Budget's
+    # scrapes_left/scrape_calls/web_calls counters are shared ACROSS both
+    # tracks today (only web_left_company/web_left_person are genuinely
+    # per-track) — that's how run() enforces one combined scrape budget for
+    # a single research pass. The spec's graph node table gives
+    # research_company/research_person each only `intake` as a declared
+    # input, with no shared-budget key in GraphContext's plain-dict state.
+    # Calling these two wrappers from independent graph nodes with no
+    # explicit budget passed in (the default below) gives EACH track its
+    # own fresh _Budget — i.e. the combined scrape cap silently becomes two
+    # separate caps, a real behavior change from today's run(). Wiring the
+    # graph nodes to share one _Budget instance is possible (GraphContext is
+    # `dict[str, object]` — a mutable object reference is a legal value) but
+    # is a deliberate architectural call this spec doesn't make explicitly,
+    # so it isn't made here either — see the implementation-status note in
+    # docs/superpowers/plans/ for the decision this needs before
+    # Orchestrator.run_pipeline is wired through run_graph().
+
+    async def run_company_track(self, intake: IntakeResult, *, budget: "_Budget | None" = None) -> dict:
+        """Graph-node-callable wrapper — returns a plain dict shaped for
+        GraphContext's PartialState convention. `budget` defaults to a
+        standalone budget when not given, so this stays independently
+        callable outside a coordinated run() too."""
+        s = get_settings()
+        budget = budget or _Budget(s.research_max_searches_per_track, s.research_max_scrapes)
+        fields, id_conf, sources, ex = await self._company_track(intake, budget)
+        return {"fields": fields, "id_conf": id_conf, "sources": sources, "explore": ex}
+
+    async def run_person_track(self, intake: IntakeResult, *, budget: "_Budget | None" = None) -> dict:
+        s = get_settings()
+        budget = budget or _Budget(s.research_max_searches_per_track, s.research_max_scrapes)
+        fields, id_conf, sources, ex = await self._person_track(intake, budget)
+        return {"fields": fields, "id_conf": id_conf, "sources": sources, "explore": ex}
 
     async def _explore(self, goal: str) -> ExploreResult:
         try:

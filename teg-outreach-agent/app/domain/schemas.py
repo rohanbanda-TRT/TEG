@@ -160,6 +160,20 @@ class Proposal(BaseModel):
     closing_cta_body: str = ""
 
 
+class ConversationSignals(BaseModel):
+    """Structured extraction from the transcript, produced by
+    extract_conversation_signals (see docs/superpowers/specs/
+    2026-09-10-verification-harness-and-graph-design.md §3.2.2/§3.3.4).
+    Feeds package-tier selection in ProposalAgent.build() — kept narrow
+    (booth size / demo-station count / confidence) rather than a general
+    summarization, so it stays easy to get right and to unit-test."""
+
+    requested_tier: Literal["base", "mid", "upsized"] | None = None
+    signal_confidence: Literal["explicit", "inferred"] | None = None
+    demo_stations: int | None = None
+    notes: str = ""
+
+
 class ProposalCard(BaseModel):
     """A delivered proposal. `page_url` (the live `/p/{id}` page) is the only
     required delivery surface — `pdf_url`/`png_url` are unset on the current

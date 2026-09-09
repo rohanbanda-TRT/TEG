@@ -90,6 +90,34 @@ async def test_run_yields_progress_then_result():
     ]
 
 
+async def test_run_counts_websearch_and_webfetch_tool_calls():
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"stream_event","event":{"type":"content_block_start",'
+              '"content_block":{"type":"tool_use","name":"WebSearch"}}}'),
+        _line('{"type":"stream_event","event":{"type":"content_block_delta",'
+              '"delta":{"type":"text_delta","text":"..."}}}'),
+        _line('{"type":"stream_event","event":{"type":"content_block_start",'
+              '"content_block":{"type":"tool_use","name":"WebFetch"}}}'),
+        # a non-counted tool_use (e.g. Skill) must not inflate the count
+        _line('{"type":"stream_event","event":{"type":"content_block_start",'
+              '"content_block":{"type":"tool_use","name":"Skill"}}}'),
+        _line('{"type":"stream_event","event":{"type":"content_block_start",'
+              '"content_block":{"type":"tool_use","name":"WebSearch"}}}'),
+        _line('{"type":"result","structured_output":{"ok":true},'
+              '"total_cost_usd":0.03,"session_id":"sess_2","stop_reason":"tool_use"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, {}))
+
+    events = [e async for e in cli.run(
+        model="claude-sonnet-5", system_prompt="sys", user_prompt="user",
+        json_schema={"type": "object"}, cwd="/tmp",
+    )]
+
+    result = events[-1]
+    assert isinstance(result, ClaudeResult)
+    assert result.tool_calls == 3  # 2x WebSearch + 1x WebFetch, not the Skill call
+
+
 async def test_run_passes_the_flags_that_matter():
     captured: dict = {}
     child = _FakeChild(stdout_lines=[

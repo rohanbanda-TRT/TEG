@@ -35,7 +35,18 @@ class FakeLLMClient(LLMClient):
         for i, item in enumerate(self._structured):
             if isinstance(item, schema):
                 return self._structured.pop(i)
-        # No exact match (e.g. a test queued only one type of stub) -> FIFO.
+        # No exact match. If the schema is fully optional (every field has a
+        # default), prefer a safe zero-value instance over silently consuming
+        # an unrelated queued item meant for a different schema — this is
+        # what lets a new, best-effort structured call (e.g. an agent's
+        # extract_conversation_signals-style extraction) get added to a
+        # pipeline without every existing test needing to also stub it.
+        try:
+            return schema()
+        except Exception:
+            pass
+        # Schema has required fields and nothing queued matches -> FIFO,
+        # same as before.
         return self._structured.pop(0)
 
     async def generate_with_tools(
