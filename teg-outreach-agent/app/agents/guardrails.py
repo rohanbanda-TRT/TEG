@@ -319,4 +319,16 @@ PROPOSAL_SAFE_SECTIONS: dict[str, dict[Persona, str]] = {
         "non_tech_sponsor": "Reply in the chat to start a sponsorship conversation — we'll help you explore the category options.",
         "visitor": "Reply in the chat when you're ready and we'll send the registration link.",
     },
+    # Used by ProposalAgent's cross-field self-consistency check (Rule B,
+    # journey_playout_mismatch — docs/superpowers/specs/
+    # 2026-09-10-verification-harness-and-graph-design.md §3.2.4). A single
+    # sentence, not a list, to match this dict's existing str-per-persona
+    # shape; the caller wraps it as [value] since how_a_teg_plays_out is a
+    # list[str] field.
+    "how_a_teg_plays_out": {
+        "it_tech_service": "Over the three days you could meet pre-scheduled buyer meetings, explore the exhibitor floor, and follow up through the TEG networking app.",
+        "ai_startup": "Over the three days you could run live demos in the Catalyst Zone, meet the investor track, and follow up through the TEG networking app.",
+        "non_tech_sponsor": "Over the three days your sponsorship could get stage visibility, on-ground branding, and C-suite networking with attendees and exhibitors.",
+        "visitor": "Over the three days you could meet 250+ exhibitors across 18 industries, attend keynote sessions, and follow up through the TEG networking app.",
+    },
 }

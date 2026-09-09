@@ -1,4 +1,5 @@
-from app.agents.proposal import _PRICING_BY_PERSONA, ProposalAgent
+from app.agents.proposal import ProposalAgent
+from app.kb.pricing import load_pricing
 from app.domain.schemas import (
     IntakeResult,
     Proposal,
@@ -167,8 +168,9 @@ async def test_build_survives_explorer_miss():
 
 
 async def test_pricing_fallback_table_has_all_personas():
+    ladders = load_pricing()
     for k in ("it_tech_service", "ai_startup", "non_tech_sponsor", "visitor"):
-        pkg = _PRICING_BY_PERSONA[k]
+        pkg = ladders[k][0]
         assert "+ GST" in pkg.price_line or k == "visitor"
 
 

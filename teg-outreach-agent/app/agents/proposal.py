@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from app.agents.base import Agent
@@ -9,6 +10,7 @@ from app.claude.prompt_builder import render_skill
 from app.claude.skill_loader import load_skill
 from app.agents.guardrails import (
     PROPOSAL_SAFE_SECTIONS,
+    GuardrailViolation,
     check_message,
     check_overpromise,
     check_testimonial,
@@ -16,6 +18,7 @@ from app.agents.guardrails import (
 from app.domain.schemas import (
     GROWTH_STAGES,
     MAX_JOURNEY_POINTS,
+    ConversationSignals,
     IntakeResult,
     JourneyStage,
     Persona,
@@ -27,6 +30,7 @@ from app.domain.schemas import (
 )
 from app.kb.explorer import KBExplorer, default_explorer
 from app.kb.facts import load as _load_facts
+from app.kb.pricing import load_pricing
 from app.obs import get_logger
 from config.settings import get_settings
 
@@ -45,47 +49,144 @@ def _split_csv(raw: str) -> list[str]:
     return [p.strip().strip("*") for p in (raw or "").split(",") if p.strip()]
 
 
-_PRICING_BY_PERSONA: dict[Persona, ProposalPackage] = {
-    "it_tech_service": ProposalPackage(
-        name="3m x 3m stall",
-        price_line="₹1,17,000 + GST (indicative, confirmed at booking); larger stalls up to ₹4,68,000 + GST for 6m x 6m",
-        includes=[
-            "2 exhibitor passes", "5 visitor passes", "modular stall + fascia",
-            "pre-scheduled 1:1 B2B meetings", "TEG Community Network Portal access",
-        ],
-        payment_plan="4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)",
-    ),
-    "ai_startup": ProposalPackage(
-        name="Catalyst Zone (2m x 2m startup stall)",
-        price_line="₹35,000 + GST (indicative, confirmed at booking)",
-        includes=[
-            "2 exhibitor passes", "modular stall + fascia",
-            "pre-scheduled 1:1 B2B meetings", "TEG Community Network Portal access",
-        ],
-        payment_plan="4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)",
-    ),
-    "non_tech_sponsor": ProposalPackage(
-        name="Official Category Partner (e.g. AI / Real Estate / Banking Partner)",
-        price_line=(
-            "from ₹6,00,000 + GST for a category partnership up to ₹35,00,000 + GST for "
-            "Title Sponsor (all indicative, confirmed at booking)"
-        ),
-        includes=[
-            "category exclusivity", "3m x 3m stall (tier-dependent)",
-            "15 visitor + 2-3 VIP passes", "website logo", "stage mention", "on-stage trophy",
-        ],
-        payment_plan="4 instalments of 25% (9 Apr / 30 Jun / 31 Jul / 31 Aug 2026)",
-    ),
-    "visitor": ProposalPackage(
-        name="Visitor pass",
-        price_line="ticketed entry (no free entry); current pricing on the official ticketing portal",
-        includes=[
-            "access to 250+ exhibitors across 18 industries", "keynote sessions",
-            "the TEG networking app",
-        ],
-        payment_plan="—",
-    ),
-}
+# ---- package-tier accuracy + cross-field self-consistency ----
+# docs/superpowers/specs/2026-09-10-verification-harness-and-graph-design.md §3.2
+
+_TIER_INDEX = {"base": 0, "mid": 1, "upsized": 2}
+
+_CONVO_SIGNALS_SYSTEM = (
+    "Read the conversation transcript between a Tech Expo Gujarat outreach agent "
+    "and a prospect. Extract ONLY whether the prospect explicitly asked for a "
+    "bigger stall/sponsorship tier than the standard base offering — e.g. a "
+    "corner stall, a 6x6, multiple demo stations, a bigger booth, a higher "
+    "sponsorship category. "
+    "requested_tier: 'mid' for a moderately bigger ask (e.g. a corner stall), "
+    "'upsized' for a clearly bigger ask (e.g. a 6x6 or the largest tier), null if "
+    "there is no such signal at all. "
+    "signal_confidence: 'explicit' ONLY if the prospect said so in plain words "
+    "(e.g. 'we need a corner stall for two demo stations'); 'inferred' if you are "
+    "reading between the lines from context clues rather than a direct statement; "
+    "null if requested_tier is null. NEVER GUESS — when in doubt between explicit "
+    "and inferred, choose inferred; when in doubt whether there is a signal at "
+    "all, leave requested_tier null. "
+    "demo_stations: an integer count of demo stations/booths mentioned, or null. "
+    "notes: one short sentence quoting or paraphrasing what in the transcript led "
+    "to your answer, for a human reviewer — empty string if requested_tier is null."
+)
+
+
+async def _extract_conversation_signals(llm, transcript: list[dict]) -> ConversationSignals:
+    """Structured extraction from `transcript` — the piece that lets
+    build_generation_prompt (here, ProposalAgent.build()) pick the right
+    package tier on the FIRST pass instead of relying only on the
+    after-the-fact consistency check below."""
+    if not transcript:
+        return ConversationSignals()
+    convo = "\n".join(f"{m['role']}: {m['content']}" for m in transcript)
+    try:
+        return await llm.generate_structured(
+            system=_CONVO_SIGNALS_SYSTEM,
+            messages=[{"role": "user", "content": f"Transcript:\n{convo}"}],
+            schema=ConversationSignals,
+        )
+    except Exception as exc:  # noqa: BLE001 — a soft-fail: stay at the base tier
+        _log.warning("extract_conversation_signals failed (%s); no signal", exc)
+        return ConversationSignals()
+
+
+def _select_tier(persona: Persona, signals: ConversationSignals) -> ProposalPackage:
+    ladder = load_pricing()[persona]
+    if signals.requested_tier is None or signals.signal_confidence != "explicit":
+        # Never Guess — same convention teg-kb-agent's own SKILL.md already
+        # enforces for the KB itself; an inferred-but-not-explicit signal is
+        # not enough to change what the prospect is offered.
+        return ladder[0]
+    idx = _TIER_INDEX[signals.requested_tier]
+    return ladder[min(idx, len(ladder) - 1)]  # visitor's 1-entry ladder always resolves to itself
+
+
+def _journey_action_agrees_with_playout(growth_journey, how_a_teg_plays_out: list[str]) -> bool:
+    """Both fields describe TEG's own three-day plan (no transcript signal to
+    check either against — see check_section_consistency's docstring), so
+    this stays a narrow, deterministic prose-vs-prose check: do the two
+    fields name the same explicit day numbers, when either names any at all?
+    """
+    action = next((s for s in growth_journey if s.stage == "action"), None)
+    if action is None or not how_a_teg_plays_out:
+        return True
+    action_text = " ".join([action.title, *action.points])
+    playout_text = " ".join(how_a_teg_plays_out)
+    action_days = set(re.findall(r"\bday\s*(\d+)\b", action_text, re.I))
+    playout_days = set(re.findall(r"\bday\s*(\d+)\b", playout_text, re.I))
+    if action_days and playout_days and action_days.isdisjoint(playout_days):
+        return False
+    return True
+
+
+def check_section_consistency(
+    p: Proposal, signals: ConversationSignals, price_requested: bool,
+) -> list[GuardrailViolation]:
+    """Cross-field checks the per-field guardrail loop structurally can't see.
+
+    The package-tier check compares against `signals` — the structured
+    extraction from the real transcript — rather than against another
+    generated field, so a shared blind spot in generation can't produce two
+    fields that agree with each other while both disagree with what the
+    prospect actually said. The other two checks stay prose-vs-prose (or
+    prose-vs-flag) deliberately: neither has a structured signal to compare
+    against instead (see the comments on each).
+    """
+    out: list[GuardrailViolation] = []
+
+    # Package tier vs. the structured transcript signal. `visitor` has no
+    # tier-ladder concept at all (a single fixed entry, §5 non-goal) — skip
+    # explicitly rather than relying on _select_tier's single-entry ladder to
+    # collapse any mismatch away silently.
+    if p.persona != "visitor" and signals.requested_tier and signals.signal_confidence == "explicit":
+        expected = _select_tier(p.persona, signals)
+        if p.recommended_package.name != expected.name:
+            out.append(GuardrailViolation(
+                "SECTION_INCONSISTENCY::package_tier",
+                f"recommended_package is '{p.recommended_package.name}' but the transcript "
+                f"explicitly signals '{signals.requested_tier}' ('{expected.name}')",
+            ))
+
+    # price_requested vs. whether a price actually shipped. price_requested
+    # is already ground truth (a build() parameter, not extracted from
+    # prose) — the only question is whether recommended_package respected it.
+    if p.recommended_package.price_line and not price_requested:
+        out.append(GuardrailViolation(
+            "SECTION_INCONSISTENCY::price_without_request",
+            "a price appears though price_requested is False",
+        ))
+
+    # growth_journey's "action" stage vs. how_a_teg_plays_out — kept
+    # prose-vs-prose: both fields are TEG's own three-day plan, not anything
+    # the prospect said, so conversation_signals has nothing to check either
+    # one against.
+    if p.growth_journey and not _journey_action_agrees_with_playout(
+        p.growth_journey, p.how_a_teg_plays_out,
+    ):
+        out.append(GuardrailViolation(
+            "SECTION_INCONSISTENCY::journey_playout_mismatch",
+            "growth_journey's action stage and how_a_teg_plays_out describe incompatible day-of plans",
+        ))
+
+    return out
+
+
+def _inferred_tier_note(persona: Persona, signals: ConversationSignals) -> str | None:
+    """A real signal exists but isn't explicit enough for _select_tier to act
+    on — surfaced as its own, distinct, low-severity flag so a human reviewer
+    can tell "we corrected it" (SECTION_INCONSISTENCY::package_tier) from "we
+    noticed a hint and did nothing — you may want to look"
+    (SECTION_INCONSISTENCY::package_tier_inferred_only). Never changes
+    recommended_package."""
+    if persona == "visitor":
+        return None
+    if signals.requested_tier and signals.signal_confidence == "inferred":
+        return "SECTION_INCONSISTENCY::package_tier_inferred_only"
+    return None
 
 
 class ProposalAgent(Agent):
@@ -186,7 +287,13 @@ class ProposalAgent(Agent):
             for t in facts.cleared_testimonials
         ]
         industries = list(facts.official_industries)
-        fallback_pkg = _PRICING_BY_PERSONA[persona]
+        # Tier selection happens BEFORE generation, regardless of
+        # price_requested — the package's name/includes appear in the
+        # proposal either way (§3.2.2). check_section_consistency below is a
+        # safety net for cases this first pass missed, not the only
+        # mechanism doing tier selection.
+        conversation_signals = await _extract_conversation_signals(self.llm, transcript)
+        fallback_pkg = _select_tier(persona, conversation_signals)
         if price_requested:
             pkg_line = (
                 f"Recommended package: {fallback_pkg.model_dump()} — use it unless the "
@@ -483,6 +590,35 @@ class ProposalAgent(Agent):
                 for i, ns in enumerate(proposal.next_steps)
             ] or [PROPOSAL_SAFE_SECTIONS["next_step"][persona]]
 
+        # Cross-field self-consistency (§3.2) — after the per-field guardrail
+        # loop above, which structurally cannot see a field that's
+        # individually clean but contradicts a *different* field.
+        consistency_violations = check_section_consistency(
+            proposal, conversation_signals, price_requested,
+        )
+        loops = 0
+        while consistency_violations and loops < get_settings().proposal_consistency_max_loops:
+            proposal = await self._regenerate_sections(
+                proposal, consistency_violations, conversation_signals,
+                system=system, user=user, persona=persona,
+            )
+            consistency_violations = check_section_consistency(
+                proposal, conversation_signals, price_requested,
+            )
+            loops += 1
+
+        if consistency_violations:
+            for v in consistency_violations:
+                if v.code not in flags:
+                    flags.append(v.code)
+            proposal = self._resolve_by_safety_order(
+                proposal, consistency_violations, conversation_signals, persona,
+            )
+
+        inferred_note = _inferred_tier_note(persona, conversation_signals)
+        if inferred_note and inferred_note not in flags:
+            flags.append(inferred_note)
+
         # force trusted fields
         proposal.company = intake.company_name_canonical
         proposal.person = intake.person_name
@@ -500,3 +636,81 @@ class ProposalAgent(Agent):
         _log.info("build done  package=%r  pains=%d  flags=%s",
                   proposal.recommended_package.name, len(proposal.pains), flags or "-")
         return proposal, flags
+
+    async def _regenerate_sections(
+        self, proposal: Proposal, violations: list[GuardrailViolation],
+        signals: ConversationSignals, *, system: str, user: str, persona: Persona,
+    ) -> Proposal:
+        """Re-prompt naming the SPECIFIC contradiction (§3.2.3), not "fix it
+        however" — for a package_tier violation this names the exact tier
+        `signals` indicated, the same structured target `_select_tier` would
+        have picked on a first pass. Only the violated field(s) are taken
+        from the regenerated draft; everything else keeps the original
+        proposal's content, so a retry aimed at one contradiction can't
+        accidentally clobber an already-good field elsewhere."""
+        codes = {v.code for v in violations}
+        detail_bits: list[str] = []
+        if "SECTION_INCONSISTENCY::package_tier" in codes:
+            expected = _select_tier(persona, signals)
+            detail_bits.append(
+                f"recommended_package must be exactly the '{expected.name}' tier "
+                f"(price_line={expected.price_line!r}, includes={expected.includes}, "
+                f"payment_plan={expected.payment_plan!r}) — the transcript explicitly asked for it."
+            )
+        if "SECTION_INCONSISTENCY::price_without_request" in codes:
+            detail_bits.append(
+                "recommended_package.price_line and payment_plan must be EMPTY strings — "
+                "no price was requested."
+            )
+        if "SECTION_INCONSISTENCY::journey_playout_mismatch" in codes:
+            detail_bits.append(
+                "how_a_teg_plays_out must describe the SAME three-day plan as growth_journey's "
+                "'action' stage — make them agree on which day is which."
+            )
+        extra = (
+            f"\nYour previous draft has section-consistency problems: {sorted(codes)}. "
+            + " ".join(detail_bits)
+        )
+        try:
+            regenerated = await self._generate(system + extra, user)
+        except (RuntimeError, TimeoutError) as exc:
+            _log.warning("section-consistency regenerate failed (%s); keeping prior draft", exc)
+            return proposal
+
+        updated = proposal.model_copy(deep=True)
+        if "SECTION_INCONSISTENCY::package_tier" in codes or \
+                "SECTION_INCONSISTENCY::price_without_request" in codes:
+            updated.recommended_package = regenerated.recommended_package
+        if "SECTION_INCONSISTENCY::journey_playout_mismatch" in codes:
+            updated.how_a_teg_plays_out = regenerated.how_a_teg_plays_out
+            updated.growth_journey = regenerated.growth_journey
+        return updated
+
+    def _resolve_by_safety_order(
+        self, proposal: Proposal, violations: list[GuardrailViolation],
+        signals: ConversationSignals, persona: Persona,
+    ) -> Proposal:
+        """Two rules, not one — see §3.2.4 for why. Rule A (package_tier) has
+        a structured signal to correct TOWARD, so it corrects the canned
+        field rather than protecting it as-is. Rule B (the other two kinds)
+        has no such signal, so it scrubs to the safe fallback, as originally
+        specified."""
+        updated = proposal.model_copy(deep=True)
+        for v in violations:
+            if v.code == "SECTION_INCONSISTENCY::package_tier":
+                # Rule A: recommended_package was the field that was wrong —
+                # correct it to match the structured signal, don't protect it.
+                updated.recommended_package = _select_tier(persona, signals)
+            elif v.code == "SECTION_INCONSISTENCY::price_without_request":
+                # Rule B: no "more correct" price to substitute — only the
+                # fact that one shouldn't be there.
+                updated.recommended_package.price_line = ""
+                updated.recommended_package.payment_plan = ""
+            elif v.code == "SECTION_INCONSISTENCY::journey_playout_mismatch":
+                # Rule B: both fields are TEG-authored opinions with no
+                # transcript truth behind either — scrub the narrower field,
+                # keep growth_journey's six-stage structure intact.
+                updated.how_a_teg_plays_out = [
+                    PROPOSAL_SAFE_SECTIONS["how_a_teg_plays_out"][persona]
+                ]
+        return updated

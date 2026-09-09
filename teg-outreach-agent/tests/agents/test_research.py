@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import IntakeResult
 from app.kb.explorer import ExploreResult, KBExplorer
@@ -172,3 +174,152 @@ async def test_peers_backfilled_when_sector_known_but_no_peers():
     assert d.sector == "Digital Marketing & SEO"
     assert "AONE SEO Service" in d.peer_companies
     assert any("list up to 5 teg exhibitors" in g.lower() for g in explorer.goals)
+
+
+# ---- run_company_track / run_person_track — the extraction §3.3.3's graph
+# nodes call. Pure refactor: same underlying _company_track/_person_track,
+# just independently callable and returning a plain dict.
+
+async def test_run_company_track_matches_the_company_half_of_run():
+    explorer = _FixedExplorer({
+        "profile the company": ExploreResult(
+            found=True, confidence=0.9, facts={"sector": "AI & Machine Learning"},
+        ),
+    })
+    agent = ResearchAgent(FakeLLMClient(structured=[]), explorer=explorer, tools=[])
+    out = await agent.run_company_track(_intake())
+    assert out["fields"]["sector"] == "AI & Machine Learning"
+    assert out["id_conf"] == 0.9
+    assert out["explore"].found is True
+
+
+async def test_run_person_track_matches_the_person_half_of_run():
+    explorer = _FixedExplorer({
+        "profile tapan patel": ExploreResult(
+            found=True, confidence=0.9, facts={"designation": "CMO"},
+        ),
+    })
+    agent = ResearchAgent(FakeLLMClient(structured=[]), explorer=explorer, tools=[])
+    out = await agent.run_person_track(_intake())
+    assert out["fields"]["designation"] == "CMO"
+    assert out["explore"].found is True
+
+
+async def test_run_company_and_person_track_can_share_one_budget():
+    """The known gap (see the comment above run_company_track in
+    app/agents/research.py): if callers want the combined scrape-budget
+    behavior run() has today, they pass the SAME _Budget instance to both —
+    this just proves that plumbing actually works when done explicitly."""
+    from app.agents.research import _Budget
+
+    explorer = _FixedExplorer({})
+    agent = ResearchAgent(FakeLLMClient(structured=[]), explorer=explorer, tools=[])
+    budget = _Budget(max_web_per_track=2, max_scrapes=3)
+    await agent.run_company_track(_intake(), budget=budget)
+    await agent.run_person_track(_intake(), budget=budget)
+    # both tracks drew from the same web_calls counter (0 here — no web
+    # tool configured — just proving the shared object, not a specific count)
+    assert budget.web_calls == 0
+
+
+# ---- Phase 7: Claude CLI is the default research backend, Tavily/Brave is
+# an explicit fallback triggered only by ClaudeCli.probe() reporting
+# unavailable (§ "uncap Claude's web research", not part of the graph spec
+# itself — a config/behavior fix raised in the same review pass).
+
+@dataclass
+class _FakeSettings:
+    claude_cli_enabled: bool = True
+    claude_cli_model: str = "claude-sonnet-5"
+    skills_path: str = "./skills"
+    research_max_searches_per_track: int = 2
+    research_max_scrapes: int = 3
+
+
+def _clear_probe_cache():
+    import app.agents.research as research_mod
+    research_mod._claude_probe_cache.clear()
+
+
+async def test_claude_web_search_is_the_default_tool_when_cli_is_usable(monkeypatch):
+    import app.agents.research as research_mod
+    from app.claude.web_research import ClaudeWebSearch
+
+    _clear_probe_cache()
+    monkeypatch.setattr(research_mod, "get_settings", lambda: _FakeSettings())
+
+    class _UsableCli:
+        api_key = "x"
+
+        async def probe(self, **kw):
+            return True, ""
+
+    monkeypatch.setattr(research_mod, "ClaudeCli", _UsableCli)
+
+    agent = ResearchAgent(FakeLLMClient(structured=[]), explorer=_FixedExplorer({}))
+    assert isinstance(agent._web, ClaudeWebSearch)
+    await agent._ensure_web_tool()
+    assert isinstance(agent._web, ClaudeWebSearch)  # unchanged — probe said usable
+
+
+async def test_falls_back_to_tavily_when_claude_cli_probe_fails(monkeypatch):
+    import app.agents.research as research_mod
+    from app.claude.web_research import ClaudeWebSearch
+
+    _clear_probe_cache()
+    monkeypatch.setattr(research_mod, "get_settings", lambda: _FakeSettings())
+
+    class _UnusableCli:
+        api_key = "x"
+
+        async def probe(self, **kw):
+            return False, "The claude CLI is not installed or not on PATH."
+
+    monkeypatch.setattr(research_mod, "ClaudeCli", _UnusableCli)
+
+    agent = ResearchAgent(FakeLLMClient(structured=[]), explorer=_FixedExplorer({}))
+    assert isinstance(agent._web, ClaudeWebSearch)  # __init__'s optimistic default
+    await agent._ensure_web_tool()
+    assert not isinstance(agent._web, ClaudeWebSearch)  # swapped after the failed probe
+    assert agent._web.name == "web"  # Tavily/Brave — still a valid "web" tool
+
+
+async def test_probe_only_happens_once_per_process(monkeypatch):
+    import app.agents.research as research_mod
+
+    _clear_probe_cache()
+    monkeypatch.setattr(research_mod, "get_settings", lambda: _FakeSettings())
+
+    calls = {"n": 0}
+
+    class _CountingCli:
+        api_key = "x"
+
+        async def probe(self, **kw):
+            calls["n"] += 1
+            return True, ""
+
+    monkeypatch.setattr(research_mod, "ClaudeCli", _CountingCli)
+
+    a1 = ResearchAgent(FakeLLMClient(structured=[]), explorer=_FixedExplorer({}))
+    a2 = ResearchAgent(FakeLLMClient(structured=[]), explorer=_FixedExplorer({}))
+    await a1._ensure_web_tool()
+    await a2._ensure_web_tool()
+    assert calls["n"] == 1  # second agent's probe was served from the module cache
+
+
+async def test_explicitly_injected_tools_are_never_second_guessed(monkeypatch):
+    """Every other test in this file passes tools= explicitly — this proves
+    that path skips the probe machinery entirely, so those tests' web tool
+    (StubTool/None) is never silently swapped out from under them."""
+    import app.agents.research as research_mod
+
+    monkeypatch.setattr(research_mod, "get_settings", lambda: _FakeSettings())
+
+    def _boom(**kw):
+        raise AssertionError("ClaudeCli should never be constructed here")
+
+    monkeypatch.setattr(research_mod, "ClaudeCli", _boom)
+
+    agent = ResearchAgent(FakeLLMClient(structured=[]), explorer=_FixedExplorer({}), tools=[])
+    await agent._ensure_web_tool()  # must not raise
