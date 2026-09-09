@@ -53,6 +53,12 @@ class ResearchDossier(BaseModel):
     review_flags: list[str] = Field(default_factory=list)
     ask_prospect: list[str] = Field(default_factory=list)
     research_cost: dict[str, int] = Field(default_factory=dict)
+    # Carries forward anything the verify_relevant_teg_claims graph node
+    # flagged as stale/conflicting against the live web (see
+    # docs/superpowers/specs/2026-09-10-verification-harness-and-graph-design.md
+    # §3.3.3) — not required behavior, just making the signal available for
+    # a downstream persuasion turn to use if it chooses to.
+    kb_confidence_flags: list[str] = Field(default_factory=list)
 
 
 class PersuasionInit(BaseModel):

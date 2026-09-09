@@ -28,6 +28,8 @@ from app.domain.schemas import (
     ResearchDossier,
     SectorFitRow,
 )
+from app.graph.node import FnNode
+from app.graph.runner import run_graph
 from app.kb.explorer import KBExplorer, default_explorer
 from app.kb.facts import load as _load_facts
 from app.kb.pricing import load_pricing
@@ -241,23 +243,55 @@ class ProposalAgent(Agent):
     ) -> tuple[Proposal, list[str]]:
         own = intake.company_name_canonical.lower()
         heading = _PERSONA_KB_HEADING.get(persona, "Visitor")
-        ex = await self._explorer.explore(
-            "Read event_goals_and_problem.md and sector_wise_participation.md.\n"
-            "Return facts:\n"
-            "- goals: TEG's stated goals (section 2), 2-3 sentences\n"
-            "- mechanism: how TEG delivers value (section 3), 2-3 sentences\n"
-            "- evidence: past-edition numbers from section 4, verbatim\n"
-            f"- pains: a JSON array of [pain, how_TEG_addresses_it] pairs from the "
-            f"'### {heading}' subsection of the section 5 pain library (2-4 pairs)\n"
-            f"- sector_peers: up to 5 TEG exhibitors in the '{dossier.sector}' sector, "
-            f"excluding {intake.company_name_canonical} (comma-separated)\n"
-            f"- sector_peer_count: the TOTAL number of companies that participated in the "
-            f"'{dossier.sector}' sector at TEG 2024 (from that sector's table/summary in "
-            "sector_wise_participation.md) — a single integer, or 0 if the sector is not listed\n"
-            "- scale_note: one sentence stating the TEG 2024 -> TEG 2026 scale, using ONLY "
-            "verbatim numbers from the KB (e.g. '125+ exhibitors and 8,000+ visitors at TEG "
-            "2024; 250+ exhibitors and 15,000+ visitors targeted for TEG 2026')"
+
+        # explore_kb_for_proposal + extract_conversation_signals (§3.3.4) —
+        # genuinely independent of each other (one reads the KB, one reads
+        # the transcript), so they run as one concurrent graph layer instead
+        # of the two sequential awaits this used to be. Everything else in
+        # build() stays a direct sequential call: each remaining step in
+        # §3.3.4's chain (build_generation_prompt -> generate ->
+        # check_field_guardrails -> regenerate_on_violation (conditional) ->
+        # check_self_consistency -> finalize) needs the PRIOR step's mutated
+        # Proposal object, so it's a genuine linear dependency chain with no
+        # real concurrency to gain — wrapping it in more graph-node ceremony
+        # would add indirection without changing behavior or performance,
+        # so it stays as the existing direct calls below.
+        async def _explore_kb(ctx: dict) -> dict:
+            result = await self._explorer.explore(
+                "Read event_goals_and_problem.md and sector_wise_participation.md.\n"
+                "Return facts:\n"
+                "- goals: TEG's stated goals (section 2), 2-3 sentences\n"
+                "- mechanism: how TEG delivers value (section 3), 2-3 sentences\n"
+                "- evidence: past-edition numbers from section 4, verbatim\n"
+                f"- pains: a JSON array of [pain, how_TEG_addresses_it] pairs from the "
+                f"'### {heading}' subsection of the section 5 pain library (2-4 pairs)\n"
+                f"- sector_peers: up to 5 TEG exhibitors in the '{dossier.sector}' sector, "
+                f"excluding {intake.company_name_canonical} (comma-separated)\n"
+                f"- sector_peer_count: the TOTAL number of companies that participated in the "
+                f"'{dossier.sector}' sector at TEG 2024 (from that sector's table/summary in "
+                "sector_wise_participation.md) — a single integer, or 0 if the sector is not listed\n"
+                "- scale_note: one sentence stating the TEG 2024 -> TEG 2026 scale, using ONLY "
+                "verbatim numbers from the KB (e.g. '125+ exhibitors and 8,000+ visitors at TEG "
+                "2024; 250+ exhibitors and 15,000+ visitors targeted for TEG 2026')"
+            )
+            return {"kb_context": result}
+
+        async def _extract_signals(ctx: dict) -> dict:
+            signals = await _extract_conversation_signals(self.llm, transcript)
+            return {"conversation_signals": signals}
+
+        proposal_ctx = await run_graph(
+            [
+                FnNode(name="explore_kb_for_proposal", fn=_explore_kb,
+                       writes=frozenset({"kb_context"})),
+                FnNode(name="extract_conversation_signals", fn=_extract_signals,
+                       writes=frozenset({"conversation_signals"})),
+            ],
+            {},
         )
+        ex = proposal_ctx["kb_context"]
+        conversation_signals: ConversationSignals = proposal_ctx["conversation_signals"]
+
         gp_goals = ex.facts.get("goals", "")
         gp_mechanism = ex.facts.get("mechanism", "")
         gp_evidence = ex.facts.get("evidence", "")
@@ -291,8 +325,8 @@ class ProposalAgent(Agent):
         # price_requested — the package's name/includes appear in the
         # proposal either way (§3.2.2). check_section_consistency below is a
         # safety net for cases this first pass missed, not the only
-        # mechanism doing tier selection.
-        conversation_signals = await _extract_conversation_signals(self.llm, transcript)
+        # mechanism doing tier selection. (conversation_signals was already
+        # computed above, concurrently with the KB explore.)
         fallback_pkg = _select_tier(persona, conversation_signals)
         if price_requested:
             pkg_line = (

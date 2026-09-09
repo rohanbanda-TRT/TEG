@@ -197,6 +197,7 @@ class ClaudeCli:
         timeout_s: float | None = None,
         on_progress: Callable[[int], None] | None = None,
         attempts: int = 2,
+        resume: str | None = None,
     ) -> ClaudeResult:
         """Await a single structured result, raising RuntimeError on failure.
 
@@ -204,6 +205,11 @@ class ClaudeCli:
         (it wrote prose, or stopped on a stop sequence) rather than a broken
         call, so it is retried once. Non-retryable failures — no CLI, a bad
         exit code, a timeout — raise on the first attempt.
+
+        `resume` is forwarded to run() unchanged — this was missing until a
+        real `scripts/run_verification.py --all` run surfaced it
+        (app/verify/claude_verifier.py is the first real caller of resume=,
+        and it calls generate(), not run(), directly).
         """
         last = "claude produced no result"
         for attempt in range(1, max(1, attempts) + 1):
@@ -212,6 +218,7 @@ class ClaudeCli:
                 model=model, system_prompt=system_prompt, user_prompt=user_prompt,
                 json_schema=json_schema, cwd=cwd, tools=tools,
                 allowed_tools=allowed_tools, add_dirs=add_dirs, timeout_s=timeout_s,
+                resume=resume,
             ):
                 if isinstance(ev, ClaudeProgress):
                     if on_progress:

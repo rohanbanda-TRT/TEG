@@ -181,17 +181,36 @@ class ResearchAgent(Agent):
         await self._ensure_web_tool()
         s = get_settings()
         budget = _Budget(s.research_max_searches_per_track, s.research_max_scrapes)
+        _log.info("research start  company=%r  person=%r  (web=%s)",
+                  intake.company_name_canonical, intake.person_name,
+                  "on" if self._web is not None else "off")
+
+        c_out, p_out = await asyncio.gather(
+            self.run_company_track(intake, budget=budget),
+            self.run_person_track(intake, budget=budget),
+        )
+        return await self.merge_tracks(intake, c_out, p_out, budget=budget)
+
+    async def merge_tracks(
+        self, intake: IntakeResult, company_out: dict, person_out: dict,
+        *, kb_confidence_flags: list[str] | None = None, budget: "_Budget | None" = None,
+    ) -> ResearchDossier:
+        """The cross-check logic that used to live inline at the end of
+        run() — extracted so §3.3.3's merge_dossier graph node can call it
+        after research_company/research_person run as independent nodes.
+        `company_out`/`person_out` are exactly what run_company_track/
+        run_person_track return. `kb_confidence_flags` (new) carries forward
+        anything the verify_relevant_teg_claims node flagged as stale/
+        conflicting — not required behavior, just making the signal
+        available on the dossier for a downstream persuasion turn to use."""
+        c_fields, c_id_conf, c_sources, c_ex = (
+            company_out["fields"], company_out["id_conf"], company_out["sources"], company_out["explore"],
+        )
+        p_fields, p_id_conf, p_sources, p_ex = (
+            person_out["fields"], person_out["id_conf"], person_out["sources"], person_out["explore"],
+        )
         company = intake.company_name_canonical
         person = intake.person_name
-        _log.info("research start  company=%r  person=%r  (web=%s)",
-                  company, person, "on" if self._web is not None else "off")
-
-        (c_fields, c_id_conf, c_sources, c_ex), (p_fields, p_id_conf, p_sources, p_ex) = (
-            await asyncio.gather(
-                self._company_track(intake, budget),
-                self._person_track(intake, budget),
-            )
-        )
 
         raw_ctx = " ".join(
             v for v in (
@@ -278,12 +297,14 @@ class ResearchAgent(Agent):
         if p_id_conf < 0.5:
             ask_prospect.append("role")
 
+        web_calls = budget.web_calls if budget is not None else 0
+        scrape_calls = budget.scrape_calls if budget is not None else 0
         _log.info(
             "research done  relationship=%s  sector=%r  peers=%d  ask_prospect=%s  "
             "company_id_conf=%.2f  person_id_conf=%.2f  cost=%s",
             relationship, sector, len(peers), ask_prospect or "none",
             c_id_conf, p_id_conf,
-            {"web": budget.web_calls, "scrape": budget.scrape_calls, "llm": llm_calls},
+            {"web": web_calls, "scrape": scrape_calls, "llm": llm_calls},
         )
         _log.debug("   company_profile=%s", {k: v for k, v in company_profile.items() if v})
         _log.debug("   person_profile=%s", {k: v for k, v in person_profile.items() if v})
@@ -300,10 +321,11 @@ class ResearchAgent(Agent):
             review_flags=(["person_company_mismatch"] if synth.person_company_match is False else []),
             ask_prospect=ask_prospect,
             research_cost={
-                "web_calls": budget.web_calls,
-                "scrape_calls": budget.scrape_calls,
+                "web_calls": web_calls,
+                "scrape_calls": scrape_calls,
                 "llm_calls": llm_calls,
             },
+            kb_confidence_flags=list(kb_confidence_flags or []),
         )
 
     # ---- tracks ----
@@ -315,23 +337,20 @@ class ResearchAgent(Agent):
     # below), NOT a behavior change: run() still builds one shared _Budget
     # and gathers both trackers exactly as before.
     #
-    # KNOWN GAP, flagged rather than silently resolved: _Budget's
-    # scrapes_left/scrape_calls/web_calls counters are shared ACROSS both
-    # tracks today (only web_left_company/web_left_person are genuinely
-    # per-track) — that's how run() enforces one combined scrape budget for
-    # a single research pass. The spec's graph node table gives
-    # research_company/research_person each only `intake` as a declared
-    # input, with no shared-budget key in GraphContext's plain-dict state.
-    # Calling these two wrappers from independent graph nodes with no
-    # explicit budget passed in (the default below) gives EACH track its
-    # own fresh _Budget — i.e. the combined scrape cap silently becomes two
-    # separate caps, a real behavior change from today's run(). Wiring the
-    # graph nodes to share one _Budget instance is possible (GraphContext is
-    # `dict[str, object]` — a mutable object reference is a legal value) but
-    # is a deliberate architectural call this spec doesn't make explicitly,
-    # so it isn't made here either — see the implementation-status note in
-    # docs/superpowers/plans/ for the decision this needs before
-    # Orchestrator.run_pipeline is wired through run_graph().
+    # RESOLVED (was a known gap, see docs/superpowers/plans/
+    # 2026-09-10-verification-harness-and-graph-implementation.md's "Phase 6
+    # completion" section for the decision): _Budget's scrapes_left/
+    # scrape_calls/web_calls counters are shared ACROSS both tracks
+    # (web_left_company/web_left_person are the only genuinely per-track
+    # fields) — that's how run() enforces one combined scrape budget for a
+    # single research pass. Orchestrator.run_pipeline's graph wiring
+    # constructs ONE _Budget and puts it in the graph's initial context
+    # under "_research_budget"; both research_company and research_person
+    # nodes read it from ctx and pass it explicitly here — NEVER relying on
+    # this method's `budget=None` default, which would silently double the
+    # combined cap by giving each track its own fresh budget. The default
+    # stays here only so these wrappers remain independently callable
+    # (as in the tests below) outside a coordinated run().
 
     async def run_company_track(self, intake: IntakeResult, *, budget: "_Budget | None" = None) -> dict:
         """Graph-node-callable wrapper — returns a plain dict shaped for

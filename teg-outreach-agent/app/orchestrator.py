@@ -5,11 +5,12 @@ import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from pathlib import Path
 
 from app.agents.analysis import AnalysisAgent
 from app.agents.persuasion import PersuasionAgent
 from app.agents.proposal import ProposalAgent
-from app.agents.research import ResearchAgent
+from app.agents.research import ResearchAgent, _Budget
 from app.domain.schemas import (
     HandoffPacket,
     IntakePayload,
@@ -18,6 +19,8 @@ from app.domain.schemas import (
     ProposalCard,
     ResearchDossier,
 )
+from app.graph.node import FnNode
+from app.graph.runner import run_graph
 from app.llm.base import get_llm
 from app.obs import get_logger
 from app.proposal.email import send_proposal_link_email
@@ -30,6 +33,7 @@ from app.store.repositories import (
     ProposalRepo,
     SessionRepo,
 )
+from app.verify.claims import CLAIMS as _VERIFY_CLAIMS
 from config.settings import get_settings
 
 _log = get_logger("orchestrator")
@@ -37,6 +41,131 @@ _log = get_logger("orchestrator")
 
 def _slug(s: str) -> str:
     return re.sub(r"-+", "-", re.sub(r"[^A-Za-z0-9]+", "-", s)).strip("-") or "company"
+
+
+# ---- inquiry pipeline, as a graph (docs/superpowers/specs/
+# 2026-09-10-verification-harness-and-graph-design.md §3.3.3) ----
+#
+# analyze_intake and persuasion_init run as their own tiny (un-timed)
+# run_graph() calls, exactly matching today's un-timed behavior for those
+# two steps. The research layer — research_company / research_person /
+# verify_relevant_teg_claims, joined by merge_dossier — runs as ONE
+# run_graph() call wrapped in the same asyncio.wait_for(...,
+# pipeline_hard_timeout_s) the old sequential code used, with the SAME
+# ask_prospect fallback dossier on timeout. This is deliberately three
+# separate run_graph() calls, not one graph spanning the whole pipeline —
+# a single flat timeout across analyze_intake/persuasion_init too would
+# change behavior neither of them has today (they're currently un-timed),
+# and a research timeout must still let the pipeline continue to
+# persuasion_init with a substitute dossier, which a single graph's
+# all-or-nothing timeout can't express without inventing new soft-fail
+# semantics for merge_dossier the spec doesn't ask for.
+
+# Intent hints that don't cleanly map to a pricing-sensitive claim set fall
+# back to "consider every v1 claim relevant" rather than guessing.
+_INTENT_RELEVANT_CLAIMS: dict[str, tuple[str, ...]] = {
+    "exhibitor": ("payment_plan_dates", "dates_venue", "scale_targets"),
+    "sponsor": ("payment_plan_dates", "dates_venue", "scale_targets"),
+    "startup_pitch": ("payment_plan_dates", "dates_venue", "scale_targets"),
+    "visitor": ("visitor_pricing_published", "dates_venue"),
+    "speaker": ("dates_venue", "scale_targets"),
+}
+
+
+def _latest_verification_log() -> Path | None:
+    log_dir = Path(get_settings().kb_path).resolve() / "_verification_log"
+    if not log_dir.is_dir():
+        return None
+    files = sorted(log_dir.glob("*.md"))
+    return files[-1] if files else None
+
+
+def _read_verification_flags(intake: IntakeResult) -> list[str]:
+    """Read-only, no live call — the mechanism that keeps §3.1's
+    verification harness out of the per-inquiry latency budget entirely.
+    Verification happens on its own schedule (scripts/run_verification.py);
+    this only ever reads whatever the most recent scheduled pass wrote."""
+    path = _latest_verification_log()
+    if path is None:
+        return []
+    relevant = set(_INTENT_RELEVANT_CLAIMS.get(intake.intent_hint, tuple(_VERIFY_CLAIMS)))
+    flags: list[str] = []
+    for line in path.read_text("utf-8").splitlines():
+        if not line.strip().startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 4 or set(cells[0]) <= set("- "):
+            continue
+        claim_id, status = cells[0], cells[3]
+        if claim_id in relevant and status == "conflicting":
+            flags.append(f"verification::{claim_id}")
+    return flags
+
+
+def _analyze_intake_node(orch: "Orchestrator") -> FnNode:
+    async def fn(ctx: dict) -> dict:
+        intake = await orch.analysis.run(ctx["payload"])
+        return {"intake": intake}
+
+    return FnNode(name="analyze_intake", fn=fn,
+                  reads=frozenset({"payload"}), writes=frozenset({"intake"}))
+
+
+def _research_company_node(orch: "Orchestrator") -> FnNode:
+    async def fn(ctx: dict) -> dict:
+        out = await orch.research.run_company_track(ctx["intake"], budget=ctx["_research_budget"])
+        return {"company_partial": out}
+
+    return FnNode(name="research_company", fn=fn,
+                  reads=frozenset({"intake", "_research_budget"}),
+                  writes=frozenset({"company_partial"}))
+
+
+def _research_person_node(orch: "Orchestrator") -> FnNode:
+    async def fn(ctx: dict) -> dict:
+        out = await orch.research.run_person_track(ctx["intake"], budget=ctx["_research_budget"])
+        return {"person_partial": out}
+
+    return FnNode(name="research_person", fn=fn,
+                  reads=frozenset({"intake", "_research_budget"}),
+                  writes=frozenset({"person_partial"}))
+
+
+def _verify_relevant_teg_claims_node() -> FnNode:
+    async def fn(ctx: dict) -> dict:
+        try:
+            flags = _read_verification_flags(ctx["intake"])
+        except Exception as exc:  # noqa: BLE001 — must never block or slow the pipeline
+            _log.warning("verify_relevant_teg_claims failed (%s); no confidence flags", exc)
+            flags = []
+        return {"kb_confidence_flags": flags}
+
+    return FnNode(name="verify_relevant_teg_claims", fn=fn,
+                  reads=frozenset({"intake"}), writes=frozenset({"kb_confidence_flags"}))
+
+
+def _merge_dossier_node(orch: "Orchestrator") -> FnNode:
+    async def fn(ctx: dict) -> dict:
+        dossier = await orch.research.merge_tracks(
+            ctx["intake"], ctx["company_partial"], ctx["person_partial"],
+            kb_confidence_flags=ctx["kb_confidence_flags"], budget=ctx["_research_budget"],
+        )
+        return {"dossier": dossier}
+
+    return FnNode(
+        name="merge_dossier", fn=fn,
+        reads=frozenset({"intake", "company_partial", "person_partial", "kb_confidence_flags"}),
+        writes=frozenset({"dossier"}),
+    )
+
+
+def _persuasion_init_node(orch: "Orchestrator") -> FnNode:
+    async def fn(ctx: dict) -> dict:
+        init = await orch.persuasion.init(ctx["intake"], ctx["dossier"])
+        return {"init": init}
+
+    return FnNode(name="persuasion_init", fn=fn,
+                  reads=frozenset({"intake", "dossier"}), writes=frozenset({"init"}))
 
 
 def _derive_learned_facts(ds) -> dict:
@@ -78,18 +207,34 @@ class Orchestrator:
         settings = get_settings()
         _log.info("=== run_pipeline  person=%r  company=%r ===",
                   payload.person_name, payload.company_name)
-        intake = await self.analysis.run(payload)
+
+        intake_ctx = await run_graph([_analyze_intake_node(self)], {"payload": payload})
+        intake: IntakeResult = intake_ctx["intake"]
 
         try:
-            dossier = await asyncio.wait_for(
-                self.research.run(intake), timeout=settings.pipeline_hard_timeout_s,
+            budget = _Budget(settings.research_max_searches_per_track, settings.research_max_scrapes)
+            research_ctx = await asyncio.wait_for(
+                run_graph(
+                    [
+                        _research_company_node(self),
+                        _research_person_node(self),
+                        _verify_relevant_teg_claims_node(),
+                        _merge_dossier_node(self),
+                    ],
+                    {"intake": intake, "_research_budget": budget},
+                ),
+                timeout=settings.pipeline_hard_timeout_s,
             )
+            dossier: ResearchDossier = research_ctx["dossier"]
         except TimeoutError:
             _log.warning("research timed out after %ss -> ask_prospect fallback",
                          settings.pipeline_hard_timeout_s)
             dossier = ResearchDossier(ask_prospect=["company_description", "role"])
 
-        init = await self.persuasion.init(intake, dossier)
+        init_ctx = await run_graph(
+            [_persuasion_init_node(self)], {"intake": intake, "dossier": dossier},
+        )
+        init = init_ctx["init"]
         _log.info("=== pipeline done  persona=%s  opening=%r ===",
                   init.persona, init.opening_message[:160])
 

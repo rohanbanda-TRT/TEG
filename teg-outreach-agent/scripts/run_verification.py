@@ -21,9 +21,7 @@ from app.verify.claude_verifier import verify_all, verify_claim
 from app.verify.schemas import VerificationResult
 from config.settings import get_settings
 
-_LOG_DIR = (
-    Path(get_settings().kb_path).resolve().parent / "_verification_log"
-)
+_LOG_DIR = Path(get_settings().kb_path).resolve() / "_verification_log"
 
 
 def _write_log(results: list[VerificationResult]) -> Path:

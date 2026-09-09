@@ -59,12 +59,26 @@ async def test_run_pipeline_persists_and_returns_opening():
 
 
 async def test_run_pipeline_research_timeout_uses_empty_dossier(monkeypatch):
+    """Orchestrator.run_pipeline now runs the research phase through
+    run_graph() (research_company/research_person/verify_relevant_teg_claims
+    -> merge_dossier), calling ResearchAgent.run_company_track/
+    run_person_track directly rather than ResearchAgent.run() — see
+    docs/superpowers/specs/2026-09-10-verification-harness-and-graph-design.md
+    §3.3.3. This test used to override run() to simulate a slow research
+    call; that's dead code now (run() is never called on this path — the
+    graph's research_company node calls run_company_track directly), so
+    the old setup would have kept "passing" for the wrong reason: a
+    PIPELINE_HARD_TIMEOUT_S of 0 always times out immediately regardless of
+    whether the overridden method is ever invoked. Fixed to override
+    run_company_track — the actual entrypoint the graph calls — so this
+    still genuinely exercises the timeout -> ask_prospect fallback contract
+    through the new code path, not just PipelineResult's shape."""
     monkeypatch.setenv("PIPELINE_HARD_TIMEOUT_S", "0")
     from config.settings import get_settings
     get_settings.cache_clear()
 
     class _SlowResearch(ResearchAgent):
-        async def run(self, intake):
+        async def run_company_track(self, intake, *, budget=None):
             import asyncio
             await asyncio.sleep(1)
             raise AssertionError("should have timed out")
