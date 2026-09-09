@@ -3,7 +3,7 @@
 > **Event:** Tech Expo Gujarat 2026 (TEG 2026)
 > **Ticketing portal:** https://events.techexpogujarat.com/e/6946415bbc05410ef59021d7
 > **Ticketing platform:** Xpro.ai
-> **Last updated:** September 1, 2026
+> **Last updated:** September 9, 2026 (headless-browser re-check of the ticketing portal — visitor pricing still unpublished)
 
 ---
 
@@ -32,6 +32,8 @@
 As of the September 2026 re-check, the site's running banner reads: **"Early Bird Offer Live! — 50% OFF"** (a "Tickets Sold" counter is shown but renders dynamically and was not populated on fetch). An earlier crawl (August 2026) had shown **"Limited Super Early Bird Ticket Offer – 60% OFF | 2,600+ Tickets Sold"** — the discount has since been reduced from 60% to 50% and the "2,600+ sold" figure is no longer displayed. Specific visitor ticket price tiers are still not present in static page content — the ticketing portal (events.techexpogujarat.com, built on the Xpro.ai platform) renders pricing dynamically; check there for current tiers.
 
 **Update (re-checked August 27, 2026):** A third-party exhibitor page (technobrains.io/techexpo-gujarat-2026/) confirms the TEG 2026 visitor ticket structure has **two named tiers: "Regular Visitor" and "Golden Ticket"** — but neither that page nor the official ticketing portal (events.techexpogujarat.com) discloses the actual rupee amounts for either tier in static/fetchable content; the page explicitly defers to techexpogujarat.com for "details and benefits of each ticket type." That page also states entry is **not free** ("There is NO FREE entry") and confirms online purchase is recommended over on-site registration-desk purchase to avoid delays. Exact pricing therefore remains unresolved — only the tier *names* are now known, not the amounts.
+
+**Update (headless-browser re-check, September 9, 2026):** The ticketing portal (events.techexpogujarat.com) was loaded with a real browser and the JS fully rendered — not just a static fetch — to rule out dynamically-injected pricing that a simple fetch would miss. Result: **still no visitor ticket price tiers rendered anywhere on the page**, and no reappearance of the "Regular Visitor" / "Golden Ticket" tier names found on the official portal itself (those names still trace only to technobrains.io, not to techexpogujarat.com or events.techexpogujarat.com). Saying this plainly rather than leaving it ambiguous: **visitor ticket pricing is confirmed still unpublished as of September 9, 2026** — this was a genuine re-check, not an assumption carried forward from the August pass. One adjacent data point found on `/become-a-sponsor/` (not visitor pricing, but a related capacity signal): the "Lanyard Branding" sponsorship add-on is capped at **"Max: 13,000 tickets,"** a print-run limit on one sponsor add-on item, not a stated ceiling on total visitor attendance — noted here only because it's the closest thing to a numeric visitor-side figure found in this pass.
 
 ## Who should attend (visitor personas per organizer)
 - IT & Tech companies exhibiting advanced tech solutions/services
@@ -68,5 +70,5 @@ All tiers were sold out at last check, and included accommodation, meals, and ne
 *(This is historical Retreat pricing, not TEG 2026 expo ticket pricing — included for pattern reference.)*
 
 ---
-*Last updated: September 1, 2026*
-*Source: techexpogujarat.com (become-an-exhibitor, become-a-sponsor, homepage banner), events.techexpogujarat.com, retreat-2025 page, technobrains.io, teg-cost.pdf (confirmed exhibitor/sponsor pricing, payment plan, refund schedule)*
+*Last updated: September 9, 2026 (headless-browser re-check of events.techexpogujarat.com — no visitor pricing found, tier names not reproduced on the official portal; earlier content re-verified September 1, 2026)*
+*Source: techexpogujarat.com (become-an-exhibitor, become-a-sponsor, homepage banner), events.techexpogujarat.com (live headless-browser render, Sept 9, 2026), retreat-2025 page, technobrains.io, teg-cost.pdf (confirmed exhibitor/sponsor pricing, payment plan, refund schedule)*

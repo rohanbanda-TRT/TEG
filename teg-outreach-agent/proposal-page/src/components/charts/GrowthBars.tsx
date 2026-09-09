@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { GROWTH } from "../../lib/chartData";
 
 const fillVariants = {
   hidden: { scaleY: 0 },
@@ -7,9 +6,9 @@ const fillVariants = {
 };
 
 function Group({ label, a, b }: { label: string; a: number; b: number }) {
-  // Each group scales to its own 2026 target so both read as "~2x growth"
+  // Each group scales to its own 2026 target so both read as "roughly 2x"
   // regardless of the raw magnitude gap between attendees and exhibitors.
-  const max = Math.max(a, b);
+  const max = Math.max(a, b, 1);
   return (
     <div className="growth-group">
       <div className="growth-group__bars">
@@ -50,19 +49,40 @@ function Group({ label, a, b }: { label: string; a: number; b: number }) {
   );
 }
 
-export function GrowthBars() {
+export interface GrowthSeries {
+  label: string;
+  from: number;
+  to: number;
+}
+
+/**
+ * A compact before/after bar comparison. Takes its series as a prop — no
+ * hardcoded TEG numbers baked in here; the caller (a page-level constant
+ * today, potentially a Proposal field tomorrow) owns the data.
+ */
+export function GrowthBars({
+  series,
+  fromLabel = "2024 (actual)",
+  toLabel = "2026 (target)",
+}: {
+  series: GrowthSeries[];
+  fromLabel?: string;
+  toLabel?: string;
+}) {
+  if (!series.length) return null;
   return (
-    <div role="img" aria-label="TEG 2024 to 2026 growth">
+    <div role="img" aria-label="Event scale, before and after">
       <div className="growth-chart">
-        <Group label="Attendees" a={GROWTH.attendees[0]} b={GROWTH.attendees[1]} />
-        <Group label="Exhibitors" a={GROWTH.exhibitors[0]} b={GROWTH.exhibitors[1]} />
+        {series.map((s) => (
+          <Group key={s.label} label={s.label} a={s.from} b={s.to} />
+        ))}
       </div>
       <div className="growth-legend">
         <span>
-          <i className="growth-legend__dot growth-legend__dot--muted" /> TEG 2024 (actual)
+          <i className="growth-legend__dot growth-legend__dot--muted" /> {fromLabel}
         </span>
         <span>
-          <i className="growth-legend__dot" /> TEG 2026 (target)
+          <i className="growth-legend__dot" /> {toLabel}
         </span>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { GrowthJourney } from "./GrowthJourney";
+import { GrowthOpportunity } from "./GrowthOpportunity";
 import type { JourneyStage } from "../lib/types";
 
 const STAGES: JourneyStage[] = [
@@ -12,20 +12,20 @@ const STAGES: JourneyStage[] = [
   { stage: "potential", title: "Where it leads", points: ["Gujarat pipeline"] },
 ];
 
-describe("GrowthJourney", () => {
+describe("GrowthOpportunity", () => {
   it("renders nothing when the journey is empty", () => {
-    const { container } = render(<GrowthJourney stages={[]} company="Itorix" />);
+    const { container } = render(<GrowthOpportunity stages={[]} company="Itorix" />);
     expect(container.firstChild).toBeNull();
   });
 
   it("renders nothing when undefined", () => {
-    const { container } = render(<GrowthJourney company="Itorix" />);
+    const { container } = render(<GrowthOpportunity company="Itorix" />);
     expect(container.firstChild).toBeNull();
   });
 
   it("renders one card per stage, in order, with its points", () => {
     const { container, getByText } = render(
-      <GrowthJourney stages={STAGES} company="Itorix" />,
+      <GrowthOpportunity stages={STAGES} company="Itorix" />,
     );
     const cards = container.querySelectorAll(".gj-stage");
     expect(cards.length).toBe(6);
@@ -34,23 +34,21 @@ describe("GrowthJourney", () => {
     expect(getByText("No local network")).toBeInTheDocument();
   });
 
-  it("labels each stage with its human name", () => {
-    const { getByText } = render(<GrowthJourney stages={STAGES} company="Itorix" />);
-    expect(getByText(/Today/i)).toBeInTheDocument();
-    expect(getByText(/Where it could lead/i)).toBeInTheDocument();
+  it("labels each stage with the new growth-narrative name", () => {
+    const { getByText } = render(<GrowthOpportunity stages={STAGES} company="Itorix" />);
+    expect(getByText(/Current position/i)).toBeInTheDocument();
+    expect(getByText(/How TEG opens market access/i)).toBeInTheDocument();
+    expect(getByText(/Where the opportunity leads/i)).toBeInTheDocument();
   });
 
   it("uses the company name in the section heading", () => {
-    const { container } = render(<GrowthJourney stages={STAGES} company="Itorix" />);
+    const { container } = render(<GrowthOpportunity stages={STAGES} company="Itorix" />);
     expect(container.querySelector(".sec-head")?.textContent).toContain("Itorix");
   });
 
   it("tolerates an unknown stage key by still rendering its content", () => {
-    const odd: JourneyStage[] = [
-      ...STAGES,
-      { stage: "mystery", title: "Extra", points: ["x"] },
-    ];
-    const { container } = render(<GrowthJourney stages={odd} company="Itorix" />);
+    const odd: JourneyStage[] = [...STAGES, { stage: "mystery", title: "Extra", points: ["x"] }];
+    const { container } = render(<GrowthOpportunity stages={odd} company="Itorix" />);
     expect(container.querySelectorAll(".gj-stage").length).toBe(7);
   });
 });

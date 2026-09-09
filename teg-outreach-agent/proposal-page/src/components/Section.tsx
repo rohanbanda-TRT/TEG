@@ -5,6 +5,7 @@ export function Section({
   band = "light",
   id,
   wide = false,
+  decorated = false,
 }: {
   children: ReactNode;
   band?: "light" | "alt" | "dark";
@@ -12,6 +13,9 @@ export function Section({
   /** Use the wide grid column instead of the narrower reading column —
    * for chart/card grids, which make good use of the extra room. */
   wide?: boolean;
+  /** Adds the abstract dot-field pattern — the honest stand-in for imagery
+   * this page doesn't have. Only meaningful on `band="dark"`. */
+  decorated?: boolean;
 }) {
   const cls =
     band === "alt"
@@ -20,7 +24,7 @@ export function Section({
         ? "section section--dark"
         : "section";
   return (
-    <section className={cls} id={id}>
+    <section className={decorated ? `${cls} dotfield` : cls} id={id}>
       <div className={wide ? "container container--wide" : "container"}>{children}</div>
     </section>
   );
