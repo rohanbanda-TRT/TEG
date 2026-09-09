@@ -112,9 +112,23 @@ class CompanyBriefRow(Base):
     dossier_json: Mapped[dict] = mapped_column(JSONB, default=dict)
     brief_markdown: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # `updated_at` is general "row last touched" bookkeeping only — NEITHER
+    # staleness check below reads it, deliberately: its onupdate fires on
+    # ANY column change, so if the light and deep passes both bumped it,
+    # updating one would silently make the other look fresher than it is.
+    # light_researched_at / deep_researched_at are each set ONLY by their
+    # own upsert path, so the two staleness clocks can never cross-contaminate.
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
     )
+    light_researched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(),
+    )
+    # Deep pass (app/research/deep.py) — additive, alongside the light
+    # dossier, never overwriting it. NULL until a deep pass has ever landed.
+    depth: Mapped[str] = mapped_column(String(8), nullable=False, server_default="light")
+    deep_findings_json: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    deep_researched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class ProposalRow(Base):

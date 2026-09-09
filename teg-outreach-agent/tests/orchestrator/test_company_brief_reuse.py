@@ -118,11 +118,14 @@ async def test_stale_brief_triggers_fresh_research_and_overwrites():
     # Backdate the stored row past the staleness window directly — the
     # public surface for "how a brief goes stale" is time passing, not a
     # setting this test should have to fake through monkeypatching.
+    # light_researched_at specifically — NOT updated_at, which is pure
+    # bookkeeping now and no longer drives the light-staleness check (see
+    # the comment on CompanyBriefRow.updated_at).
     async with SessionLocal() as s:
         row = (await s.execute(
             select(CompanyBriefRow).where(CompanyBriefRow.company_key == "third rock techkno")
         )).scalars().first()
-        row.updated_at = datetime.now(UTC) - timedelta(days=31)
+        row.light_researched_at = datetime.now(UTC) - timedelta(days=31)
         await s.commit()
 
     await orch.run_pipeline(_payload())
@@ -135,8 +138,8 @@ async def test_stale_brief_triggers_fresh_research_and_overwrites():
             select(CompanyBriefRow).where(CompanyBriefRow.company_key == "third rock techkno")
         )).scalars().all())
     # Overwritten IN PLACE — still exactly one row for this company (an
-    # upsert, not a second row), and its updated_at proves the write is
-    # from just now, not the original run.
+    # upsert, not a second row), and its light_researched_at proves the
+    # write is from just now, not the original run.
     assert row is not None
     assert count == 1
-    assert row.updated_at > datetime.now(UTC) - timedelta(minutes=1)
+    assert row.light_researched_at > datetime.now(UTC) - timedelta(minutes=1)

@@ -25,6 +25,7 @@ from app.llm.base import get_llm
 from app.obs import get_logger
 from app.proposal.email import send_proposal_link_email
 from app.research.brief import render_company_brief
+from app.research.deep import deep_research
 from app.store.db import SessionLocal
 from app.store.repositories import (
     CompanyBriefRepo,
@@ -190,6 +191,11 @@ class PipelineResult:
     session_id: uuid.UUID
     opening_message: str
     persona: str
+    # Additive — needed so app/api/inquiries.py can schedule the background
+    # deep-research pass (app.orchestrator.Orchestrator.run_deep_research)
+    # without re-deriving intake from the DB itself.
+    company_name_canonical: str = ""
+    person_name: str = ""
 
 
 class Orchestrator:
@@ -272,6 +278,8 @@ class Orchestrator:
             return PipelineResult(
                 inquiry_id=inq.id, session_id=cs.id,
                 opening_message=init.opening_message, persona=init.persona,
+                company_name_canonical=intake.company_name_canonical,
+                person_name=intake.person_name,
             )
 
     async def _reuse_company_brief(self, intake: IntakeResult) -> ResearchDossier | None:
@@ -284,9 +292,15 @@ class Orchestrator:
         except Exception as exc:  # noqa: BLE001 — a cache miss must never break the pipeline
             _log.warning("company brief lookup failed (%s); researching fresh", exc)
             return None
-        if row is None:
+        if row is None or not row.dossier_json:
+            # The empty-dossier_json case is real, not defensive filler: a
+            # deep-only pass (upsert_deep_findings) can create a row before
+            # any light pass ever has, with light_researched_at defaulted to
+            # "now" at insert time even though no light research happened —
+            # without this check that row would look like a fresh, valid
+            # light-research hit and skip real research entirely.
             return None
-        age = datetime.now(UTC) - row.updated_at
+        age = datetime.now(UTC) - row.light_researched_at
         staleness = timedelta(days=get_settings().company_brief_staleness_days)
         if age > staleness:
             _log.info("company brief for %r is stale (age=%s > %s) -> researching fresh",
@@ -319,6 +333,67 @@ class Orchestrator:
         briefs_dir = Path(get_settings().kb_path).resolve().parent / "prospect_briefs"
         briefs_dir.mkdir(parents=True, exist_ok=True)
         (briefs_dir / f"{slug}.md").write_text(markdown, encoding="utf-8")
+
+    async def run_deep_research(self, *, company_name: str, person_name: str) -> None:
+        """Background-task entrypoint — app/api/inquiries.py schedules this
+        via FastAPI BackgroundTasks AFTER the response (the opening message)
+        is already computed, so it can never delay anything the prospect
+        sees. Never raises: a background task that raises has nowhere
+        useful to send that exception. See
+        docs/superpowers/specs/2026-09-09-background-deep-research-design.md §3.2/§3.4.
+        """
+        settings = get_settings()
+        # deep_research() has no fallback backend the way ResearchAgent does
+        # (Tavily/Brave) — it's Claude-only by design (§3.1 of the spec), so
+        # claude_cli_enabled=False means "can't run at all," not just
+        # "prefer a different tool." This is also what makes the suite safe:
+        # tests force CLAUDE_CLI_ENABLED=false (see tests/conftest.py) the
+        # same way they already do for every other ClaudeCli-backed caller,
+        # so a test hitting POST /inquiries never spawns a real subprocess
+        # via this background task.
+        if not settings.deep_research_enabled or not settings.claude_cli_enabled:
+            return
+        try:
+            async with SessionLocal() as s:
+                row = await CompanyBriefRepo(s).get_by_company(company_name)
+            if row is not None and row.deep_researched_at is not None:
+                age = datetime.now(UTC) - row.deep_researched_at
+                staleness = timedelta(days=settings.deep_research_staleness_days)
+                if age <= staleness:
+                    _log.info("deep brief for %r is fresh (age=%s) -> skipping", company_name, age)
+                    return
+            _log.info("deep research starting for %r", company_name)
+            findings = await deep_research(company_name, person_name)
+            if findings is None:
+                _log.warning("deep research produced nothing for %r", company_name)
+                return
+            async with SessionLocal() as s:
+                await CompanyBriefRepo(s).upsert_deep_findings(company_name, findings)
+                await s.commit()
+            _log.info("deep research done for %r", company_name)
+        except Exception as exc:  # noqa: BLE001 — a background task must never raise
+            _log.warning("deep research failed for %r: %s", company_name, exc)
+
+    async def _pickup_deep_research(self, company_name: str, session_started_at: datetime) -> dict | None:
+        """Read-only, cheap: has a deep brief landed for this company SINCE
+        this conversation started? Never blocks, never awaited-for — just a
+        lookup. Returns the raw findings dict for the caller to fold into
+        learned_facts, or None if nothing fresher than the session exists.
+        Not yet consumed by PersuasionAgent's prompt-building — this makes
+        the signal available, the same "not required behavior" pattern
+        kb_confidence_flags already established; wiring it into the live
+        prompt text is separate follow-up work."""
+        try:
+            async with SessionLocal() as s:
+                row = await CompanyBriefRepo(s).get_by_company(company_name)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("deep-research pickup lookup failed for %r: %s", company_name, exc)
+            return None
+        if row is None or row.deep_researched_at is None:
+            return None
+        if row.deep_researched_at <= session_started_at:
+            return None
+        return row.deep_findings_json
 
     def _state_from_row(self, cs) -> dict:
         return {
@@ -390,6 +465,18 @@ class Orchestrator:
             )
             history = await MessageRepo(s).history(session_id)
             state = self._state_from_row(cs)
+
+            deep_findings = await self._pickup_deep_research(
+                intake.company_name_canonical, cs.started_at,
+            )
+            if deep_findings:
+                # Available to learned_facts, not yet read by the prompt-
+                # building logic itself — see _pickup_deep_research's
+                # docstring for why that's the deliberate scope here.
+                state["learned_facts"] = {
+                    **state.get("learned_facts", {}),
+                    "_deep_research": deep_findings,
+                }
 
             turn = await self.persuasion.respond(
                 intake=intake, dossier=dossier, state=state,

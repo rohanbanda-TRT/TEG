@@ -15,6 +15,11 @@ os.environ.setdefault(
 # explicitly; this only stops agents self-constructing a real one. Set before
 # any app import, so get_settings() caches the overridden value.
 os.environ["CLAUDE_CLI_ENABLED"] = "false"
+# Orchestrator.run_deep_research is itself gated on claude_cli_enabled (it
+# has no fallback backend), so the line above already covers it — this is
+# defense-in-depth so the background deep-research task never fires a real
+# subprocess via POST /inquiries even if that gate is ever loosened.
+os.environ["DEEP_RESEARCH_ENABLED"] = "false"
 
 from typing import ClassVar
 

@@ -101,6 +101,10 @@ class CompanyBriefRepo:
     async def upsert(
         self, company_name: str, dossier: ResearchDossier, brief_markdown: str,
     ) -> CompanyBriefRow:
+        """The LIGHT pass. Sets light_researched_at explicitly — the field
+        the light-staleness check reads — never relying on updated_at's
+        onupdate, which would also fire on a deep-only write (see the
+        comment on CompanyBriefRow.updated_at)."""
         key = _norm(company_name)
         row = await self.get_by_company(company_name)
         if row is None:
@@ -110,7 +114,27 @@ class CompanyBriefRepo:
         row.company_name_canonical = company_name
         row.dossier_json = dossier.model_dump()
         row.brief_markdown = brief_markdown
-        row.updated_at = func.now()
+        row.light_researched_at = func.now()
+        return row
+
+    async def upsert_deep_findings(self, company_name: str, findings) -> CompanyBriefRow:
+        """The DEEP pass (app/research/deep.py) — additive, alongside the
+        light dossier, never overwriting dossier_json/brief_markdown.
+        Creates a row if the deep pass somehow lands before any light pass
+        ever has (an empty light dossier placeholder, upgraded to a real
+        one whenever the light pass next runs)."""
+        key = _norm(company_name)
+        row = await self.get_by_company(company_name)
+        if row is None:
+            row = CompanyBriefRow(
+                company_key=key, company_name_canonical=company_name,
+                dossier_json={}, brief_markdown="",
+            )
+            self.s.add(row)
+        row.company_name_canonical = company_name
+        row.deep_findings_json = findings.model_dump()
+        row.depth = "deep"
+        row.deep_researched_at = func.now()
         return row
 
 
