@@ -61,6 +61,29 @@ async def test_a_cli_failure_returns_none_not_raise():
     assert result is None
 
 
+async def test_teg_fit_fields_round_trip():
+    claude = _FakeClaude(data={
+        "market_positioning": "Odoo + Salesforce implementation partner",
+        "core_capabilities": ["Odoo ERP implementation", "Salesforce consulting"],
+        "customer_segments": ["Manufacturing", "Retail"],
+        "expansion_industries": ["Logistics"],
+        "b2b_opportunities": ["Odoo integration partnerships with logistics operators"],
+        "teg_fit_reasons": ["Their ERP/CRM mix maps directly to TEG's logistics and retail floor"],
+    })
+    result = await deep_research("Uncanny", "X", cli=claude)
+    assert result.market_positioning == "Odoo + Salesforce implementation partner"
+    assert result.expansion_industries == ["Logistics"]
+    assert result.teg_fit_reasons
+
+
+async def test_prompt_grounds_expansion_industries_in_the_official_teg_list():
+    claude = _FakeClaude(data={})
+    await deep_research("Acme Co", "X", cli=claude)
+    user_prompt = claude.calls[0]["user_prompt"]
+    assert "official buyer industries" in user_prompt
+    assert "Manufacturing" in user_prompt  # a known official industry, from facts.json
+
+
 async def test_missing_skill_file_returns_none_not_raise():
     import app.research.deep as deep_mod
 

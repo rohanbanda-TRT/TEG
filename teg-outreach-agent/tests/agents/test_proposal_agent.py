@@ -1,5 +1,6 @@
-from app.agents.proposal import ProposalAgent
+from app.agents.proposal import ProposalAgent, _company_standing
 from app.kb.pricing import load_pricing
+from app.research.deep import DeepFindings
 from app.domain.schemas import (
     IntakeResult,
     Proposal,
@@ -353,3 +354,54 @@ async def test_itorix_infotech_business_focused_proposal():
     print(f"Closing CTA Body: {p.closing_cta_body}")
     print(f"Flags: {flags}")
     print("=== END TEST RESULTS ===\n")
+
+
+# ---- company_standing / teg_fit_points — deep-research passthrough,
+# deterministic (no LLM authorship), see app/research/deep.py.
+
+def _deep_findings(**over) -> DeepFindings:
+    base = dict(
+        market_positioning="Odoo + Salesforce implementation partner",
+        core_capabilities=["Odoo ERP implementation", "Salesforce consulting"],
+        customer_segments=["Manufacturing", "Retail"],
+        growth_trend="headcount growing faster than revenue",
+        competitive_position="a small but credible mid-market player",
+        teg_fit_reasons=["Their ERP/CRM mix maps directly to TEG's manufacturing and retail floor"],
+    )
+    base.update(over)
+    return DeepFindings(**base)
+
+
+def test_company_standing_assembles_deterministically_from_deep_findings():
+    text = _company_standing(_deep_findings())
+    assert "Odoo + Salesforce implementation partner" in text
+    assert "Odoo ERP implementation" in text
+    assert "Manufacturing" in text
+    assert "headcount growing faster than revenue" in text.lower()
+
+
+def test_company_standing_empty_when_no_deep_findings():
+    assert _company_standing(None) == ""
+
+
+async def test_build_populates_company_standing_and_teg_fit_points_when_deep_findings_given():
+    llm = FakeLLMClient(structured=[_good_proposal()])
+    p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+        deep_findings=_deep_findings(),
+    )
+    assert "Odoo + Salesforce implementation partner" in p.company_standing
+    assert p.teg_fit_points == [
+        "Their ERP/CRM mix maps directly to TEG's manufacturing and retail floor"
+    ]
+
+
+async def test_build_leaves_company_standing_and_teg_fit_points_empty_without_deep_findings():
+    llm = FakeLLMClient(structured=[_good_proposal()])
+    p, _ = await ProposalAgent(llm, explorer=_explorer()).build(
+        intake=_intake(), dossier=_dossier(), persona="it_tech_service",
+        transcript=[], learned_facts={}, session_ref="x", version=1, price_requested=True,
+    )
+    assert p.company_standing == ""
+    assert p.teg_fit_points == []

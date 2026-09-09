@@ -269,11 +269,12 @@ class PersuasionAgent(Agent):
             else "Do not name other companies — you have no peer list for this prospect."
         )
         props = self._rules.persona_triggers.get(persona, {}).get("value_props", [])
+        deep_line = self._deep_research_line(learned_facts)
 
         if completeness is not None:
             return self._turn_context_v2(
                 tone, peer_line, props, persona, discovery, completeness
-            )
+            ) + deep_line
 
         known = sorted(k for k in self._REQUIRED_DISCOVERY if learned_facts.get(k))
         missing = [k for k in self._REQUIRED_DISCOVERY if not learned_facts.get(k)]
@@ -287,6 +288,39 @@ class PersuasionAgent(Agent):
             f"If they ask about cost, the one indicative line you may give is: "
             f"\"{_PRICING_LINE[persona]}\"\n"
             f"Benefits you may draw on (paraphrase, never list): {'; '.join(props)}."
+        ) + deep_line
+
+    def _deep_research_line(self, learned_facts: dict) -> str:
+        """Surfaces the background deep-research pass (app/research/deep.py),
+        picked up into learned_facts["_deep_research"] by
+        Orchestrator._pickup_deep_research — empty string (no section at
+        all) until a fresh deep brief has actually landed for this company,
+        so most turns are unaffected. Reuses the same "never narrate that
+        you researched them" rule already in teg-conversation/_system —
+        stated again here since this is new, easy-to-misuse material."""
+        dr = learned_facts.get("_deep_research")
+        if not dr:
+            return ""
+        bits: list[str] = []
+        if dr.get("market_positioning"):
+            bits.append(f"positioning: {dr['market_positioning']}")
+        if dr.get("core_capabilities"):
+            bits.append(f"capabilities: {', '.join(dr['core_capabilities'])}")
+        if dr.get("customer_segments"):
+            bits.append(f"currently serves: {', '.join(dr['customer_segments'])}")
+        if dr.get("expansion_industries"):
+            bits.append(f"could realistically expand into: {', '.join(dr['expansion_industries'])}")
+        if dr.get("teg_fit_reasons"):
+            bits.append(f"why TEG could specifically fit: {'; '.join(dr['teg_fit_reasons'])}")
+        if not bits:
+            return ""
+        return (
+            "\n\n## Deeper research on this company\n"
+            "Use this naturally, in your own words, only where it fits the conversation — "
+            "never as a list, never more than one point per turn. NEVER say or imply you "
+            "researched them (no 'I found', 'I looked into', 'since your enquiry came "
+            "through' — state it as something you already know).\n"
+            + "\n".join(f"- {b}" for b in bits)
         )
 
     _HOW_KNOWN = {

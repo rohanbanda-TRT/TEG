@@ -556,6 +556,16 @@ strong {
   font-style: normal;
   color: var(--cyan);
 }
+/* A longer, flowing paragraph (research-derived company standing) — same
+   card, but normal weight and a wider measure than .state-statement, which
+   is sized for one punchy sentence, not several. */
+.standing-copy {
+  font-weight: 400;
+  font-size: clamp(1rem, 1.5vw, 1.1rem);
+  color: var(--slate);
+  line-height: 1.7;
+  max-width: 60ch;
+}
 .state-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);

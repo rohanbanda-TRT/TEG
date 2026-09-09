@@ -25,7 +25,7 @@ from app.llm.base import get_llm
 from app.obs import get_logger
 from app.proposal.email import send_proposal_link_email
 from app.research.brief import render_company_brief
-from app.research.deep import deep_research
+from app.research.deep import DeepFindings, deep_research
 from app.store.db import SessionLocal
 from app.store.repositories import (
     CompanyBriefRepo,
@@ -395,6 +395,23 @@ class Orchestrator:
             return None
         return row.deep_findings_json
 
+    async def _fetch_deep_findings(self, company_name: str) -> DeepFindings | None:
+        """Used by generate_proposal — unlike _pickup_deep_research (which
+        only counts a deep brief NEWER than the session start), a proposal
+        should use whatever deep research exists at all, however old, since
+        using it is strictly better than not — staleness only governs
+        whether run_deep_research decides to RE-research, never whether
+        existing findings are worth using once they exist."""
+        try:
+            async with SessionLocal() as s:
+                row = await CompanyBriefRepo(s).get_by_company(company_name)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("deep-findings lookup failed for %r: %s", company_name, exc)
+            return None
+        if row is None or row.deep_findings_json is None:
+            return None
+        return DeepFindings.model_validate(row.deep_findings_json)
+
     def _state_from_row(self, cs) -> dict:
         return {
             "persona": cs.persona,
@@ -580,13 +597,16 @@ class Orchestrator:
             price_requested = bool(cs.price_requested)
             version = await ProposalRepo(s).next_version(session_id)
 
-        _log.info("=== generate_proposal  session=%s  v%d  persona=%s  price_requested=%s ===",
-                  str(session_id)[:8], version, persona, price_requested)
+        deep_findings = await self._fetch_deep_findings(intake.company_name_canonical)
+        _log.info("=== generate_proposal  session=%s  v%d  persona=%s  price_requested=%s  "
+                  "deep_research=%s ===",
+                  str(session_id)[:8], version, persona, price_requested,
+                  "yes" if deep_findings else "no")
         proposal, flags = await asyncio.wait_for(
             self.proposal.build(
                 intake=intake, dossier=dossier, persona=persona, transcript=transcript,
                 learned_facts=learned, session_ref=str(session_id)[:8], version=version,
-                price_requested=price_requested,
+                price_requested=price_requested, deep_findings=deep_findings,
             ),
             timeout=settings.proposal_hard_timeout_s,
         )

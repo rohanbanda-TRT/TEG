@@ -42,6 +42,39 @@ no filesystem access.
   company already invests in visibility, which is a strong signal for
   whether an expo pitch will land.
 
+You are also answering a second question: **given what this company does
+today, who at TEG could they realistically meet, and how could TEG help
+them grow?** That needs:
+
+- **market_positioning** — how the company positions itself today, in its
+  own words where possible (their site's own language, not your paraphrase
+  of a vague impression).
+- **core_capabilities** — their actual products/services, concretely (not
+  "IT services" — "Odoo ERP implementation" and "Salesforce consulting" are
+  concrete; "digital transformation" is not).
+- **customer_segments** — the industries/customer types they serve TODAY,
+  from real evidence (case studies, client logos, their own site's "who we
+  serve" language).
+- **expansion_industries** — industries they could REALISTICALLY expand
+  into, reasoned from their existing capabilities (e.g. a company doing
+  inventory/ERP work for manufacturing clients has a real, arguable case for
+  logistics or retail — not an arbitrary industry). You will be given TEG's
+  official buyer-industry list in the prompt — name ONLY industries from
+  that list, copied exactly, and only when you can state a real reason.
+- **b2b_opportunities** — concrete potential sell-to or partner-with angles
+  a TEG floor full of the right buyers could open for THIS company,
+  reasoned from their actual capabilities — not a generic "networking
+  opportunities" line.
+- **teg_fit_reasons** — 2-4 short, specific reasons TEG would matter to
+  THIS company, each one traceable to a fact above. A good reason names a
+  concrete capability and a concrete audience; "TEG offers great exposure"
+  is not a reason, it's a slogan.
+
+Every field in this second group must be grounded in something you
+actually found — a real capability, a real client, a real market signal.
+If you cannot support expansion_industries or teg_fit_reasons with real
+evidence, leave them empty rather than reasoning from nothing.
+
 ## How to search
 
 This runs in the background, not during a live chat, so you have real time

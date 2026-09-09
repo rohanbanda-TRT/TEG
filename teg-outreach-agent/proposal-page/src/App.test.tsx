@@ -17,6 +17,7 @@ describe("App", () => {
     expect(ids).toEqual([
       "top",
       "today",
+      "standing",
       "opportunity",
       "market",
       "how-teg-helps",
@@ -24,6 +25,15 @@ describe("App", () => {
       "outcomes",
       "recommendation",
     ]);
+  });
+
+  it("renders company_standing and teg_fit_points when a deep-research pass has landed", () => {
+    const { container } = render(<App payload={fixture as Payload} />);
+    expect(screen.getByText(/BI-and-analytics implementation partner/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/maps directly to the finance and healthcare buyers/),
+    ).toBeInTheDocument();
+    expect(container.querySelector("#standing")).toBeTruthy();
   });
 
   it("degrades cleanly to a thin proposal — every optional section just disappears", () => {

@@ -8,9 +8,11 @@ from app.agents.research import ResearchAgent, _Synthesis
 from app.domain.schemas import IntakePayload, Proposal, ProposalPackage, ProposalPain
 from app.llm.fake import FakeLLMClient
 from app.orchestrator import Orchestrator
+from app.research.deep import DeepFindings
 from app.research.tools import ResearchResult, ResearchTool
 from app.store.db import Base, SessionLocal, engine
 from app.store.models import ChatMessage, ProposalRow
+from app.store.repositories import CompanyBriefRepo
 from tests.conftest import StubExplorer
 
 
@@ -90,6 +92,32 @@ async def test_generate_proposal_writes_files_row_and_message(tmp_path, monkeypa
         assert msgs[-1].attachment["page_url"] == f"/p/{card.proposal_id}"
         assert "/p/" in msgs[-1].content
     get_settings.cache_clear()
+
+
+async def test_generate_proposal_picks_up_a_stored_deep_research_brief(tmp_path, monkeypatch):
+    monkeypatch.setenv("PROPOSAL_DIR", str(tmp_path / "proposals"))
+    from config.settings import get_settings
+    get_settings.cache_clear()
+
+    async with SessionLocal() as s:
+        await CompanyBriefRepo(s).upsert_deep_findings(
+            "Third Rock Techkno",
+            DeepFindings(
+                market_positioning="AI + cloud engineering consultancy",
+                teg_fit_reasons=["Their AI/cloud practice maps to TEG's tech-cluster visitors"],
+            ),
+        )
+        await s.commit()
+
+    orch, sid = await _seed_session()
+    await orch.generate_proposal(sid)
+
+    async with SessionLocal() as s:
+        pr = (await s.execute(select(ProposalRow))).scalars().one()
+        assert "AI + cloud engineering consultancy" in pr.proposal_json["company_standing"]
+        assert pr.proposal_json["teg_fit_points"] == [
+            "Their AI/cloud practice maps to TEG's tech-cluster visitors"
+        ]
 
 
 async def test_generate_proposal_bumps_version(tmp_path, monkeypatch):

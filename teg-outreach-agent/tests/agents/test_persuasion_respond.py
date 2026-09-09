@@ -100,3 +100,37 @@ async def test_respond_guardrail_fallback_sets_needs_review():
     assert "₹400" not in turn.reply_text
     assert turn.updated_state["needs_review"] is True
     assert turn.guardrail_flags
+
+
+# ---- deep-research surfacing in the live conversation (app/research/deep.py
+# picked up via Orchestrator._pickup_deep_research into learned_facts) ----
+
+def test_deep_research_line_empty_when_nothing_picked_up():
+    agent = PersuasionAgent(FakeLLMClient())
+    assert agent._deep_research_line({}) == ""
+    assert agent._deep_research_line({"_deep_research": {}}) == ""
+    assert agent._deep_research_line({"_deep_research": None}) == ""
+
+
+def test_deep_research_line_surfaces_teg_fit_reasons_with_the_narration_warning():
+    agent = PersuasionAgent(FakeLLMClient())
+    line = agent._deep_research_line({
+        "_deep_research": {
+            "market_positioning": "Odoo + Salesforce implementation partner",
+            "expansion_industries": ["Logistics"],
+            "teg_fit_reasons": ["Their ERP/CRM mix maps to TEG's logistics and retail floor"],
+        },
+    })
+    assert "Odoo + Salesforce implementation partner" in line
+    assert "Logistics" in line
+    assert "NEVER say or imply you researched them" in line
+
+
+async def test_turn_context_includes_the_deep_research_line_when_present():
+    agent = PersuasionAgent(FakeLLMClient())
+    d = ResearchDossier(sector="Software Development", relationship="cold")
+    ctx = agent._turn_context(
+        "it_tech_service", d,
+        learned_facts={"_deep_research": {"market_positioning": "Odoo + Salesforce partner"}},
+    )
+    assert "Odoo + Salesforce partner" in ctx

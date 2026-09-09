@@ -25,6 +25,7 @@ from pydantic import BaseModel, Field
 from app.claude.cli import ClaudeCli
 from app.claude.prompt_builder import render_skill
 from app.claude.skill_loader import load_skill
+from app.kb.facts import load as _load_facts
 from app.obs import get_logger
 from config.settings import get_settings
 
@@ -50,7 +51,14 @@ class ReviewTheme(BaseModel):
 class DeepFindings(BaseModel):
     """Superset of ResearchDossier — fields today's lightweight pass never
     gathers. Stored alongside (not replacing) the light dossier in
-    company_briefs.deep_findings_json."""
+    company_briefs.deep_findings_json.
+
+    Two families of field here: firmographic/diligence (funding_status
+    through notable_visibility — the original scope) and TEG-fit fields
+    (market_positioning through teg_fit_reasons — added so the proposal and
+    the live conversation can answer "given what this company does today,
+    who at TEG could they realistically meet, and how could TEG help them
+    grow?" without a second research pass)."""
 
     funding_status: str | None = None
     growth_trend: str | None = None
@@ -59,6 +67,15 @@ class DeepFindings(BaseModel):
     certifications: list[str] = Field(default_factory=list)
     review_sentiment_themes: list[ReviewTheme] = Field(default_factory=list)
     notable_visibility: str | None = None
+
+    # --- TEG-fit fields ---
+    market_positioning: str | None = None       # how they position themselves today, in their own terms
+    core_capabilities: list[str] = Field(default_factory=list)   # products/services, concretely
+    customer_segments: list[str] = Field(default_factory=list)   # industries/segments they serve TODAY
+    expansion_industries: list[str] = Field(default_factory=list)  # industries they could realistically enter
+    b2b_opportunities: list[str] = Field(default_factory=list)   # potential sell/partner angles at TEG
+    teg_fit_reasons: list[str] = Field(default_factory=list)     # why TEG specifically, grounded in the above
+
     sources: list[str] = Field(default_factory=list)
     notes: str = ""
 
@@ -80,9 +97,12 @@ async def deep_research(
         _log.warning("teg-deep-research skill missing; skipping deep research")
         return None
     system = _SYSTEM_PREFIX + "\n\n" + render_skill(skill)
+    industries = ", ".join(_load_facts().official_industries) or "(list unavailable)"
     user = (
         f"Company: {company_name}\n"
         f"Enquirer: {person_name}\n\n"
+        f"TEG's official buyer industries (for expansion_industries — only ever name "
+        f"industries from THIS list, copied exactly): {industries}\n\n"
         "Compile the deepest account-research brief you can support with "
         "real, cited sources. Leave a field null/empty rather than guessing."
     )
