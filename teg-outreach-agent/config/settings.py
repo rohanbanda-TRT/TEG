@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     brave_api_key: str = ""
     research_max_searches_per_track: int = 2
     research_max_scrapes: int = 3
+    # How long a stored company_briefs row is trusted before a new inquiry
+    # for the same company re-runs research instead of reusing it.
+    company_brief_staleness_days: int = 30
     pipeline_soft_timeout_s: int = 15
     pipeline_hard_timeout_s: int = 90
     kb_path: str = "../teg-kb-agent/knowledge_base"

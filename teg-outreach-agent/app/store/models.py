@@ -99,6 +99,24 @@ class HandoffPacketRow(Base):
     delivered_to: Mapped[str | None] = mapped_column(Text)
 
 
+class CompanyBriefRow(Base):
+    """One reusable research brief per company — keyed by a normalized
+    company-name key (see app.kb._names._norm, the same normalization the
+    peer/exhibitor-matching code already uses), not raw company name, so
+    "Third Rock Techkno" and "Third Rock Techkno Pvt. Ltd." hit the same row.
+    """
+    __tablename__ = "company_briefs"
+    id: Mapped[uuid.UUID] = _uuid_col(primary_key=True)
+    company_key: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    company_name_canonical: Mapped[str] = mapped_column(Text, nullable=False)
+    dossier_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    brief_markdown: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(),
+    )
+
+
 class ProposalRow(Base):
     __tablename__ = "proposals"
     id: Mapped[uuid.UUID] = _uuid_col(primary_key=True)

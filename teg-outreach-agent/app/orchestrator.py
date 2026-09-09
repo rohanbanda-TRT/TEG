@@ -4,7 +4,7 @@ import asyncio
 import re
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from app.agents.analysis import AnalysisAgent
@@ -24,8 +24,10 @@ from app.graph.runner import run_graph
 from app.llm.base import get_llm
 from app.obs import get_logger
 from app.proposal.email import send_proposal_link_email
+from app.research.brief import render_company_brief
 from app.store.db import SessionLocal
 from app.store.repositories import (
+    CompanyBriefRepo,
     DossierRepo,
     HandoffRepo,
     InquiryRepo,
@@ -211,25 +213,40 @@ class Orchestrator:
         intake_ctx = await run_graph([_analyze_intake_node(self)], {"payload": payload})
         intake: IntakeResult = intake_ctx["intake"]
 
-        try:
-            budget = _Budget(settings.research_max_searches_per_track, settings.research_max_scrapes)
-            research_ctx = await asyncio.wait_for(
-                run_graph(
-                    [
-                        _research_company_node(self),
-                        _research_person_node(self),
-                        _verify_relevant_teg_claims_node(),
-                        _merge_dossier_node(self),
-                    ],
-                    {"intake": intake, "_research_budget": budget},
-                ),
-                timeout=settings.pipeline_hard_timeout_s,
-            )
-            dossier: ResearchDossier = research_ctx["dossier"]
-        except TimeoutError:
-            _log.warning("research timed out after %ss -> ask_prospect fallback",
-                         settings.pipeline_hard_timeout_s)
-            dossier = ResearchDossier(ask_prospect=["company_description", "role"])
+        # Company Research Brief reuse — checked BEFORE the research graph
+        # runs at all, so a fresh hit skips research entirely rather than
+        # just skipping persistence. Only ever reused when fresh (see
+        # settings.company_brief_staleness_days); a stale or missing entry
+        # falls through to the normal research path below unchanged.
+        dossier = await self._reuse_company_brief(intake)
+        if dossier is not None:
+            _log.info("reusing stored company brief for %r -> skipping research",
+                      intake.company_name_canonical)
+        else:
+            try:
+                budget = _Budget(settings.research_max_searches_per_track, settings.research_max_scrapes)
+                research_ctx = await asyncio.wait_for(
+                    run_graph(
+                        [
+                            _research_company_node(self),
+                            _research_person_node(self),
+                            _verify_relevant_teg_claims_node(),
+                            _merge_dossier_node(self),
+                        ],
+                        {"intake": intake, "_research_budget": budget},
+                    ),
+                    timeout=settings.pipeline_hard_timeout_s,
+                )
+                dossier = research_ctx["dossier"]
+                # Only a real, completed research pass is worth caching — a
+                # timeout fallback below is a thin synthetic dossier, and
+                # saving THAT as "the" brief for company_brief_staleness_days
+                # would poison every future lookup for this company.
+                await self._save_company_brief(intake, dossier)
+            except TimeoutError:
+                _log.warning("research timed out after %ss -> ask_prospect fallback",
+                             settings.pipeline_hard_timeout_s)
+                dossier = ResearchDossier(ask_prospect=["company_description", "role"])
 
         init_ctx = await run_graph(
             [_persuasion_init_node(self)], {"intake": intake, "dossier": dossier},
@@ -256,6 +273,52 @@ class Orchestrator:
                 inquiry_id=inq.id, session_id=cs.id,
                 opening_message=init.opening_message, persona=init.persona,
             )
+
+    async def _reuse_company_brief(self, intake: IntakeResult) -> ResearchDossier | None:
+        """None on a miss OR a stale hit — either way, run_pipeline falls
+        through to normal research. Never raises: a brief-lookup failure
+        degrades to "do the research," not to a broken pipeline."""
+        try:
+            async with SessionLocal() as s:
+                row = await CompanyBriefRepo(s).get_by_company(intake.company_name_canonical)
+        except Exception as exc:  # noqa: BLE001 — a cache miss must never break the pipeline
+            _log.warning("company brief lookup failed (%s); researching fresh", exc)
+            return None
+        if row is None:
+            return None
+        age = datetime.now(UTC) - row.updated_at
+        staleness = timedelta(days=get_settings().company_brief_staleness_days)
+        if age > staleness:
+            _log.info("company brief for %r is stale (age=%s > %s) -> researching fresh",
+                      intake.company_name_canonical, age, staleness)
+            return None
+        return ResearchDossier.model_validate(row.dossier_json)
+
+    async def _save_company_brief(self, intake: IntakeResult, dossier: ResearchDossier) -> None:
+        """Never raises out into run_pipeline — a failed save just means the
+        NEXT inquiry for this company re-researches too, which is safe."""
+        try:
+            markdown = render_company_brief(dossier)
+            async with SessionLocal() as s:
+                await CompanyBriefRepo(s).upsert(intake.company_name_canonical, dossier, markdown)
+                await s.commit()
+            self._write_prospect_brief_file(intake.company_name_canonical, markdown)
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("saving company brief for %r failed (%s)", intake.company_name_canonical, exc)
+
+    @staticmethod
+    def _write_prospect_brief_file(company_name: str, markdown: str) -> None:
+        """teg-kb-agent/prospect_briefs/<slug>.md — a sibling of
+        knowledge_base/, same "generated staging artifact, not sourced
+        content" pattern _verification_log/ already established. Never
+        written INTO knowledge_base/ — that directory is TEG's own sourced
+        content, never prospect data."""
+        from app.kb._names import _norm
+
+        slug = _norm(company_name).replace(" ", "-") or "company"
+        briefs_dir = Path(get_settings().kb_path).resolve().parent / "prospect_briefs"
+        briefs_dir.mkdir(parents=True, exist_ok=True)
+        (briefs_dir / f"{slug}.md").write_text(markdown, encoding="utf-8")
 
     def _state_from_row(self, cs) -> dict:
         return {
