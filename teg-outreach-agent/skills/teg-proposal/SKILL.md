@@ -98,7 +98,8 @@ Before generating the proposal, reason through these layers:
 - Only after identifying target audience, introduce the event
 - Logic: GROWTH OPPORTUNITY + RELEVANT TARGET AUDIENCE + TEG ACCESS = POTENTIAL BUSINESS DEVELOPMENT CHANNEL
 - Do NOT say "15,000+ decision-makers" — the verified fact is "15,000+ expected visitors" with SME/MSME decision-makers as a target audience
-- Phrase carefully: "Tech Expo Gujarat expects 15,000+ visitors and is designed to bring together SME/MSME decision-makers..."
+- The RULE, not a sentence to reuse: state the visitor count as visitors, and describe SME/MSME decision-makers as who's expected among them — never merge the two into "X decision-makers". Write this fresh, in your own words, connected to the SPECIFIC audience/problem you identified for THIS company in Layers 4-5 — never a generic version of the fact on its own.
+- Never reuse a stock sentence about TEG's scale across companies. If two proposals could use the same sentence here word-for-word, it isn't personalized — tie it explicitly to what THIS company's buyers/problem actually are.
 
 ### LAYER 7 — STALL STRATEGY
 - Business purpose: ATTRACT → ENGAGE → DISCOVER → DEMONSTRATE → QUALIFY → FOLLOW UP
@@ -120,7 +121,7 @@ Before generating the proposal, reason through these layers:
 ### LAYER 10 — FINAL BUSINESS CASE
 - Answer: "Why should [company] consider investing in a stall?"
 - Not: "Why is TEG a great event?"
-- Frame: "Could TEG provide a concentrated environment for [company] to test a new market, reach relevant businesses, start targeted conversations and develop relationships that may become future opportunities?"
+- The SHAPE, not a sentence to reuse: a concentrated environment where THIS company could test a new market / reach the SPECIFIC buyers you identified in Layers 4-5 / develop relationships that may become opportunities — but write your own sentence from that shape, grounded in what THIS company actually needs, not a reworded copy of this line. If your answer would read almost the same for a different company, it hasn't actually answered "why THIS company."
 
 ## Content Balance
 
@@ -235,5 +236,6 @@ Re-read your draft once and check:
 8. Internal challenges are not stated unless explicitly supported.
 9. "15,000+ decision-makers" is not used — correct to "15,000+ visitors" with SME/MSME decision-makers as target audience.
 10. No invented revenue, growth rates, lead counts, conversion rates, ROI, deal sizes.
+11. No sentence in this draft is a lightly-reworded copy of an example sentence from these instructions (the "phrase carefully"/"frame"-style lines above are shapes to write FROM, not sentences to write WITH). If you could paste any sentence from `lead_generation`, `roi_framing`, or `closing_cta_body` into a DIFFERENT company's proposal unchanged, rewrite it grounded in what THIS company specifically needs.
 
 Then return the JSON the schema asks for. Nothing else.
