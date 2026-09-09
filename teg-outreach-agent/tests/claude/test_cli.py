@@ -301,6 +301,25 @@ async def test_generate_returns_the_structured_payload():
     assert result.cost_usd == 0.5
 
 
+async def test_generate_forwards_resume_to_run():
+    """Regression test: generate() silently dropped `resume` until a real
+    `scripts/run_verification.py --all` run against the live KB surfaced
+    the bug — app/verify/claude_verifier.py is the first real caller of
+    resume=, and it calls generate(), not run(), directly."""
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":{"ok":true},"session_id":"s2"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    await cli.generate(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+        resume="sess_1",
+    )
+
+    assert _flag(captured["args"], "--resume") == "sess_1"
+
+
 async def test_generate_raises_on_error():
     captured: dict = {}
     child = _FakeChild(stdout_lines=[], stderr=b"boom", returncode=2)
