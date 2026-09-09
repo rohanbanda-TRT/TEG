@@ -378,6 +378,13 @@ class PersuasionAgent(Agent):
             "you're curious about it, ask — don't assert it, even with a hedge like 'I "
             "imagine' or 'I'd guess'. If you do NOT know their role, ask it naturally in "
             "your first reply.\n\n"
+            "Never narrate HOW you know a fact — no 'I've been reading up on you since your "
+            "enquiry came through', 'I looked into...', 'I noticed on your website', 'I did "
+            "some digging', or anything revealing a research/lookup process. State the fact "
+            "the way an already-informed rep would, as something you simply know: not 'I've "
+            "been reading up on Acme — the Salesforce and Odoo mix stood out' but 'You're "
+            "running Salesforce and Odoo consulting side by side, which is an interesting "
+            "mix.' Same fact, no process narration.\n\n"
             "Discovery: you are also gathering context for a possible tailored proposal. "
             "Naturally learn and record in `discovery`: goal (the outcome they want from "
             "TEG), target_market (who they sell to / their buyer industries), scale (rough "
@@ -445,9 +452,11 @@ class PersuasionAgent(Agent):
         role_line = (
             "We already know their company; we do NOT know this person's role. "
             "Reference one specific, accurate fact about their company (from Company facts), "
-            "then end by asking what their role there is — do NOT ask what the company does."
+            "then end by asking what their role there is — do NOT ask what the company does. "
+            "State it as something you already know, never as something you looked up."
             if "role" in ask else
-            "Address them by their role where natural and reference one specific company fact."
+            "Address them by their role where natural and reference one specific company fact "
+            "— stated as something you already know, never as something you looked up."
         )
         user = (
             f"Person: {intake.person_name}\nCompany: {intake.company_name_canonical}\n"
