@@ -72,6 +72,7 @@
     <div class="row" style="margin-top:1rem">
       <button id="recheck">Re-check</button>
       <button id="disconnect" hidden>Disconnect key</button>
+      <button id="signout" hidden>Sign out of Claude account</button>
     </div>
   </div>
 
@@ -128,6 +129,7 @@ async function refresh() {
   line.textContent = 'Checking…';
   detail.textContent = '';
   $('disconnect').hidden = true;
+  $('signout').hidden = true;
 
   let body;
   try {
@@ -149,6 +151,7 @@ async function refresh() {
     if (body.subscription_type) bits.push(body.subscription_type + ' plan');
     detail.textContent = bits.join(' · ');
     $('disconnect').hidden = !viaKey;
+    $('signout').hidden = viaKey;
   } else {
     dot.className = 'dot off';
     line.textContent = 'Not connected';
@@ -195,6 +198,22 @@ $('connect').addEventListener('click', async () => {
 $('disconnect').addEventListener('click', async () => {
   await fetch('/claude/disconnect', { method: 'POST' });
   show($('connectMsg'), 'Key cleared.', 'ok');
+  await refresh();
+});
+
+$('signout').addEventListener('click', async () => {
+  const b = $('signout');
+  if (!confirm('Sign out of the Claude account for everyone using this server?')) return;
+  setBusy(b, true, 'Signing out…', 'Sign out of Claude account');
+  show($('loginMsg'), '', '');
+  try {
+    const res = await fetch('/claude/logout', { method: 'POST' });
+    if (!res.ok) throw new Error();
+    show($('loginMsg'), 'Signed out. Sign in again to reconnect.', 'ok');
+  } catch {
+    show($('loginMsg'), 'Could not sign out.', 'err');
+  }
+  setBusy(b, false, '', 'Sign out of Claude account');
   await refresh();
 });
 

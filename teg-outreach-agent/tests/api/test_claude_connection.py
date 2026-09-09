@@ -10,12 +10,20 @@ pytestmark = pytest.mark.asyncio
 
 
 class _FakeCli(ClaudeCli):
-    def __init__(self, *, auth=None, probe_ok=True, probe_reason="nope"):
+    def __init__(self, *, auth=None, probe_ok=True, probe_reason="nope",
+                 logout_ok=True, logout_reason="boom"):
         self._auth = auth
         self._probe_ok = probe_ok
         self._probe_reason = probe_reason
+        self._logout_ok = logout_ok
+        self._logout_reason = logout_reason
         self.login_started = 0
+        self.logout_calls = 0
         self.probe_calls: list[dict] = []
+
+    async def logout(self, *, cwd):
+        self.logout_calls += 1
+        return (True, "") if self._logout_ok else (False, self._logout_reason)
 
     async def auth_status(self, *, cwd):
         return self._auth
@@ -125,6 +133,28 @@ async def test_connect_stores_the_key_and_disconnect_clears_it():
         r = await c.post("/claude/disconnect")
         assert r.status_code == 200
         assert claude_conn.get_api_key() is None
+
+
+async def test_logout_signs_out_the_account():
+    fake = _FakeCli(auth={"logged_in": True})
+    claude_conn.set_cli(fake)
+
+    async with await _client() as c:
+        r = await c.post("/claude/logout")
+
+    assert r.status_code == 200
+    assert r.json() == {"ok": True}
+    assert fake.logout_calls == 1
+
+
+async def test_logout_surfaces_a_cli_failure():
+    claude_conn.set_cli(_FakeCli(logout_ok=False, logout_reason="not logged in"))
+
+    async with await _client() as c:
+        r = await c.post("/claude/logout")
+
+    assert r.status_code == 502
+    assert "not logged in" in r.json()["detail"]
 
 
 async def test_connect_rejects_a_missing_key():

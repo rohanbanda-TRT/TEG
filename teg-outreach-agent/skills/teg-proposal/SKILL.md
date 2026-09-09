@@ -184,6 +184,43 @@ The proposal renders as a web page, so you also write its copy:
 - `closing_cta_headline` / `closing_cta_body` — the final nudge. Warm, specific, no pressure tactics, no numbers.
 - `section_ctas` — short button labels for `priorities`, `charts`, `investment`. Three or four words each.
 
+## Custom HTML Sections
+
+If you have content that doesn't fit the standard proposal fields, you can generate custom HTML sections in `custom_html_sections`. Use this sparingly — only when the content truly requires custom formatting beyond the standard structure.
+
+**When to use custom HTML sections:**
+- Complex tables or matrices that don't fit standard fields
+- Interactive diagrams or visual frameworks
+- Industry-specific analysis that needs special presentation
+- Multi-step process flows that benefit from visual layout
+
+**How to structure a custom section:**
+- `section_id` — unique identifier (e.g., "competitor_matrix", "growth_framework")
+- `title` — clear heading for the section
+- `html_content` — valid HTML (no `<script>`, no `on*` attributes, safe inline styles only)
+- `position` — where to insert: "after_hero", "before_pains", "after_proof", "before_closing"
+- `confidence` — evidence category: "verified", "inferred", "hypothesis", "requires_confirmation"
+
+**HTML security rules:**
+- No `<script>` tags
+- No `on*` event attributes (onclick, onmouseover, etc.)
+- No external CSS/JS references
+- Use inline styles with safe properties only
+- Keep it simple: headings, paragraphs, lists, tables, basic styling
+
+**Example:**
+```json
+{
+  "section_id": "competitor_landscape",
+  "title": "Competitive Positioning in Gujarat",
+  "html_content": "<div style='padding: 20px; background: #f5f5f5;'><h3>Key Competitors</h3><table>...</table></div>",
+  "position": "after_proof",
+  "confidence": "inferred"
+}
+```
+
+**Do NOT overuse custom sections.** The standard fields should handle 90%+ of proposals. Custom sections are for exceptional cases where the content structure truly requires it.
+
 ## Before you answer
 
 Re-read your draft once and check:
