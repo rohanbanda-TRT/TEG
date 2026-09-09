@@ -204,3 +204,24 @@ def test_fabricated_attribution_off_by_default_for_backward_compatibility():
         allowed_peers=[], persona="it_tech_service",
     )
     assert not any(x.code == "fabricated_attribution" for x in v)
+
+
+@pytest.mark.parametrize("text", [
+    "I've been reading up on Acme since your enquiry came through — the Salesforce "
+    "and Odoo mix stood out.",
+    "Since your enquiry came through I looked into Acme and noticed you're in Rajkot.",
+    "I did some digging and found that you work across two very different buyer types.",
+    "I noticed on your website that you serve both fintech and healthcare clients.",
+])
+def test_flags_research_narration(text):
+    v = check_message(text, allowed_peers=[], persona="it_tech_service")
+    assert any(x.code == "research_narration" for x in v)
+
+
+def test_allows_the_same_fact_stated_without_narrating_how_it_was_found():
+    v = check_message(
+        "You're running Salesforce and Odoo consulting side by side, which is an "
+        "interesting mix — what would you most want out of being at TEG?",
+        allowed_peers=[], persona="it_tech_service",
+    )
+    assert not any(x.code == "research_narration" for x in v)

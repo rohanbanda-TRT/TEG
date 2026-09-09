@@ -12,6 +12,11 @@
     "hero_headline": "Turn TEG 2026 into your India-market pipeline",
     "hero_subline": "Three focused days from cold outreach to booked buyer meetings.",
     "executive_summary": "DataZen Analytics builds BI dashboards and is exploring TEG 2026 to reach India enterprise buyers.",
+    "company_standing": "DataZen Analytics positions itself as a BI-and-analytics implementation partner for mid-market enterprises. It works primarily in Power BI dashboard implementation, Tableau consulting and data pipeline engineering and serves clients mainly in Finance and Healthcare. Headcount has grown steadily over the past two years alongside a widening client base. A small but fast-growing player in a crowded BI-consulting field.",
+    "teg_fit_points": [
+      "Their BI/analytics practice maps directly to the finance and healthcare buyers TEG's floor already draws",
+      "A proprietary dashboard template library gives them a live demo, not just a pitch, for the TEG floor"
+    ],
     "pains": [
       { "pain": "Revenue concentrated in US clients", "teg_answer": "15,000+ India-market decision-makers plus pre-scheduled B2B meetings" },
       { "pain": "Low brand visibility at home", "teg_answer": "On-ground, digital and regional PR presence at the state's largest tech expo" }

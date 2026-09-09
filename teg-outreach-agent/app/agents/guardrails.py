@@ -59,6 +59,16 @@ _DEFINITIVE_GROWTH = re.compile(
     r"must|shall)\s+(?:expand|grow|acquire|generate|produce|land|close|win|get)\b",
     re.I,
 )
+# Check for dangerous HTML in custom sections
+_DANGEROUS_HTML = re.compile(
+    r'<\s*(script|iframe|object|embed|form|input|button)[^>]*>|'
+    r'on\w+\s*=|'
+    r'javascript:|'
+    r'data:text/html|'
+    r'<\s*link[^>]*>|'
+    r'<\s*style[^>]*>',
+    re.I,
+)
 
 # Names of other Gujarat / India tech expos and generic competitor phrasing.
 _COMPETITOR = re.compile(
@@ -79,6 +89,17 @@ _FABRICATED_ATTRIBUTION = re.compile(
     r"\b(you\s+(?:told|informed|mentioned|shared|said)\s+us|"
     r"as\s+you\s+(?:told|mentioned|said|shared)|you\s+said\s+that|"
     r"you(?:'ve| have)\s+(?:told|mentioned|shared)\s+(?:me|us))\b",
+    re.I,
+)
+# The rep may KNOW a researched fact and use it; it must never say HOW it
+# came to know it — that reveals a backend research/lookup process to the
+# prospect. Every phrasing below narrates the process, not just the fact.
+_RESEARCH_NARRATION = re.compile(
+    r"\b(I(?:'ve| have)?\s*been\s+(?:reading up on|looking into|researching)\b|"
+    r"since\s+your\s+(?:enquiry|inquiry)\s+came\s+(?:through|in)|"
+    r"I\s+(?:did\s+some\s+)?(?:digging|research(?:ed)?\s+(?:you|your|this)|"
+    r"looked\s+into\s+(?:you|your)|noticed\s+on\s+your\s+website|"
+    r"came\s+across\s+your))\b",
     re.I,
 )
 
@@ -105,6 +126,13 @@ def check_message(
         fm = _FABRICATED_ATTRIBUTION.search(text)
         if fm:
             out.append(GuardrailViolation("fabricated_attribution", fm.group(0)))
+
+    # research narration — checked at every turn, not just the opener: the
+    # rep may know a researched fact, but must never say how it came to
+    # know it (reveals the backend research process to the prospect).
+    rn = _RESEARCH_NARRATION.search(text)
+    if rn:
+        out.append(GuardrailViolation("research_narration", rn.group(0)))
 
     # visitor price
     for m in _RUPEE.finditer(text):
@@ -188,6 +216,16 @@ def check_overpromise(text: str) -> GuardrailViolation | None:
     dg = _DEFINITIVE_GROWTH.search(text)
     if dg:
         return GuardrailViolation("definitive_growth", dg.group(0))
+    return None
+
+
+def check_custom_html(html_content: str) -> GuardrailViolation | None:
+    """Check custom HTML sections for dangerous content (XSS prevention)."""
+    if not html_content:
+        return None
+    m = _DANGEROUS_HTML.search(html_content)
+    if m:
+        return GuardrailViolation("dangerous_html", f"Found dangerous HTML: {m.group(0)[:100]}")
     return None
 
 

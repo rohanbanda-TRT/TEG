@@ -9,8 +9,10 @@ from app.domain.schemas import (
     HandoffPacket, IntakePayload, IntakeResult, OutcomeStatus, PersuasionInit,
     ResearchDossier, SourceRef,
 )
+from app.kb._names import _norm
 from app.store.models import (
-    ChatMessage, ChatSession, HandoffPacketRow, Inquiry, ProposalRow, ResearchDossierRow,
+    ChatMessage, ChatSession, CompanyBriefRow, HandoffPacketRow, Inquiry, ProposalRow,
+    ResearchDossierRow,
 )
 
 
@@ -77,6 +79,63 @@ class DossierRepo:
             ask_prospect=row.ask_prospect or [],
             research_cost=row.research_cost or {},
         )
+
+
+class CompanyBriefRepo:
+    """One reusable research brief per company, keyed by the same
+    normalized-name convention app.kb._names._norm already provides for
+    peer/exhibitor matching — not raw company name, so name variants
+    ("Third Rock Techkno" vs "Third Rock Techkno Pvt. Ltd.") hit one row."""
+
+    def __init__(self, session: AsyncSession) -> None:
+        self.s = session
+
+    async def get_by_company(self, company_name: str) -> CompanyBriefRow | None:
+        key = _norm(company_name)
+        if not key:
+            return None
+        return (await self.s.execute(
+            select(CompanyBriefRow).where(CompanyBriefRow.company_key == key)
+        )).scalars().first()
+
+    async def upsert(
+        self, company_name: str, dossier: ResearchDossier, brief_markdown: str,
+    ) -> CompanyBriefRow:
+        """The LIGHT pass. Sets light_researched_at explicitly — the field
+        the light-staleness check reads — never relying on updated_at's
+        onupdate, which would also fire on a deep-only write (see the
+        comment on CompanyBriefRow.updated_at)."""
+        key = _norm(company_name)
+        row = await self.get_by_company(company_name)
+        if row is None:
+            row = CompanyBriefRow(company_key=key, company_name_canonical=company_name,
+                                  brief_markdown=brief_markdown)
+            self.s.add(row)
+        row.company_name_canonical = company_name
+        row.dossier_json = dossier.model_dump()
+        row.brief_markdown = brief_markdown
+        row.light_researched_at = func.now()
+        return row
+
+    async def upsert_deep_findings(self, company_name: str, findings) -> CompanyBriefRow:
+        """The DEEP pass (app/research/deep.py) — additive, alongside the
+        light dossier, never overwriting dossier_json/brief_markdown.
+        Creates a row if the deep pass somehow lands before any light pass
+        ever has (an empty light dossier placeholder, upgraded to a real
+        one whenever the light pass next runs)."""
+        key = _norm(company_name)
+        row = await self.get_by_company(company_name)
+        if row is None:
+            row = CompanyBriefRow(
+                company_key=key, company_name_canonical=company_name,
+                dossier_json={}, brief_markdown="",
+            )
+            self.s.add(row)
+        row.company_name_canonical = company_name
+        row.deep_findings_json = findings.model_dump()
+        row.depth = "deep"
+        row.deep_researched_at = func.now()
+        return row
 
 
 class SessionRepo:

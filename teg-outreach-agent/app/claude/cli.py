@@ -290,6 +290,27 @@ class ClaudeCli:
             start_new_session=True,
         )
 
+    async def logout(self, *, cwd: str) -> tuple[bool, str]:
+        """Clear the CLI's stored login (`claude auth logout`).
+
+        Affects the whole machine's `claude` session — there is only one.
+        """
+        try:
+            child = await self.spawn(
+                "claude", "auth", "logout",
+                cwd=cwd, env=self._env(),
+                stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+            )
+            code = await asyncio.wait_for(child.wait(), timeout=15)
+        except FileNotFoundError:
+            return False, "The claude CLI is not installed or not on PATH."
+        except (OSError, TimeoutError) as e:  # pragma: no cover - defensive
+            return False, f"Failed to run claude auth logout: {e}"
+        if code == 0:
+            return True, ""
+        stderr = (await child.stderr.read()).decode(errors="replace").strip()
+        return False, stderr or f"claude auth logout exited with code {code}"
+
     async def auth_status(self, *, cwd: str) -> dict | None:
         """Read the CLI's stored login. None on any failure — never a hard 'no'."""
         try:

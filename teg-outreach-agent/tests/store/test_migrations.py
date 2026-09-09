@@ -18,11 +18,11 @@ def _script_dir() -> ScriptDirectory:
     return ScriptDirectory.from_config(cfg)
 
 
-def test_migration_chain_is_linear_and_head_is_0004():
+def test_migration_chain_is_linear_and_head_is_0006():
     sd = _script_dir()
-    assert list(sd.get_heads()) == ["0004"]
+    assert list(sd.get_heads()) == ["0006"]
     revs = [s.revision for s in sd.walk_revisions()]
-    assert revs == ["0004", "0003", "0002", "0001"]
+    assert revs == ["0006", "0005", "0004", "0003", "0002", "0001"]
 
 
 def test_0003_adds_price_requested_column():
@@ -38,3 +38,20 @@ def test_0004_adds_discovery_state_column():
     assert 'revision = "0004"' in src
     assert 'down_revision = "0003"' in src
     assert '"discovery_state"' in src
+
+
+def test_0005_adds_company_briefs_table():
+    src = (_ROOT / "app" / "store" / "migrations" / "versions" / "0005_company_briefs.py").read_text()
+    assert 'revision = "0005"' in src
+    assert 'down_revision = "0004"' in src
+    assert '"company_briefs"' in src
+    assert '"company_key"' in src
+
+
+def test_0006_adds_company_brief_depth_columns():
+    src = (_ROOT / "app" / "store" / "migrations" / "versions" / "0006_company_brief_depth.py").read_text()
+    assert 'revision = "0006"' in src
+    assert 'down_revision = "0005"' in src
+    assert '"light_researched_at"' in src
+    assert '"depth"' in src
+    assert '"deep_findings_json"' in src

@@ -21,6 +21,14 @@ export interface Package {
   payment_plan: string;
 }
 
+export interface CustomHtmlSection {
+  section_id: string;
+  title: string;
+  html_content: string;
+  position: string; // "after_hero", "before_pains", "after_proof", "before_closing"
+  confidence: string; // "verified", "inferred", "hypothesis", "requires_confirmation"
+}
+
 export interface Proposal {
   company: string;
   person: string;
@@ -48,6 +56,13 @@ export interface Proposal {
   closing_cta_body?: string;
   next_steps: string[];
   contact: string;
+  custom_html_sections?: CustomHtmlSection[];
+  // Populated only when a background deep-research pass has landed for this
+  // company — both empty/absent otherwise, so the page renders identically
+  // to before this existed. See
+  // docs/superpowers/specs/2026-09-09-background-deep-research-design.md.
+  company_standing?: string;
+  teg_fit_points?: string[];
 }
 
 export interface Payload {

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from app.domain.schemas import IntakePayload
 from app.orchestrator import Orchestrator
@@ -22,9 +22,17 @@ def get_orchestrator() -> Orchestrator:
 
 @router.post("/inquiries", status_code=status.HTTP_202_ACCEPTED)
 async def create_inquiry(
-    payload: IntakePayload, orch: Orchestrator = Depends(get_orchestrator)
+    payload: IntakePayload, background_tasks: BackgroundTasks,
+    orch: Orchestrator = Depends(get_orchestrator),
 ) -> dict:
     result = await orch.run_pipeline(payload)
+    # Fired via FastAPI BackgroundTasks — runs AFTER this response is sent,
+    # so it never delays the opening message. Detached, best-effort: see
+    # docs/superpowers/specs/2026-09-09-background-deep-research-design.md §3.2.
+    background_tasks.add_task(
+        orch.run_deep_research,
+        company_name=result.company_name_canonical, person_name=result.person_name,
+    )
     return {
         "session_id": str(result.session_id),
         "opening_message": result.opening_message,

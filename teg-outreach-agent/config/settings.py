@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     brave_api_key: str = ""
     research_max_searches_per_track: int = 2
     research_max_scrapes: int = 3
+    # How long a stored company_briefs row is trusted before a new inquiry
+    # for the same company re-runs research instead of reusing it.
+    company_brief_staleness_days: int = 30
     pipeline_soft_timeout_s: int = 15
     pipeline_hard_timeout_s: int = 90
     kb_path: str = "../teg-kb-agent/knowledge_base"
@@ -54,6 +57,16 @@ class Settings(BaseSettings):
     # Wall-clock bound for one verify_claim() call — one or two WebSearch/
     # WebFetch round-trips per the teg-verify skill's search budget.
     verify_claim_timeout_s: float = 120.0
+
+    # --- background deep-research pass (app/research/deep.py) ---
+    # See docs/superpowers/specs/2026-09-09-background-deep-research-design.md.
+    deep_research_enabled: bool = True
+    # Generous, not step-capped — the teg-deep-research skill's own search
+    # budget bounds how much it does, same philosophy as verify_claim_timeout_s.
+    deep_research_timeout_s: float = 480.0
+    # Deep diligence goes stale slower than a quick firmographic lookup, so
+    # this is deliberately longer than company_brief_staleness_days.
+    deep_research_staleness_days: int = 90
 
     # --- discovery v2 ---
     # When true, the conversation runs the evidence-aware DiscoveryState +

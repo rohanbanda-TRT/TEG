@@ -135,3 +135,17 @@ async def disconnect() -> dict:
     set_api_key(None)
     _log.info("claude api key cleared")
     return {"ok": True}
+
+
+@router.post("/claude/logout")
+async def logout() -> dict:
+    """Sign out the machine's Claude account (`claude auth logout`).
+
+    There is only one CLI session per host, so this disconnects it for
+    everyone using this server, not just the caller.
+    """
+    ok, reason = await get_cli().logout(cwd=_cwd())
+    if not ok:
+        raise HTTPException(status_code=502, detail=reason)
+    _log.info("claude account signed out")
+    return {"ok": True}

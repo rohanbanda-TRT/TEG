@@ -11,6 +11,7 @@ from app.claude.skill_loader import load_skill
 from app.agents.guardrails import (
     PROPOSAL_SAFE_SECTIONS,
     GuardrailViolation,
+    check_custom_html,
     check_message,
     check_overpromise,
     check_testimonial,
@@ -34,6 +35,7 @@ from app.kb.explorer import KBExplorer, default_explorer
 from app.kb.facts import load as _load_facts
 from app.kb.pricing import load_pricing
 from app.obs import get_logger
+from app.research.deep import DeepFindings
 from config.settings import get_settings
 
 _log = get_logger("agent.proposal")
@@ -177,6 +179,46 @@ def check_section_consistency(
     return out
 
 
+def _company_standing(deep_findings: DeepFindings | None) -> str:
+    """Deterministic, not LLM-authored — a plain assembly of stored
+    DeepFindings fields, the same "state facts, never invent" discipline
+    every other forced field in this module follows. Written as flowing
+    sentences, not "Label: a, b." fragments — this renders as a real
+    paragraph on the proposal page, not a punchy one-liner, so it reads
+    like prose rather than a data dump.
+    Empty string (not a placeholder sentence) when no deep pass has landed
+    for this company yet, so the frontend can hide the section entirely
+    rather than show an empty-sounding one."""
+    if deep_findings is None:
+        return ""
+    bits: list[str] = []
+    if deep_findings.market_positioning:
+        bits.append(deep_findings.market_positioning.rstrip("."))
+    caps_segs: list[str] = []
+    if deep_findings.core_capabilities:
+        caps_segs.append("works primarily in " + _join_naturally(deep_findings.core_capabilities))
+    if deep_findings.customer_segments:
+        caps_segs.append("serves clients mainly in " + _join_naturally(deep_findings.customer_segments))
+    if caps_segs:
+        bits.append("It " + " and ".join(caps_segs))
+    if deep_findings.growth_trend:
+        bits.append(deep_findings.growth_trend.rstrip("."))
+    if deep_findings.competitive_position:
+        bits.append(deep_findings.competitive_position.rstrip("."))
+    return (". ".join(b[0].upper() + b[1:] for b in bits) + ".") if bits else ""
+
+
+def _join_naturally(items: list[str]) -> str:
+    """['A', 'B', 'C'] -> 'A, B and C' — a plain-English list join, not a
+    Python repr or a comma-only run-on."""
+    items = [i for i in items if i]
+    if not items:
+        return ""
+    if len(items) == 1:
+        return items[0]
+    return ", ".join(items[:-1]) + " and " + items[-1]
+
+
 def _inferred_tier_note(persona: Persona, signals: ConversationSignals) -> str | None:
     """A real signal exists but isn't explicit enough for _select_tier to act
     on — surfaced as its own, distinct, low-severity flag so a human reviewer
@@ -239,7 +281,7 @@ class ProposalAgent(Agent):
     async def build(
         self, *, intake: IntakeResult, dossier: ResearchDossier, persona: Persona,
         transcript: list[dict], learned_facts: dict, session_ref: str, version: int,
-        price_requested: bool = False,
+        price_requested: bool = False, deep_findings: DeepFindings | None = None,
     ) -> tuple[Proposal, list[str]]:
         own = intake.company_name_canonical.lower()
         heading = _PERSONA_KB_HEADING.get(persona, "Visitor")
@@ -510,6 +552,11 @@ class ProposalAgent(Agent):
                     op = check_overpromise(pt)
                     if op:
                         found.append((f"journey::{si}::{pi}", op))
+            # check custom HTML sections for dangerous content
+            for i, section in enumerate(p.custom_html_sections or []):
+                html_violation = check_custom_html(section.html_content)
+                if html_violation:
+                    found.append((f"custom_html::{i}", html_violation))
             return found
 
         def _clamp_target_industries(p: Proposal) -> None:
@@ -663,6 +710,14 @@ class ProposalAgent(Agent):
         proposal.peer_companies = [p for p in proposal.peer_companies if p in peers][:5] or peers[:3]
         proposal.peers_in_sector_total = sector_peer_count
         proposal.scale_note = scale_note
+        # Deterministic, not LLM-authored (§ same discipline as scale_note
+        # above) — both empty when no deep-research pass exists for this
+        # company yet, so the page renders identically to before this field
+        # existed. teg_fit_points is a direct copy of DeepFindings.teg_fit_reasons
+        # (already grounded, guardrail-guided output from the deep-research
+        # pass itself) rather than a second LLM call re-deriving it.
+        proposal.company_standing = _company_standing(deep_findings)
+        proposal.teg_fit_points = list(deep_findings.teg_fit_reasons) if deep_findings else []
         if not proposal.peer_companies or "peer_context_line" in {label for label, _ in violations}:
             proposal.peer_context_line = ""
         if not proposal.contact:
