@@ -78,7 +78,11 @@ class Settings(BaseSettings):
     # --- proposal / PDF ---
     proposal_model: str = ""  # empty -> use llm_model_main
     proposal_soft_timeout_s: int = 240
-    proposal_hard_timeout_s: int = 240
+    # A build that hits a guardrail violation runs the full generation pass
+    # TWICE (draft + one regeneration) plus a KB lookup ahead of both — 240s
+    # was cutting it close (~220s observed for exactly that path) with no
+    # margin for a slower run.
+    proposal_hard_timeout_s: int = 420
     proposal_dir: str = "./proposals"
     # Bounded retry budget for the cross-field self-consistency check
     # (ProposalAgent.build(), post per-field guardrail loop). Start
