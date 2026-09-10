@@ -50,15 +50,26 @@ class ReviewTheme(BaseModel):
 
 class DeepFindings(BaseModel):
     """Superset of ResearchDossier — fields today's lightweight pass never
-    gathers. Stored alongside (not replacing) the light dossier in
-    company_briefs.deep_findings_json.
+    gathers. Stored alongside (not replacing) the light dossier in the
+    company_briefs table.
 
     Two families of field here: firmographic/diligence (funding_status
     through notable_visibility — the original scope) and TEG-fit fields
     (market_positioning through teg_fit_reasons — added so the proposal and
     the live conversation can answer "given what this company does today,
     who at TEG could they realistically meet, and how could TEG help them
-    grow?" without a second research pass)."""
+    grow?" without a second research pass).
+
+    This docstring becomes the JSON schema's top-level "description" via
+    Pydantic — i.e. it is sent to the model verbatim as part of the tool
+    definition it fills in. A prior version said "...deep_findings_json"
+    here (naming the storage column, an implementation detail with no
+    bearing on the output shape), and the model read that as an instruction
+    to wrap its whole answer in a top-level "deep_findings" key — silently
+    discarding every real finding it had gathered, since every field below
+    has a default and Pydantic validates the wrapped shape without error.
+    Keep this description free of anything that isn't true of the schema
+    itself."""
 
     funding_status: str | None = None
     growth_trend: str | None = None

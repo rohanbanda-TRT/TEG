@@ -104,6 +104,23 @@ class ClaudeCli:
             "--verbose",
             "--permission-mode", "dontAsk",
             "--json-schema", json.dumps(json_schema),
+            # Without these, this subprocess inherits the operator's FULL
+            # personal Claude Code config — every installed plugin, every
+            # custom subagent, every connected MCP server (Shopify, Klaviyo,
+            # Canva, Google Drive, ...), none of which this call ever uses.
+            # That bloat alone was found to run 300K+ cached tokens on a
+            # trivial call, and on a multi-turn tool-use pass (KB explore,
+            # web research) it was enough to blow the request's size limit
+            # entirely — which the CLI reports as a terminal message with
+            # stop_reason "stop_sequence" and text "Prompt is too long",
+            # indistinguishable from the OTHER (benign) stop_sequence case
+            # _terminal_event() already handles, and 100% reproducible for
+            # the same prompt, not a one-off model slip. --restricted skips
+            # user/project/local settings (still honors the explicit --tools
+            # list below, so callers that need WebFetch etc. keep it);
+            # --strict-mcp-config additionally skips inherited MCP servers.
+            "--restricted",
+            "--strict-mcp-config",
         ]
         # `--tools` with no values = no tools at all (the default, and the safe
         # choice for any prompt carrying untrusted text).
@@ -357,6 +374,32 @@ def _salvage_structured(text: Any) -> Any | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+def _unwrap_stringified_structured(out: Any) -> Any:
+    """On a large/deeply-nested schema, the model sometimes calls the
+    StructuredOutput tool correctly by name but puts the WRONG shape inside
+    it: the whole real payload JSON-encoded as a STRING under a single
+    generic wrapper key (observed as both "input" and "deep_findings" — the
+    key varies, so this can't be special-cased by name). Since every field
+    in schemas like DeepFindings has a default, that wrapped shape still
+    validates — as an all-empty result — silently discarding real,
+    well-sourced findings instead of failing loudly. If `out` looks like
+    exactly this pattern (one key, whose value is a string that itself
+    parses as a JSON object), unwrap it. A schema whose real, intended shape
+    is a single string field essentially never has a value that also
+    happens to parse as JSON, so this is safe in the normal case and only
+    fires for the actual bug."""
+    if not isinstance(out, dict) or len(out) != 1:
+        return out
+    (value,) = out.values()
+    if not isinstance(value, str):
+        return out
+    try:
+        parsed = json.loads(value)
+    except (ValueError, TypeError):
+        return out
+    return parsed if isinstance(parsed, dict) else out
+
+
 def _terminal_event(msg: dict) -> ClaudeResult | ClaudeError:
     """Map a CLI `result` message onto our terminal event.
 
@@ -365,6 +408,8 @@ def _terminal_event(msg: dict) -> ClaudeResult | ClaudeError:
     the schema is delivered through a tool call.
     """
     out = msg.get("structured_output")
+    if out is not None:
+        out = _unwrap_stringified_structured(out)
     if out is None:
         out = _salvage_structured(msg.get("result"))
     if out is None:

@@ -381,6 +381,47 @@ async def test_run_salvages_json_the_model_wrote_as_plain_text():
     assert events[0].data == {"reply": "hi"}
 
 
+async def test_run_unwraps_structured_output_the_model_stringified_under_a_wrapper_key():
+    """On a large schema (observed with DeepFindings), the model sometimes
+    calls StructuredOutput correctly by name but puts the real payload
+    JSON-encoded as a STRING under a single generic wrapper key instead of
+    passing the fields directly — the key itself varies ("input",
+    "deep_findings", ...), so this has to be detected by shape, not name."""
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":{"input":'
+              '"{\\"funding_status\\":\\"bootstrapped\\",\\"growth_trend\\":\\"up\\"}"},'
+              '"session_id":"s"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    events = [e async for e in cli.run(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+    )]
+
+    assert isinstance(events[0], ClaudeResult)
+    assert events[0].data == {"funding_status": "bootstrapped", "growth_trend": "up"}
+
+
+async def test_run_leaves_a_genuine_single_field_result_alone():
+    """The unwrap heuristic must not fire on a schema whose real, intended
+    shape IS a single string field — only when that string also happens to
+    parse as a JSON object, which a genuine short string answer won't."""
+    captured: dict = {}
+    child = _FakeChild(stdout_lines=[
+        _line('{"type":"result","structured_output":{"reply":"hi there"},'
+              '"session_id":"s"}'),
+    ])
+    cli = ClaudeCli(spawn=_spawner(child, captured))
+
+    events = [e async for e in cli.run(
+        model="m", system_prompt="s", user_prompt="u", json_schema={}, cwd="/tmp",
+    )]
+
+    assert isinstance(events[0], ClaudeResult)
+    assert events[0].data == {"reply": "hi there"}
+
+
 async def test_missing_structured_output_is_marked_retryable():
     captured: dict = {}
     child = _FakeChild(stdout_lines=[
