@@ -1,0 +1,373 @@
+"""The Orchestrator — ties together intake analysis, research (light +
+background deep), persuasion, and proposal generation into the inquiry
+pipeline and the live per-turn conversation loop.
+
+The pipeline itself runs as a small graph
+(docs/superpowers/specs/2026-09-10-verification-harness-and-graph-design.md
+§3.3.3) — see app.orchestrator.graph_nodes for the node factories this
+class wires together in run_pipeline().
+"""
+from __future__ import annotations
+
+import asyncio
+import re
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from app.agents.analysis import AnalysisAgent
+from app.agents.persuasion import PersuasionAgent
+from app.agents.proposal import ProposalAgent
+from app.agents.research import ResearchAgent, _Budget
+from app.domain.schemas import (
+    HandoffPacket,
+    IntakePayload,
+    IntakeResult,
+    PersuasionTurn,
+    ProposalCard,
+    ResearchDossier,
+)
+from app.graph.runner import run_graph
+from app.llm.base import get_llm
+from app.obs import get_logger
+from app.orchestrator import company_brief, deep_research, discovery
+from app.orchestrator.graph_nodes import (
+    analyze_intake_node,
+    merge_dossier_node,
+    persuasion_init_node,
+    research_company_node,
+    research_person_node,
+    verify_relevant_teg_claims_node,
+)
+from app.proposal.email import send_proposal_link_email
+from app.store.db import SessionLocal
+from app.store.repositories import (
+    DossierRepo,
+    HandoffRepo,
+    InquiryRepo,
+    MessageRepo,
+    ProposalRepo,
+    SessionRepo,
+)
+from config.settings import get_settings
+
+_log = get_logger("orchestrator")
+
+
+def _slug(s: str) -> str:
+    return re.sub(r"-+", "-", re.sub(r"[^A-Za-z0-9]+", "-", s)).strip("-") or "company"
+
+
+@dataclass
+class PipelineResult:
+    inquiry_id: uuid.UUID
+    session_id: uuid.UUID
+    opening_message: str
+    persona: str
+    # Additive — needed so app/api/inquiries.py can schedule the background
+    # deep-research pass (Orchestrator.run_deep_research) without
+    # re-deriving intake from the DB itself.
+    company_name_canonical: str = ""
+    person_name: str = ""
+
+
+class Orchestrator:
+    def __init__(
+        self, *,
+        analysis: AnalysisAgent | None = None,
+        research: ResearchAgent | None = None,
+        persuasion: PersuasionAgent | None = None,
+        proposal: ProposalAgent | None = None,
+    ) -> None:
+        self.analysis = analysis or AnalysisAgent(get_llm())
+        self.research = research or ResearchAgent(get_llm())
+        self.persuasion = persuasion or PersuasionAgent(get_llm())
+        self.proposal = proposal or ProposalAgent(get_llm())
+
+    async def run_pipeline(self, payload: IntakePayload) -> PipelineResult:
+        settings = get_settings()
+        _log.info("=== run_pipeline  person=%r  company=%r ===",
+                  payload.person_name, payload.company_name)
+
+        intake_ctx = await run_graph([analyze_intake_node(self)], {"payload": payload})
+        intake: IntakeResult = intake_ctx["intake"]
+
+        # Company Research Brief reuse — checked BEFORE the research graph
+        # runs at all, so a fresh hit skips research entirely rather than
+        # just skipping persistence. Only ever reused when fresh and
+        # non-thin (see settings.company_brief_staleness_days and
+        # company_brief.dossier_is_thin); anything else falls through to
+        # the normal research path below unchanged.
+        dossier = await company_brief.reuse_company_brief(intake)
+        if dossier is not None:
+            _log.info("reusing stored company brief for %r -> skipping research",
+                      intake.company_name_canonical)
+        else:
+            try:
+                budget = _Budget(settings.research_max_searches_per_track, settings.research_max_scrapes)
+                research_ctx = await asyncio.wait_for(
+                    run_graph(
+                        [
+                            research_company_node(self),
+                            research_person_node(self),
+                            verify_relevant_teg_claims_node(),
+                            merge_dossier_node(self),
+                        ],
+                        {"intake": intake, "_research_budget": budget},
+                    ),
+                    timeout=settings.pipeline_hard_timeout_s,
+                )
+                dossier = research_ctx["dossier"]
+                # Only a real, completed research pass is worth caching — a
+                # timeout fallback below is a thin synthetic dossier, and
+                # saving THAT as "the" brief for company_brief_staleness_days
+                # would poison every future lookup for this company.
+                await company_brief.save_company_brief(intake, dossier)
+            except TimeoutError:
+                _log.warning("research timed out after %ss -> ask_prospect fallback",
+                             settings.pipeline_hard_timeout_s)
+                dossier = ResearchDossier(ask_prospect=["company_description", "role"])
+
+        init_ctx = await run_graph(
+            [persuasion_init_node(self)], {"intake": intake, "dossier": dossier},
+        )
+        init = init_ctx["init"]
+        _log.info("=== pipeline done  persona=%s  opening=%r ===",
+                  init.persona, init.opening_message[:160])
+
+        async with SessionLocal() as s:
+            inq = await InquiryRepo(s).create(payload, intake)
+            await s.flush()
+            drow = await DossierRepo(s).create(inq.id, dossier)
+            await s.flush()
+            cs = await SessionRepo(s).create(inq.id, drow.id, init)
+            await s.flush()
+            if get_settings().discovery_v2_enabled:
+                from app.agents.discovery_seed import seed_from_dossier
+
+                cs.discovery_state = seed_from_dossier(dossier, intake).model_dump()
+            mr = MessageRepo(s)
+            await mr.append(cs.id, "agent", init.opening_message, turn_index=0)
+            await s.commit()
+            return PipelineResult(
+                inquiry_id=inq.id, session_id=cs.id,
+                opening_message=init.opening_message, persona=init.persona,
+                company_name_canonical=intake.company_name_canonical,
+                person_name=intake.person_name,
+            )
+
+    async def run_deep_research(self, *, company_name: str, person_name: str) -> None:
+        await deep_research.run_deep_research_task(
+            company_name=company_name, person_name=person_name,
+        )
+
+    def _state_from_row(self, cs) -> dict:
+        return {
+            "persona": cs.persona,
+            "target_cta": cs.target_cta,
+            "cta_status": cs.cta_status,
+            "cta_detail": cs.cta_detail or {},
+            "learned_facts": cs.learned_facts or {},
+            "persona_remapped": cs.persona_remapped,
+            "needs_review": cs.needs_review,
+            "price_requested": cs.price_requested,
+            "discovery_state": cs.discovery_state or {},
+        }
+
+    async def run_turn(self, session_id: uuid.UUID, prospect_message: str) -> PersuasionTurn:
+        async with SessionLocal() as s:
+            cs = await SessionRepo(s).get(session_id)
+            inq = await InquiryRepo(s).get(cs.inquiry_id)
+            drow = await DossierRepo(s).get(cs.dossier_id)
+            dossier = DossierRepo.to_domain(drow)
+            intake = IntakeResult(
+                person_name=inq.person_name,
+                company_name_raw=inq.company_name_raw,
+                company_name_canonical=inq.company_name_canonical or inq.company_name_raw,
+                provided_fields=[],
+                intent_hint=inq.intent_hint,
+                consent_status=inq.consent_status,
+            )
+            history = await MessageRepo(s).history(session_id)
+            state = self._state_from_row(cs)
+
+            deep_findings = await deep_research.pickup_deep_research(
+                intake.company_name_canonical, cs.started_at,
+            )
+            if deep_findings:
+                # Available to learned_facts, not yet read by the prompt-
+                # building logic itself — see pickup_deep_research's
+                # docstring for why that's the deliberate scope here.
+                state["learned_facts"] = {
+                    **state.get("learned_facts", {}),
+                    "_deep_research": deep_findings,
+                }
+
+            turn = await self.persuasion.respond(
+                intake=intake, dossier=dossier, state=state,
+                history=history, prospect_message=prospect_message,
+            )
+
+            mr = MessageRepo(s)
+            prospect_turn_index = await mr.next_turn_index(session_id)
+            await mr.append(session_id, "prospect", prospect_message,
+                            turn_index=prospect_turn_index)
+            await s.flush()
+            await mr.append(session_id, "agent", turn.reply_text,
+                            turn_index=await mr.next_turn_index(session_id),
+                            guardrail_flags=turn.guardrail_flags,
+                            detected_intent={"detected_cta": turn.detected_cta})
+
+            learned_facts = turn.updated_state.get("learned_facts", {})
+            discovery_state_dump: dict | None = None
+            if get_settings().discovery_v2_enabled:
+                learned_facts, discovery_state_dump, turn = discovery.apply_discovery_v2(
+                    cs, turn, history, prospect_turn_index,
+                )
+
+            await SessionRepo(s).update_state(
+                session_id,
+                cta_status=turn.cta_status, cta_type=turn.cta_type,
+                cta_detail=turn.cta_detail,
+                learned_facts=learned_facts,
+                persona=turn.persona,
+                persona_remapped=turn.updated_state.get("persona_remapped", False),
+                needs_review=turn.updated_state.get("needs_review", False),
+                price_requested=turn.updated_state.get("price_requested", False),
+                discovery_state=discovery_state_dump,
+            )
+            await s.commit()
+            return turn
+
+    async def end_session(self, session_id: uuid.UUID, reason: str) -> HandoffPacket | None:
+        async with SessionLocal() as s:
+            cs = await SessionRepo(s).get(session_id)
+            drow = await DossierRepo(s).get(cs.dossier_id)
+            dossier = DossierRepo.to_domain(drow)
+            history = await MessageRepo(s).history(session_id)
+
+            if cs.cta_status == "completed" or cs.cta_status in ("in_progress", "offered") and (cs.cta_detail or {}).get("callback"):
+                outcome = "qualified"
+            elif reason == "bounced" or cs.cta_status == "declined":
+                outcome = "lost"
+            else:
+                outcome = "contacted"
+
+            packet: HandoffPacket | None = None
+            if cs.cta_status != "completed":
+                if dossier.ask_prospect:
+                    confidence = "low"
+                elif dossier.sector and dossier.person_profile.get("teg_role"):
+                    confidence = "high"
+                else:
+                    confidence = "medium"
+                convo = "\n".join(f"{m['role']}: {m['content']}" for m in history)
+                packet = await self.persuasion.llm.generate_structured(
+                    system=(
+                        "Write a concise sales handoff for the TEG team. Summarise who this is, "
+                        "what they want, where the conversation landed, and the best next step. "
+                        "suggested_followup_message: a short draft the rep can send."
+                    ),
+                    messages=[{"role": "user", "content": (
+                        f"Dossier: company={dossier.company_profile} person={dossier.person_profile} "
+                        f"sector={dossier.sector} relationship={dossier.relationship}\n"
+                        f"Learned in chat: {cs.learned_facts}\n\nTranscript:\n{convo}"
+                    )}],
+                    schema=HandoffPacket,
+                )
+                packet = packet.model_copy(update={"prospect_confidence": confidence})
+                await HandoffRepo(s).create(session_id, packet)
+
+            await SessionRepo(s).finalize(
+                session_id, outcome_status=outcome, handoff_generated=packet is not None,
+            )
+            await s.commit()
+            return packet
+
+    async def generate_proposal(
+        self, session_id: uuid.UUID, *, email: str | None = None
+    ) -> ProposalCard:
+        settings = get_settings()
+        async with SessionLocal() as s:
+            cs = await SessionRepo(s).get(session_id)
+            inq = await InquiryRepo(s).get(cs.inquiry_id)
+            drow = await DossierRepo(s).get(cs.dossier_id)
+            dossier = DossierRepo.to_domain(drow)
+            intake = IntakeResult(
+                person_name=inq.person_name,
+                company_name_raw=inq.company_name_raw,
+                company_name_canonical=inq.company_name_canonical or inq.company_name_raw,
+                provided_fields=[], intent_hint=inq.intent_hint, consent_status=inq.consent_status,
+            )
+            transcript = await MessageRepo(s).history(session_id)
+            persona = cs.persona or "visitor"
+            learned = cs.learned_facts or {}
+            price_requested = bool(cs.price_requested)
+            version = await ProposalRepo(s).next_version(session_id)
+
+        deep_findings = await deep_research.fetch_deep_findings(intake.company_name_canonical)
+        _log.info("=== generate_proposal  session=%s  v%d  persona=%s  price_requested=%s  "
+                  "deep_research=%s ===",
+                  str(session_id)[:8], version, persona, price_requested,
+                  "yes" if deep_findings else "no")
+        proposal, flags = await asyncio.wait_for(
+            self.proposal.build(
+                intake=intake, dossier=dossier, persona=persona, transcript=transcript,
+                learned_facts=learned, session_ref=str(session_id)[:8], version=version,
+                price_requested=price_requested, deep_findings=deep_findings,
+            ),
+            timeout=settings.proposal_hard_timeout_s,
+        )
+        proposal.generated_on = datetime.now(UTC).date().isoformat()
+        _log.info("proposal built  flags=%s", flags or "-")
+
+        # Delivered as the live `/p/{id}` page only — no PDF/PNG render pass.
+        # That render (headless Chromium via playwright) was the slow, most
+        # failure-prone part of this path; dropping it also means a
+        # proposal's numbers can never drift from what the page shows.
+        filename = f"TEG-2026-Proposal-{_slug(proposal.company)}-v{version}"
+
+        async with SessionLocal() as s:
+            row = await ProposalRepo(s).create(
+                session_id, proposal=proposal, version=version,
+                pdf_path=None, png_path=None, bytes_=None,
+                guardrail_flags=flags, emailed_to=None,
+            )
+            await s.flush()
+            page_url = f"/p/{row.id}"
+            blurb = (proposal.hero_subline or proposal.executive_summary or "")[:160]
+            title = f"Your TEG 2026 proposal for {proposal.company}"
+
+            emailed_to = None
+            if email:
+                full_url = (
+                    f"{settings.public_base_url}{page_url}"
+                    if settings.public_base_url else page_url
+                )
+                ok = await send_proposal_link_email(
+                    to=email, page_url=full_url, company=proposal.company
+                )
+                emailed_to = email if ok else None
+                row.emailed_to = emailed_to
+
+            card = {
+                "kind": "proposal_link", "proposal_id": str(row.id), "version": version,
+                "page_url": page_url, "title": title, "blurb": blurb,
+            }
+            mr = MessageRepo(s)
+            await mr.append(
+                session_id, "agent",
+                f"I've put together a proposal for {proposal.company} — open it here: {page_url}",
+                turn_index=await mr.next_turn_index(session_id),
+                attachment=card,
+            )
+            if flags:
+                cs2 = await SessionRepo(s).get(session_id)
+                cs2.needs_review = True
+            await s.commit()
+            proposal_id = str(row.id)
+
+        return ProposalCard(
+            kind="proposal_link", proposal_id=proposal_id, version=version, filename=filename,
+            page_url=page_url, title=title, blurb=blurb,
+        )

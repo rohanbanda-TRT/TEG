@@ -1,12 +1,13 @@
 """Orchestrator.run_deep_research and the run_turn mid-chat pickup — unit
-level, no network (app.orchestrator.deep_research is monkeypatched)."""
+level, no network (app.orchestrator.deep_research.deep_research is
+monkeypatched)."""
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
 
-import app.orchestrator as orch_mod
+import app.orchestrator.deep_research as orch_mod
 from app.orchestrator import Orchestrator
 from app.research.deep import DeepFindings
 from app.store.db import Base, SessionLocal, engine
@@ -146,7 +147,7 @@ async def test_run_turn_folds_in_a_fresh_deep_brief():
         )
         await s.commit()
 
-    picked_up = await orch._pickup_deep_research("Acme Co", session_started)
+    picked_up = await orch_mod.pickup_deep_research("Acme Co", session_started)
     assert picked_up is not None
     assert picked_up["funding_status"] == "bootstrapped"
 
@@ -160,11 +161,11 @@ async def test_run_turn_ignores_a_deep_brief_older_than_the_session():
         await s.commit()
 
     session_started = datetime.now(UTC)  # session started AFTER the deep pass
-    picked_up = await orch._pickup_deep_research("Acme Co", session_started)
+    picked_up = await orch_mod.pickup_deep_research("Acme Co", session_started)
     assert picked_up is None
 
 
 async def test_run_turn_pickup_returns_none_for_a_light_only_company():
     orch = Orchestrator()
-    picked_up = await orch._pickup_deep_research("Never Researched Co", datetime.now(UTC))
+    picked_up = await orch_mod.pickup_deep_research("Never Researched Co", datetime.now(UTC))
     assert picked_up is None

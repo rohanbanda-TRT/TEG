@@ -60,15 +60,15 @@ async def test_research_layer_runs_concurrently_in_a_real_pipeline_run(monkeypat
             await asyncio.sleep(_SLEEP_S)
             return await super().run_person_track(intake, budget=budget)
 
-    import app.orchestrator as orch_mod
+    import app.orchestrator.graph_nodes as graph_nodes_mod
 
-    real_read_flags = orch_mod._read_verification_flags
+    real_read_flags = graph_nodes_mod.read_verification_flags
 
     def _timed_read_flags(intake):
         timestamps["verify"] = time.monotonic()
         return real_read_flags(intake)
 
-    monkeypatch.setattr(orch_mod, "_read_verification_flags", _timed_read_flags)
+    monkeypatch.setattr(graph_nodes_mod, "read_verification_flags", _timed_read_flags)
 
     analysis = AnalysisAgent(FakeLLMClient(structured=[
         _CanonResult(canonical="Third Rock Techkno", intent_hint="exhibitor"),

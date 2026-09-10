@@ -100,6 +100,56 @@ async def test_second_inquiry_reuses_stored_brief_without_reresearching():
     assert res1.inquiry_id != res2.inquiry_id  # two distinct inquiries, one reused brief
 
 
+def _obscure_orch(research: ResearchAgent) -> Orchestrator:
+    analysis = AnalysisAgent(FakeLLMClient(structured=[
+        _CanonResult(canonical="Zephyrion Testware LLP", intent_hint="exhibitor"),
+        _CanonResult(canonical="Zephyrion Testware LLP", intent_hint="exhibitor"),
+    ]))
+    persuasion = PersuasionAgent(FakeLLMClient(responses=[
+        "Welcome, Zephyrion Testware LLP.",
+        "Welcome, Zephyrion Testware LLP.",
+    ]))
+    return Orchestrator(analysis=analysis, research=research, persuasion=persuasion)
+
+
+async def test_thin_brief_triggers_fresh_research_even_when_fresh():
+    """A real, completed research pass can still find almost nothing about
+    an obscure company — that's a valid completed pass (not a timeout
+    fallback), so it gets cached same as any other. But reusing a
+    near-empty result forever, just because it's still "fresh" by age, is
+    worse than trying again — a later attempt may simply do better.
+
+    Uses a fictitious company name with no KB entry (unlike "Third Rock
+    Techkno" used elsewhere in this file, which the KB itself knows about
+    as a real past exhibitor) so company_profile genuinely ends up empty."""
+    research = _CountingResearch(
+        FakeLLMClient(structured=[
+            _Synthesis(sector=None, company_size=None, hq=None, founder=None,
+                       designation=None, seniority=None, is_technical=None, person_company_match=None),
+            _Synthesis(sector="AI Consulting", company_size="200", hq=None, founder=None,
+                       designation=None, seniority=None, is_technical=None, person_company_match=None),
+        ]),
+        explorer=StubExplorer(), tools=[_DeadWeb()],
+    )
+    orch = _obscure_orch(research)
+    payload = IntakePayload(person_name="Someone", company_name="Zephyrion Testware LLP")
+
+    await orch.run_pipeline(payload)
+    assert research.company_track_calls == 1
+
+    # The thin dossier was still cached (a real, completed pass) — confirm
+    # it landed empty before asserting the reuse-skip is bypassed.
+    async with SessionLocal() as s:
+        row = await CompanyBriefRepo(s).get_by_company("Zephyrion Testware LLP")
+    assert row is not None
+    assert row.dossier_json.get("company_profile") == {}
+    assert row.dossier_json.get("sector") is None
+
+    await orch.run_pipeline(payload)
+    assert research.company_track_calls == 2, "a thin brief was reused instead of re-researched"
+    assert research.person_track_calls == 2
+
+
 async def test_stale_brief_triggers_fresh_research_and_overwrites():
     research = _CountingResearch(
         FakeLLMClient(structured=[
