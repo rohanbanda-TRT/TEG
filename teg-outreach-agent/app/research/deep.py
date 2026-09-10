@@ -116,6 +116,12 @@ async def deep_research(
             tools=["WebSearch", "WebFetch"],
             allowed_tools=["WebSearch", "WebFetch"],
             timeout_s=s.deep_research_timeout_s,
+            # This runs detached in the background with a generous timeout
+            # budget and nobody waiting on latency, unlike generate()'s other
+            # callers — worth a third attempt against the "model answers in
+            # prose instead of the schema" slip on low-web-footprint
+            # companies, rather than the generic 2-attempt default.
+            attempts=3,
         )
     except RuntimeError as exc:
         _log.warning("[%s] deep research failed: %s", company_name, exc)

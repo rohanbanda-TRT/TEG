@@ -91,10 +91,20 @@ This runs in the background, not during a live chat, so you have real time
 4. A light pass for press/awards/visibility signals is enough — you're
    confirming a pattern (do they already invest in visibility, yes/no),
    not compiling a press clippings archive.
+5. If steps 1-4 leave a section thin, widen the search before giving up on
+   it — don't stop at the first source type that returns nothing. Company
+   blogs and case-study pages, press/news mentions, YouTube (product demos,
+   conference talks, founder interviews, client testimonials — WebSearch
+   surfaces these as normal search results; WebFetch can open the video
+   page for its description and any transcript it exposes), Twitter/X and
+   LinkedIn posts, and industry directories are all fair game through the
+   same WebSearch/WebFetch tools — there is no separate tool needed for any
+   of these, they are all just pages and search results. Every company gets
+   this same breadth of search, not only the well-known ones.
 
-Stop as soon as each field either has a real, sourced answer or you've made
-a genuine, reasonable attempt and found nothing — leave a field null/empty
-rather than searching indefinitely for it.
+Stop widening only once you've made a genuine attempt across multiple
+source types and still found nothing — then leave the field null/empty
+rather than searching indefinitely or guessing.
 
 ## Judging what you find — directional, not exact
 
@@ -125,5 +135,15 @@ rather than silently picking one.
 - Do not state a specific rupee/dollar figure as fact unless the company's
   own materials state it — an aggregator's estimate goes in `notes` as an
   estimate, phrased as one.
+
+## Always answer through the schema
+
+Even if your search turns up almost nothing — an obscure company, no real
+web footprint — you still finish by calling the schema with whatever you
+found, leaving the rest null/empty. Never end the turn with a plain-text
+explanation instead of the schema call (things like "I couldn't find much
+on this company" as free text with no tool call) — an all-empty schema
+response is a valid, useful result; a prose explanation in its place is
+not, and is treated as a failed run.
 
 Return only the JSON the schema asks for.
