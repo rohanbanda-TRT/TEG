@@ -115,6 +115,25 @@ def target_cta_for(persona: Persona) -> str:
     }[persona]
 
 
+_TOOL_ARTIFACT_TAIL = re.compile(
+    r"\s*(?:</?(?:message|invoke|parameter|function_calls?|antml:invoke|"
+    r"antml:parameter)\b[^>]*>\s*)+$",
+    re.I,
+)
+
+
+def _strip_tool_artifacts(text: str) -> str:
+    """Backstop for a rare model slip: asking the CLI to deliver plain text
+    through a one-field schema (see _generate_text) can prime the model into
+    narrating its own output-wrapping mechanics — it answers correctly, then
+    appends literal tool-call closing-tag syntax ("</message>\n</invoke>")
+    as trailing text INSIDE the string value. No content guardrail catches
+    this (check_message checks policy, not formatting), so strip any such
+    trailing tag debris here before it can reach a prospect."""
+    stripped = _TOOL_ARTIFACT_TAIL.sub("", text).rstrip()
+    return stripped or text
+
+
 def _price_free(text: str) -> str:
     """Strip any sentence containing a ₹ figure — used when a safe-template
     fallback fires but the prospect never asked about cost."""
@@ -214,12 +233,22 @@ class PersuasionAgent(Agent):
         result = await self._claude.generate(
             model=self._claude_model,
             system_prompt=system,
-            user_prompt=user + "\n\nReturn the message in the `message` field.",
+            # Deliberately does NOT say "in the `message` field" — the schema
+            # already conveys that mechanically. Naming the field in prose,
+            # on top of the schema, was observed to prime the model into
+            # narrating its own output-wrapping mechanics: it once answered
+            # correctly but appended literal tool-call closing-tag syntax
+            # ("</message>\n</invoke>") as trailing text INSIDE the string
+            # value, which reached the prospect verbatim because
+            # check_message()'s guardrails check content policy, not
+            # formatting artifacts. _strip_tool_artifacts() below is the
+            # backstop for whatever prompt-wording alone doesn't prevent.
+            user_prompt=user,
             json_schema=self._Text.model_json_schema(),
             cwd=str(Path(self._skills_path).resolve().parent),
             timeout_s=self._claude_timeout_s,
         )
-        return self._Text.model_validate(result.data).message
+        return _strip_tool_artifacts(self._Text.model_validate(result.data).message)
 
     def _claude_system(self, fallback: str) -> str:
         """Skill-authored system prompt when the CLI backend is active."""
@@ -646,7 +675,7 @@ class PersuasionAgent(Agent):
             state["cta_detail"] = {**state.get("cta_detail", {}), **analysis.cta_detail}
 
         return PersuasionTurn(
-            reply_text=analysis.reply.strip(),
+            reply_text=_strip_tool_artifacts(analysis.reply.strip()),
             detected_cta=analysis.detected_cta,
             cta_status=analysis.cta_status,
             cta_type=analysis.cta_type,
